@@ -2,15 +2,14 @@ package com.abyssalrpg.mixin;
 
 import com.abyssalrpg.api.BossDefenseHolder;
 import com.abyssalrpg.api.BossHealthHolder;
+import com.abyssalrpg.combat.CinderDragonArmorHandler;
 import com.abyssalrpg.combat.DualBladeCombatHandler;
-import com.abyssalrpg.combat.NightmareArmorHandler;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.CombatRules;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import org.spongepowered.asm.mixin.Mixin;
@@ -85,23 +84,11 @@ public abstract class LivingEntityMixin {
         cir.setReturnValue(Math.max(cir.getReturnValueF(), piercedDamage));
     }
 
-    @Inject(method = "canBeAffected", at = @At("HEAD"), cancellable = true)
-    private void abyssalrpg$nightmareArmorImmunities(MobEffectInstance effectInstance,
-                                                     CallbackInfoReturnable<Boolean> cir) {
-        if (NightmareArmorHandler.shouldBlockMobEffect((LivingEntity) (Object) this, effectInstance)) {
-            cir.setReturnValue(false);
-        }
-    }
-
-    @Inject(method = "getDamageAfterMagicAbsorb", at = @At("RETURN"), cancellable = true)
+    @Inject(method = "getDamageAfterMagicAbsorb", at = @At("RETURN"))
     private void abyssalrpg$recordPostMitigationDamage(DamageSource source, float damageAmount,
                                                        CallbackInfoReturnable<Float> cir) {
         LivingEntity self = (LivingEntity) (Object) this;
-        float finalDmg = NightmareArmorHandler.applyFullSetDamageReduction(self, source, cir.getReturnValueF());
-        if (finalDmg != cir.getReturnValueF()) {
-            cir.setReturnValue(finalDmg);
-        }
-        DualBladeCombatHandler.recordPostMitigationDamage(self, source, finalDmg);
+        DualBladeCombatHandler.recordPostMitigationDamage(self, source, cir.getReturnValueF());
     }
 
     @Inject(method = "hurt", at = @At("RETURN"))
@@ -109,7 +96,7 @@ public abstract class LivingEntityMixin {
         if (cir.getReturnValueZ()) {
             LivingEntity self = (LivingEntity) (Object) this;
             DualBladeCombatHandler.onLivingHurtReturn(self, source, true);
-            NightmareArmorHandler.onVictimHurtReturn(self, source, amount);
+            CinderDragonArmorHandler.onTargetHurtByAttacker(self, source);
         }
     }
 }

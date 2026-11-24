@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_cinder_dragon_scale": {
+      "conditions": {
+        "items": [
+          {
+            "items": "abyssalrpg:cinder_dragon_scale"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "abyssalrpg:cinder_dragon_helmet"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_cinder_dragon_scale"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "abyssalrpg:cinder_dragon_helmet"
+    ]
+  }
+}

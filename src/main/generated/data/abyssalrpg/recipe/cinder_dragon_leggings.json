@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "S": {
+      "item": "abyssalrpg:cinder_dragon_scale"
+    }
+  },
+  "pattern": [
+    "SSS",
+    "S S",
+    "S S"
+  ],
+  "result": {
+    "count": 1,
+    "id": "abyssalrpg:cinder_dragon_leggings"
+  }
+}

@@ -1,6 +1,8 @@
 package com.abyssalrpg.registry;
 
 import com.abyssalrpg.AbyssalRpgMod;
+import com.abyssalrpg.item.CinderDragonArmorItem;
+import com.abyssalrpg.item.CinderDragonHeartItem;
 import com.abyssalrpg.item.DualBladeItem;
 import com.abyssalrpg.item.NightmareArmorItem;
 import com.abyssalrpg.item.NightmareCoreItem;
@@ -39,11 +41,22 @@ public final class ModItems {
     public static final Item NIGHTMARE_ARMOR_SHARD = register("nightmare_armor_shard",
             new Item(new Item.Properties().rarity(Rarity.RARE).fireResistant()));
 
+    // Cinder Dragon Boss Armor Materials (Phase 2 Drops)
+    public static final Item CINDER_DRAGON_HEART = register("cinder_dragon_heart", new CinderDragonHeartItem());
+    public static final Item CINDER_DRAGON_SCALE = register("cinder_dragon_scale",
+            new Item(new Item.Properties().rarity(Rarity.RARE).fireResistant()));
+
     // Endgame 4-Piece Nightmare Knight 3D Armor Set (GeckoLib GeoArmorRenderer)
     public static Item NIGHTMARE_HELMET;
     public static Item NIGHTMARE_CHESTPLATE;
     public static Item NIGHTMARE_LEGGINGS;
     public static Item NIGHTMARE_BOOTS;
+
+    // Endgame 4-Piece Cinder Dragon 3D Armor Set (GeckoLib GeoArmorRenderer + AutoGlowingGeoLayer)
+    public static Item CINDER_DRAGON_HELMET;
+    public static Item CINDER_DRAGON_CHESTPLATE;
+    public static Item CINDER_DRAGON_LEGGINGS;
+    public static Item CINDER_DRAGON_BOOTS;
 
     // Signature Two-Handed Weapon (`abyssalrpg:dual_knife`)
     public static Item DUAL_KNIFE;
@@ -73,6 +86,11 @@ public final class ModItems {
         NIGHTMARE_CHESTPLATE = register("nightmare_chestplate", new NightmareArmorItem(ArmorItem.Type.CHESTPLATE));
         NIGHTMARE_LEGGINGS = register("nightmare_leggings", new NightmareArmorItem(ArmorItem.Type.LEGGINGS));
         NIGHTMARE_BOOTS = register("nightmare_boots", new NightmareArmorItem(ArmorItem.Type.BOOTS));
+
+        CINDER_DRAGON_HELMET = register("cinder_dragon_helmet", new CinderDragonArmorItem(ArmorItem.Type.HELMET));
+        CINDER_DRAGON_CHESTPLATE = register("cinder_dragon_chestplate", new CinderDragonArmorItem(ArmorItem.Type.CHESTPLATE));
+        CINDER_DRAGON_LEGGINGS = register("cinder_dragon_leggings", new CinderDragonArmorItem(ArmorItem.Type.LEGGINGS));
+        CINDER_DRAGON_BOOTS = register("cinder_dragon_boots", new CinderDragonArmorItem(ArmorItem.Type.BOOTS));
 
         DUAL_KNIFE = register("dual_knife", new DualBladeItem());
 

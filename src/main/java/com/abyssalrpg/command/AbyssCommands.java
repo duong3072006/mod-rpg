@@ -1,6 +1,7 @@
 package com.abyssalrpg.command;
 
 import com.abyssalrpg.AbyssalRpgMod;
+import com.abyssalrpg.combat.CinderDragonArmorHandler;
 import com.abyssalrpg.combat.DualBladeCombatHandler;
 import com.abyssalrpg.combat.NightmareArmorHandler;
 import com.abyssalrpg.config.ArmorConfig;
@@ -188,6 +189,10 @@ public final class AbyssCommands {
                         .requires(AbyssCommands::canRunDebug)
                         .then(Commands.literal("test")
                                 .executes(ctx -> runNightmareArmorAudit(ctx.getSource()))))
+                .then(Commands.literal("cinderarmor")
+                        .requires(AbyssCommands::canRunDebug)
+                        .then(Commands.literal("test")
+                                .executes(ctx -> runCinderDragonArmorAudit(ctx.getSource()))))
         );
 
         // Lệnh debug chuyên biệt cho Boss Leviathan (/leviathan debug [on|off|status] & /leviathan test)
@@ -1887,10 +1892,18 @@ public final class AbyssCommands {
     }
 
     private static RealTickDualBladeAudit activeDualBladeAudit = null;
+    private static RealTickArmorExpiryAudit activeArmorAudit = null;
+    private static RealTickCinderArmorExpiryAudit activeCinderArmorAudit = null;
 
     public static void tickActiveAudits(net.minecraft.server.MinecraftServer server) {
         if (activeDualBladeAudit != null && activeDualBladeAudit.tick()) {
             activeDualBladeAudit = null;
+        }
+        if (activeArmorAudit != null && activeArmorAudit.tick()) {
+            activeArmorAudit = null;
+        }
+        if (activeCinderArmorAudit != null && activeCinderArmorAudit.tick()) {
+            activeCinderArmorAudit = null;
         }
     }
 
@@ -2022,13 +2035,15 @@ public final class AbyssCommands {
 
     /**
      * Kiểm định toàn diện Bộ Giáp Nightmare Knight (`/abyss armor test`):
-     * 1. Đăng ký 6 vật phẩm, `Holder<ArmorMaterial>`, chỉ số 4/10/8/4 (=26), Toughness 4.0, KB Res 0.15,
-     *    độ bền 528/768/720/624 (48x), Enchantability 18, kháng lửa, `nightmare_core` glint, sửa Đe bằng Shard, tương thích Enchant vanilla.
-     * 2. Đủ 4 công thức Shaped Crafting Table (`nightmare_helmet/chestplate/leggings/boots`) khớp đúng nguyên liệu & pattern.
-     * 3. Loot Table Boss Nightmare Knight: Phase 1 chặn rơi loot (chuyển Phase 2 thay vì chết) + mô phỏng 2000 kill Phase 2
-     *    kiểm chứng tỉ lệ `nightmare_core` ~5.0% (0 ảnh hưởng Looting) & `nightmare_armor_shard` 100% rơi 6–10 mảnh.
-     * 4. Full Set Bonus 4/4 (`Nightmare Sovereign`): Miễn Darkness, Giảm -12% sát thương cận chiến/Boss (chỉ khi đủ 4/4),
-     *    Phản Gai 20% (trần 15.0, cooldown 20 ticks, chống vòng lặp đệ quy).
+     * 1. Đăng ký 6 vật phẩm, `Holder<ArmorMaterial>`, chỉ số chuẩn Netherite 3/8/6/3 (=20), Toughness 3.0 (=12.0),
+     *    KB Res 0.10 (=40%), độ bền 407/592/555/481 (37x), kháng lửa, `nightmare_core` glint, sửa Đe bằng Shard, enchant vanilla.
+     * 2. Đủ 4 công thức Shaped Crafting Table (`nightmare_helmet/chestplate/leggings/boots`).
+     * 3. Loot Table Boss Nightmare Knight: Phase 1 intercept + 2000 kill Phase 2 (~5% Core, 100% 6–10 Shards).
+     * 4. Full Set Bonus 4/4 mới:
+     *    - Mặc 4/4: `MAX_HEALTH = 24.0` (+4.0, không cộng dồn khi sync lặp/relog), `FIRE_RESISTANCE` (amp 0, 60t, ambient/!visible/showIcon),
+     *      `DAMAGE_RESISTANCE` (amp 1 = Kháng Cự II, 60t, ambient/!visible/showIcon), không ghi đè Kháng Cự III+, không xung đột `BossHealthHolder`.
+     *    - Tháo 1 món: `MAX_HEALTH` lập tức về `20.0`, máu bị clamp `24.0 -> 20.0`, không còn modifier thừa,
+     *      và 2 hiệu ứng tự hết sạch sau ~3 giây (kiểm chứng real-tick 65 ticks trên server thực).
      */
     private static int runNightmareArmorAudit(CommandSourceStack source) {
         ServerLevel level = source.getLevel();
@@ -2038,13 +2053,19 @@ public final class AbyssCommands {
         FakePlayer tester = FakePlayer.get(level, new com.mojang.authlib.GameProfile(
                 UUID.nameUUIDFromBytes("AbyssalNightmareArmorAudit".getBytes()), "ArmorAuditBot"));
         tester.setPos(origin.getX() + 0.5, origin.getY() + 1.0, origin.getZ() + 0.5);
+        tester.removeAllEffects();
+        tester.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
+        tester.setItemSlot(EquipmentSlot.CHEST, ItemStack.EMPTY);
+        tester.setItemSlot(EquipmentSlot.LEGS, ItemStack.EMPTY);
+        tester.setItemSlot(EquipmentSlot.FEET, ItemStack.EMPTY);
+        NightmareArmorHandler.syncMaxHealthModifier(tester);
         tester.setHealth(tester.getMaxHealth());
-        NightmareArmorHandler.clearCooldownForTest(tester.getUUID());
 
         NightmareKnightBossEntity boss = null;
-        Zombie attacker = null;
+        Zombie wearer = null;
         try {
-            // 1. Kiểm tra đăng ký vật phẩm, ArmorMaterial, chỉ số, sửa Đe & Enchant vanilla
+            // 1. Kiểm tra đăng ký vật phẩm, ArmorMaterial, config v2, chỉ số 37x, sửa Đe & Enchant vanilla
+            ArmorConfig cfg = ArmorConfig.get();
             ItemStack core = new ItemStack(ModItems.NIGHTMARE_CORE);
             ItemStack shard = new ItemStack(ModItems.NIGHTMARE_ARMOR_SHARD);
             ItemStack helm = new ItemStack(ModItems.NIGHTMARE_HELMET);
@@ -2060,12 +2081,14 @@ public final class AbyssCommands {
                     && legs.has(DataComponents.FIRE_RESISTANT) && boots.has(DataComponents.FIRE_RESISTANT);
             boolean coreGlintOk = core.hasFoil();
             boolean repairOk = mat.repairIngredient().get().test(shard);
-            boolean durOk = helm.getMaxDamage() == 528 && chest.getMaxDamage() == 768
-                    && legs.getMaxDamage() == 720 && boots.getMaxDamage() == 624;
-            boolean statsOk = (defTotal == 26)
-                    && Math.abs(mat.toughness() - 4.0F) < 0.01F
-                    && Math.abs(mat.knockbackResistance() - 0.15F) < 0.005F
-                    && mat.enchantmentValue() == 18
+            boolean durOk = helm.getMaxDamage() == 407 && chest.getMaxDamage() == 592
+                    && legs.getMaxDamage() == 555 && boots.getMaxDamage() == 481;
+            boolean cfgOk = cfg.configVersion == ArmorConfig.CURRENT_CONFIG_VERSION
+                    && cfg.durabilityMultiplier == 37
+                    && Math.abs(cfg.setBonusMaxHealth - 4.0) < 1e-6;
+            boolean statsOk = cfgOk && (defTotal == 20)
+                    && Math.abs(mat.toughness() - 3.0F) < 0.01F
+                    && Math.abs(mat.knockbackResistance() - 0.10F) < 0.005F
                     && durOk && fireResOk && coreGlintOk && repairOk;
 
             HolderLookup.RegistryLookup<Enchantment> enchReg = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
@@ -2078,10 +2101,10 @@ public final class AbyssCommands {
                     && unbreak.canEnchant(chest) && mending.canEnchant(chest)
                     && resp.canEnchant(helm) && ff.canEnchant(boots);
 
-            AbyssalRpgMod.LOGGER.info("[ARMOR_AUDIT] 1. STATS & MATERIAL: def={} (4/10/8/4) tough={} kbRes={} dur={}/{}/{}/{} enchVal={} fireRes={} coreGlint={} repairShard={} vanillaEnch={} -> {}",
-                    defTotal, mat.toughness(), mat.knockbackResistance(),
+            AbyssalRpgMod.LOGGER.info("[ARMOR_AUDIT] 1. STATS & MATERIAL (cfg v{}): def={} (3/8/6/3) tough={} kbRes={} dur={}/{}/{}/{} fireRes={} coreGlint={} repairShard={} vanillaEnch={} -> {}",
+                    cfg.configVersion, defTotal, mat.toughness(), mat.knockbackResistance(),
                     helm.getMaxDamage(), chest.getMaxDamage(), legs.getMaxDamage(), boots.getMaxDamage(),
-                    mat.enchantmentValue(), fireResOk, coreGlintOk, repairOk, vanillaEnchOk,
+                    fireResOk, coreGlintOk, repairOk, vanillaEnchOk,
                     (statsOk && vanillaEnchOk) ? "PASS" : "FAIL");
 
             // 2. Kiểm tra đủ 4 công thức Shaped Crafting Table khớp pattern chuẩn
@@ -2166,77 +2189,516 @@ public final class AbyssCommands {
                     p1InterceptedAlive, coreDrops, rolls, String.format("%.2f", coreRatePct),
                     shardDropsRolls, rolls, minShards, maxShards, lootOk ? "PASS" : "FAIL");
 
-            // 4. Full Set Bonus 4/4 (`Nightmare Sovereign`)
+            // 4. Full Set Bonus 4/4 mới (Kháng Lửa I, Kháng Cự II, +4.0 MAX_HEALTH, không cộng dồn, không ghi đè Kháng Cự III+, không chạm BossHealthHolder)
             tester.setItemSlot(EquipmentSlot.HEAD, helm.copy());
             tester.setItemSlot(EquipmentSlot.CHEST, chest.copy());
             tester.setItemSlot(EquipmentSlot.LEGS, legs.copy());
             tester.setItemSlot(EquipmentSlot.FEET, boots.copy());
             int equipped4 = NightmareArmorHandler.countEquippedPieces(tester);
 
-            // 4a. Miễn nhiễm hoàn toàn Darkness
-            boolean darknessAdded = tester.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 120, 0));
-            boolean darknessImmuneOk = !darknessAdded && !tester.hasEffect(MobEffects.DARKNESS);
+            // Sync 2 lần liên tiếp mô phỏng relog/đổi world -> MAX_HEALTH phải đúng 24.0 (0 cộng dồn)
+            NightmareArmorHandler.syncPlayerImmediate(tester);
+            NightmareArmorHandler.syncPlayerImmediate(tester);
 
-            // 4b. Giảm thêm 12% sát thương cận chiến & Boss (chỉ kích hoạt khi mặc 4/4)
-            attacker = EntityType.ZOMBIE.create(level);
-            if (attacker == null) {
-                throw new IllegalStateException("Không thể tạo Zombie test");
-            }
-            attacker.moveTo(origin.getX() + 2.0, origin.getY() + 1.0, origin.getZ() + 0.5, 0.0F, 0.0F);
-            AttributeInstance zMaxHp = attacker.getAttribute(Attributes.MAX_HEALTH);
-            if (zMaxHp != null) zMaxHp.setBaseValue(200.0);
-            attacker.setHealth(200.0F);
-            level.addFreshEntity(attacker);
+            AttributeInstance maxHpAttr = tester.getAttribute(Attributes.MAX_HEALTH);
+            float maxHp4 = tester.getMaxHealth();
+            boolean hasMod4 = maxHpAttr != null && maxHpAttr.getModifier(NightmareArmorHandler.SET_HEALTH_MODIFIER_ID) != null;
 
-            var meleeSrc = level.damageSources().mobAttack(attacker);
-            float reduced4 = NightmareArmorHandler.applyFullSetDamageReduction(tester, meleeSrc, 10.0F);
+            MobEffectInstance fireEff = tester.getEffect(MobEffects.FIRE_RESISTANCE);
+            MobEffectInstance resEff = tester.getEffect(MobEffects.DAMAGE_RESISTANCE);
+            boolean fireOk = fireEff != null && fireEff.getAmplifier() == 0
+                    && fireEff.isAmbient() && !fireEff.isVisible() && fireEff.showIcon()
+                    && fireEff.getDuration() >= 50 && fireEff.getDuration() <= 60;
+            boolean resOk = resEff != null && resEff.getAmplifier() == 1
+                    && resEff.isAmbient() && !resEff.isVisible() && resEff.showIcon()
+                    && resEff.getDuration() >= 50 && resEff.getDuration() <= 60;
+
+            // Test không ghi đè Kháng Cự cấp cao hơn (Resistance III amp=2)
+            tester.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 200, 2, false, true, true));
+            NightmareArmorHandler.applyPeriodicSetEffects(tester);
+            MobEffectInstance res3After = tester.getEffect(MobEffects.DAMAGE_RESISTANCE);
+            boolean higherResPreservedOk = res3After != null && res3After.getAmplifier() == 2 && res3After.getDuration() >= 195;
+
+            // Test không xung đột với BossHealthHolder
+            NightmareArmorHandler.syncMaxHealthModifier(boss);
+            AttributeInstance bossHpAttr = boss.getAttribute(Attributes.MAX_HEALTH);
+            boolean bossSafeOk = bossHpAttr == null || bossHpAttr.getModifier(NightmareArmorHandler.SET_HEALTH_MODIFIER_ID) == null;
+
+            // Test tháo 1 món -> MAX_HEALTH lập tức về 20.0, health clamp từ 24.0 về 20.0, 0 modifier thừa
+            tester.setHealth(24.0F);
             tester.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
-            float unreduced3 = NightmareArmorHandler.applyFullSetDamageReduction(tester, meleeSrc, 10.0F);
-            tester.setItemSlot(EquipmentSlot.HEAD, helm.copy());
-            boolean reductionOk = Math.abs(reduced4 - 8.80F) < 0.02F && Math.abs(unreduced3 - 10.0F) < 0.02F;
+            NightmareArmorHandler.syncMaxHealthModifier(tester);
+            float maxHp3 = tester.getMaxHealth();
+            float hpClamped3 = tester.getHealth();
+            boolean modRemoved3 = maxHpAttr != null && maxHpAttr.getModifier(NightmareArmorHandler.SET_HEALTH_MODIFIER_ID) == null;
 
-            // 4c. Phản Gai 20% (trần 15.0, cooldown 20 ticks, chống đệ quy)
-            float zHp0 = attacker.getHealth();
-            float refl1 = NightmareArmorHandler.onVictimHurtReturn(tester, meleeSrc, 20.0F);
-            float zDmg1 = zHp0 - attacker.getHealth();
-            float reflCdBlocked = NightmareArmorHandler.onVictimHurtReturn(tester, meleeSrc, 20.0F);
-            NightmareArmorHandler.clearCooldownForTest(tester.getUUID());
-            attacker.invulnerableTime = 0;
-            float reflCap = NightmareArmorHandler.onVictimHurtReturn(tester, meleeSrc, 120.0F);
-            boolean retaliationOk = Math.abs(refl1 - 4.0F) < 0.05F
-                    && zDmg1 > 0.0F
-                    && reflCdBlocked == 0.0F
-                    && Math.abs(reflCap - ArmorConfig.get().spikedRetaliationCap) < 0.05F;
+            boolean setBonusSyncOk = (equipped4 == 4)
+                    && Math.abs(maxHp4 - 24.0F) < 0.01F && hasMod4
+                    && fireOk && resOk && higherResPreservedOk && bossSafeOk
+                    && Math.abs(maxHp3 - 20.0F) < 0.01F && Math.abs(hpClamped3 - 20.0F) < 0.01F && modRemoved3;
 
-            AbyssalRpgMod.LOGGER.info("[ARMOR_AUDIT] 4. FULL SET BONUS 4/4: pieces={} darknessImmune={} meleeRed4={} (3/4={}) refl20={} (zDmg={}) cdBlocked={} reflCap120={} -> {}",
-                    equipped4, darknessImmuneOk, String.format("%.2f", reduced4), String.format("%.2f", unreduced3),
-                    String.format("%.2f", refl1), String.format("%.2f", zDmg1), reflCdBlocked == 0.0F,
-                    String.format("%.2f", reflCap),
-                    (equipped4 == 4 && darknessImmuneOk && reductionOk && retaliationOk) ? "PASS" : "FAIL");
+            AbyssalRpgMod.LOGGER.info("[ARMOR_AUDIT] 4. FULL SET BONUS 4/4 (EQUIP/UNEQUIP/GUARD): pieces={} maxHP4={} mod4={} fireRes(amp0,{}t)={} resII(amp1,{}t)={} keepResIII={} bossSafe={} unequipMaxHP={} clampHP={} modGone={} -> {}",
+                    equipped4, String.format("%.1f", maxHp4), hasMod4,
+                    fireEff != null ? fireEff.getDuration() : -1, fireOk,
+                    resEff != null ? resEff.getDuration() : -1, resOk,
+                    higherResPreservedOk, bossSafeOk,
+                    String.format("%.1f", maxHp3), String.format("%.1f", hpClamped3), modRemoved3,
+                    setBonusSyncOk ? "PASS" : "FAIL");
 
-            final int fMinShards = minShards;
-            final int fMaxShards = maxShards;
-            boolean allPass = statsOk && vanillaEnchOk && recipesOk && lootOk
-                    && equipped4 == 4 && darknessImmuneOk && reductionOk && retaliationOk;
-            AbyssalRpgMod.LOGGER.info("[ARMOR_AUDIT] === TỔNG KẾT: {} ===", allPass ? "ALL_PASS" : "FAIL");
-            source.sendSuccess(() -> Component.literal(String.format(
-                    "[Nightmare Armor Audit] %s | Def=%d (4/10/8/4) Tough=%.1f KB=%.2f Dur=48x | Recipes=4/4 | Core=%.2f%% Shards=%d..%d | 4/4 Bonus: DarkImm=%s Red12%%=%.2f Refl=%.1f/Cap%.1f",
-                    allPass ? "ALL PASS" : "FAIL", defTotal, mat.toughness(), mat.knockbackResistance(),
-                    coreRatePct, fMinShards, fMaxShards, darknessImmuneOk, reduced4, refl1, reflCap
-            )).withStyle(allPass ? ChatFormatting.GREEN : ChatFormatting.RED), true);
-            return allPass ? 1 : 0;
+            // 5. Real-tick expiry check (65 server ticks ~3.25s) trên thực thể sống trong level:
+            // mặc 4/4 nhận đủ 24.0 HP + 2 buff -> tháo 1 món -> MAX_HEALTH về 20.0 ngay & 2 buff tự hết sạch sau ~3s!
+            wearer = EntityType.ZOMBIE.create(level);
+            if (wearer == null) {
+                throw new IllegalStateException("Không thể tạo Zombie real-tick audit");
+            }
+            wearer.moveTo(origin.getX() + 2.5, origin.getY() + 1.0, origin.getZ() + 0.5, 0.0F, 0.0F);
+            wearer.setNoAi(true);
+            wearer.setInvulnerable(true);
+            level.addFreshEntity(wearer);
+
+            wearer.setItemSlot(EquipmentSlot.HEAD, helm.copy());
+            wearer.setItemSlot(EquipmentSlot.CHEST, chest.copy());
+            wearer.setItemSlot(EquipmentSlot.LEGS, legs.copy());
+            wearer.setItemSlot(EquipmentSlot.FEET, boots.copy());
+            NightmareArmorHandler.syncPlayerImmediate(wearer);
+            float wearerHp4 = wearer.getMaxHealth();
+            wearer.setHealth(wearerHp4);
+            boolean wearerBuffsOn4 = Math.abs(wearerHp4 - 24.0F) < 0.01F
+                    && wearer.hasEffect(MobEffects.FIRE_RESISTANCE)
+                    && wearer.hasEffect(MobEffects.DAMAGE_RESISTANCE);
+
+            // Tháo mũ ngay tại tick 0 -> máu về 20.0 & 2 buff sẽ tự đếm ngược hết sạch trong 65 ticks!
+            wearer.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
+            NightmareArmorHandler.syncMaxHealthModifier(wearer);
+            boolean wearerUnequipNowOk = Math.abs(wearer.getMaxHealth() - 20.0F) < 0.01F
+                    && Math.abs(wearer.getHealth() - 20.0F) < 0.01F;
+
+            Zombie wearerForRealTick = wearer;
+            wearer = null; // bàn giao lifecycle cho RealTickArmorExpiryAudit
+            boolean syncAllOk = statsOk && vanillaEnchOk && recipesOk && lootOk && setBonusSyncOk && wearerBuffsOn4 && wearerUnequipNowOk;
+            activeArmorAudit = new RealTickArmorExpiryAudit(
+                    source, wearerForRealTick, syncAllOk,
+                    defTotal, mat.toughness(), mat.knockbackResistance(),
+                    helm.getMaxDamage(), chest.getMaxDamage(), legs.getMaxDamage(), boots.getMaxDamage(),
+                    coreRatePct, minShards, maxShards, maxHp4, maxHp3
+            );
+            return syncAllOk ? 1 : 0;
         } catch (Exception e) {
             AbyssalRpgMod.LOGGER.error("[ARMOR_AUDIT] Lỗi kiểm định Nightmare Armor:", e);
             source.sendFailure(Component.literal("[Nightmare Armor Audit] ERROR: " + e.getMessage()));
             return 0;
         } finally {
+            tester.removeAllEffects();
             tester.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
             tester.setItemSlot(EquipmentSlot.CHEST, ItemStack.EMPTY);
             tester.setItemSlot(EquipmentSlot.LEGS, ItemStack.EMPTY);
             tester.setItemSlot(EquipmentSlot.FEET, ItemStack.EMPTY);
-            NightmareArmorHandler.clearCooldownForTest(tester.getUUID());
+            NightmareArmorHandler.syncMaxHealthModifier(tester);
             if (boss != null) boss.discard();
-            if (attacker != null) attacker.discard();
+            if (wearer != null) wearer.discard();
+        }
+    }
+
+    private static final class RealTickArmorExpiryAudit {
+        private final CommandSourceStack source;
+        private final Zombie wearer;
+        private final boolean syncStagesOk;
+        private final int defTotal;
+        private final float toughness;
+        private final float kbRes;
+        private final int durH, durC, durL, durB;
+        private final double coreRatePct;
+        private final int minShards, maxShards;
+        private final float maxHp4, maxHp3;
+        private int elapsedTicks = 0;
+
+        RealTickArmorExpiryAudit(CommandSourceStack source, Zombie wearer, boolean syncStagesOk,
+                                 int defTotal, float toughness, float kbRes,
+                                 int durH, int durC, int durL, int durB,
+                                 double coreRatePct, int minShards, int maxShards,
+                                 float maxHp4, float maxHp3) {
+            this.source = source;
+            this.wearer = wearer;
+            this.syncStagesOk = syncStagesOk;
+            this.defTotal = defTotal;
+            this.toughness = toughness;
+            this.kbRes = kbRes;
+            this.durH = durH;
+            this.durC = durC;
+            this.durL = durL;
+            this.durB = durB;
+            this.coreRatePct = coreRatePct;
+            this.minShards = minShards;
+            this.maxShards = maxShards;
+            this.maxHp4 = maxHp4;
+            this.maxHp3 = maxHp3;
+        }
+
+        boolean tick() {
+            if (this.wearer.isRemoved() || !this.wearer.isAlive()) {
+                AbyssalRpgMod.LOGGER.error("[ARMOR_AUDIT] 5. REAL-TICK EXPIRY: wearer removed prematurely -> FAIL");
+                AbyssalRpgMod.LOGGER.info("[ARMOR_AUDIT] === TỔNG KẾT: FAIL ===");
+                return true;
+            }
+            // Mô phỏng đúng chu kỳ server tick (mỗi 20t gọi applyPeriodicSetEffects nhưng đang chỉ mặc 3/4 nên không làm mới!)
+            NightmareArmorHandler.syncMaxHealthModifier(this.wearer);
+            if (this.elapsedTicks % 20 == 0) {
+                NightmareArmorHandler.applyPeriodicSetEffects(this.wearer);
+            }
+            if (this.elapsedTicks >= 65) {
+                boolean fireGone = !this.wearer.hasEffect(MobEffects.FIRE_RESISTANCE);
+                boolean resGone = !this.wearer.hasEffect(MobEffects.DAMAGE_RESISTANCE);
+                AttributeInstance attr = this.wearer.getAttribute(Attributes.MAX_HEALTH);
+                boolean modStillGone = attr != null
+                        && attr.getModifier(NightmareArmorHandler.SET_HEALTH_MODIFIER_ID) == null
+                        && Math.abs(this.wearer.getMaxHealth() - 20.0F) < 0.01F;
+                boolean expiryOk = fireGone && resGone && modStillGone;
+                AbyssalRpgMod.LOGGER.info("[ARMOR_AUDIT] 5. REAL-TICK EXPIRY (65 ticks after unequip): fireGone={} resGone={} maxHP={} modGone={} -> {}",
+                        fireGone, resGone, String.format("%.1f", this.wearer.getMaxHealth()), modStillGone,
+                        expiryOk ? "PASS" : "FAIL");
+                this.wearer.discard();
+
+                boolean allPass = this.syncStagesOk && expiryOk;
+                AbyssalRpgMod.LOGGER.info("[ARMOR_AUDIT] === TỔNG KẾT: {} ===", allPass ? "ALL_PASS" : "FAIL");
+                this.source.sendSuccess(() -> Component.literal(String.format(
+                        "[Nightmare Armor Audit] %s | Def=%d (3/8/6/3) Tough=%.1f KB=%.2f Dur=%d/%d/%d/%d | Recipes=4/4 | Core=%.2f%% Shards=%d..%d | 4/4 MaxHP=%.1f->%.1f FireRes+ResII Expiry=%s",
+                        allPass ? "ALL PASS" : "FAIL", this.defTotal, this.toughness, this.kbRes,
+                        this.durH, this.durC, this.durL, this.durB,
+                        this.coreRatePct, this.minShards, this.maxShards,
+                        this.maxHp4, this.maxHp3, expiryOk
+                )).withStyle(allPass ? ChatFormatting.GREEN : ChatFormatting.RED), true);
+                return true;
+            }
+            this.elapsedTicks++;
+            return false;
+        }
+    }
+
+    /**
+     * Kiểm định toàn diện Bộ Giáp Cinder Dragon (`/abyss cinderarmor test`):
+     * 1. Đăng ký 6 vật phẩm, `Holder<ArmorMaterial> CINDER_DRAGON`, chỉ số 3/8/6/3 (=20), Toughness 3.0 (=12.0),
+     *    KB Res 0.10 (=40%), độ bền 407/592/555/481 (37x), kháng lửa, `cinder_dragon_heart` glint, sửa bằng Scale, enchant vanilla.
+     * 2. Đủ 4 công thức Shaped Crafting Table (`cinder_dragon_helmet/chestplate/leggings/boots`).
+     * 3. Loot Table Boss Cinder Dragon: Phase 1 chặn chết không rơi đồ + 2000 kill Phase 2 (~5% Heart, 100% 6–10 Scales, giữ nguyên sách Dual Knife).
+     * 4. Full Set Bonus 4/4: Kháng Lửa I (amp 0, 60t, ambient/!visible/showIcon), +3.0 Attack Damage (0 cộng dồn relog, 0 chạm BossHealthHolder),
+     *    đánh trúng đốt cháy mục tiêu 3s; tháo 1 món -> gỡ ngay Attack Damage modifier & Kháng Lửa tự hết sạch sau 65 ticks thực!
+     */
+    private static int runCinderDragonArmorAudit(CommandSourceStack source) {
+        ServerLevel level = source.getLevel();
+        BlockPos origin = new BlockPos(0, level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, 0, 0), 0);
+        AbyssalRpgMod.LOGGER.info("[CINDER_ARMOR_AUDIT] === BẮT ĐẦU KIỂM ĐỊNH CINDER DRAGON ARMOR TẠI {} ===", origin);
+
+        FakePlayer tester = FakePlayer.get(level, new com.mojang.authlib.GameProfile(
+                UUID.nameUUIDFromBytes("AbyssalCinderArmorAudit".getBytes()), "CinderArmorBot"));
+        tester.setPos(origin.getX() + 0.5, origin.getY() + 1.0, origin.getZ() + 0.5);
+        tester.removeAllEffects();
+        tester.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
+        tester.setItemSlot(EquipmentSlot.CHEST, ItemStack.EMPTY);
+        tester.setItemSlot(EquipmentSlot.LEGS, ItemStack.EMPTY);
+        tester.setItemSlot(EquipmentSlot.FEET, ItemStack.EMPTY);
+        CinderDragonArmorHandler.syncAttackDamageModifier(tester);
+        double baseAtk = tester.getAttributeValue(Attributes.ATTACK_DAMAGE);
+
+        CinderDragonBossEntity boss = null;
+        Zombie target = null;
+        Zombie wearer = null;
+        try {
+            // 1. Chỉ số, Material, Config v3, Sửa Đe & Enchant vanilla
+            ArmorConfig cfg = ArmorConfig.get();
+            ItemStack heart = new ItemStack(ModItems.CINDER_DRAGON_HEART);
+            ItemStack scale = new ItemStack(ModItems.CINDER_DRAGON_SCALE);
+            ItemStack helm = new ItemStack(ModItems.CINDER_DRAGON_HELMET);
+            ItemStack chest = new ItemStack(ModItems.CINDER_DRAGON_CHESTPLATE);
+            ItemStack legs = new ItemStack(ModItems.CINDER_DRAGON_LEGGINGS);
+            ItemStack boots = new ItemStack(ModItems.CINDER_DRAGON_BOOTS);
+
+            ArmorMaterial mat = ModArmorMaterials.CINDER_DRAGON.value();
+            int defTotal = mat.getDefense(ArmorItem.Type.HELMET) + mat.getDefense(ArmorItem.Type.CHESTPLATE)
+                    + mat.getDefense(ArmorItem.Type.LEGGINGS) + mat.getDefense(ArmorItem.Type.BOOTS);
+            boolean fireResOk = heart.has(DataComponents.FIRE_RESISTANT) && scale.has(DataComponents.FIRE_RESISTANT)
+                    && helm.has(DataComponents.FIRE_RESISTANT) && chest.has(DataComponents.FIRE_RESISTANT)
+                    && legs.has(DataComponents.FIRE_RESISTANT) && boots.has(DataComponents.FIRE_RESISTANT);
+            boolean heartGlintOk = heart.hasFoil();
+            boolean repairOk = mat.repairIngredient().get().test(scale);
+            boolean durOk = helm.getMaxDamage() == 407 && chest.getMaxDamage() == 592
+                    && legs.getMaxDamage() == 555 && boots.getMaxDamage() == 481;
+            boolean cfgOk = cfg.configVersion == ArmorConfig.CURRENT_CONFIG_VERSION
+                    && cfg.cinderDurabilityMultiplier == 37
+                    && Math.abs(cfg.cinderSetBonusAttackDamageBonus - 3.0) < 1e-6
+                    && cfg.cinderSetBonusIgniteSeconds == 3;
+            boolean statsOk = cfgOk && (defTotal == 20)
+                    && Math.abs(mat.toughness() - 3.0F) < 0.01F
+                    && Math.abs(mat.knockbackResistance() - 0.10F) < 0.005F
+                    && durOk && fireResOk && heartGlintOk && repairOk;
+
+            HolderLookup.RegistryLookup<Enchantment> enchReg = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
+            Enchantment prot = enchReg.getOrThrow(Enchantments.PROTECTION).value();
+            Enchantment unbreak = enchReg.getOrThrow(Enchantments.UNBREAKING).value();
+            Enchantment mending = enchReg.getOrThrow(Enchantments.MENDING).value();
+            Enchantment resp = enchReg.getOrThrow(Enchantments.RESPIRATION).value();
+            Enchantment ff = enchReg.getOrThrow(Enchantments.FEATHER_FALLING).value();
+            boolean vanillaEnchOk = prot.canEnchant(helm) && prot.canEnchant(chest) && prot.canEnchant(legs) && prot.canEnchant(boots)
+                    && unbreak.canEnchant(chest) && mending.canEnchant(chest)
+                    && resp.canEnchant(helm) && ff.canEnchant(boots);
+
+            AbyssalRpgMod.LOGGER.info("[CINDER_ARMOR_AUDIT] 1. STATS & MATERIAL (cfg v{}): def={} (3/8/6/3) tough={} kbRes={} dur={}/{}/{}/{} fireRes={} heartGlint={} repairScale={} vanillaEnch={} -> {}",
+                    cfg.configVersion, defTotal, mat.toughness(), mat.knockbackResistance(),
+                    helm.getMaxDamage(), chest.getMaxDamage(), legs.getMaxDamage(), boots.getMaxDamage(),
+                    fireResOk, heartGlintOk, repairOk, vanillaEnchOk,
+                    (statsOk && vanillaEnchOk) ? "PASS" : "FAIL");
+
+            // 2. 4 công thức Shaped Crafting Table (1 Heart + 23 Scales + 1 bộ Netherite)
+            CraftingInput helmIn = CraftingInput.of(3, 2, List.of(
+                    scale.copy(), scale.copy(), scale.copy(),
+                    scale.copy(), new ItemStack(Items.NETHERITE_HELMET), scale.copy()));
+            CraftingInput chestIn = CraftingInput.of(3, 3, List.of(
+                    scale.copy(), new ItemStack(Items.NETHERITE_CHESTPLATE), scale.copy(),
+                    scale.copy(), heart.copy(), scale.copy(),
+                    scale.copy(), scale.copy(), scale.copy()));
+            CraftingInput legsIn = CraftingInput.of(3, 3, List.of(
+                    scale.copy(), scale.copy(), scale.copy(),
+                    scale.copy(), new ItemStack(Items.NETHERITE_LEGGINGS), scale.copy(),
+                    scale.copy(), ItemStack.EMPTY, scale.copy()));
+            CraftingInput bootsIn = CraftingInput.of(3, 2, List.of(
+                    scale.copy(), ItemStack.EMPTY, scale.copy(),
+                    scale.copy(), new ItemStack(Items.NETHERITE_BOOTS), scale.copy()));
+
+            ItemStack helmOut = matchCraftingResult(level, helmIn);
+            ItemStack chestOut = matchCraftingResult(level, chestIn);
+            ItemStack legsOut = matchCraftingResult(level, legsIn);
+            ItemStack bootsOut = matchCraftingResult(level, bootsIn);
+            boolean recipesOk = helmOut.is(ModItems.CINDER_DRAGON_HELMET)
+                    && chestOut.is(ModItems.CINDER_DRAGON_CHESTPLATE)
+                    && legsOut.is(ModItems.CINDER_DRAGON_LEGGINGS)
+                    && bootsOut.is(ModItems.CINDER_DRAGON_BOOTS);
+            AbyssalRpgMod.LOGGER.info("[CINDER_ARMOR_AUDIT] 2. SHAPED RECIPES (4/4): helm={} chest={} legs={} boots={} -> {}",
+                    BuiltInRegistries.ITEM.getKey(helmOut.getItem()),
+                    BuiltInRegistries.ITEM.getKey(chestOut.getItem()),
+                    BuiltInRegistries.ITEM.getKey(legsOut.getItem()),
+                    BuiltInRegistries.ITEM.getKey(bootsOut.getItem()),
+                    recipesOk ? "PASS" : "FAIL");
+
+            // 3. Boss Cinder Dragon Phase 1 zero-drop guard + Loot Table 2000 rolls Phase 2
+            boss = ModEntities.CINDER_DRAGON.create(level);
+            if (boss == null) {
+                throw new IllegalStateException("Không thể tạo CinderDragonBossEntity");
+            }
+            boss.moveTo(origin.getX() + 18.0, origin.getY() + 1.0, origin.getZ() + 0.5, 0.0F, 0.0F);
+            level.addFreshEntity(boss);
+
+            boolean p1Before = !boss.hasEnteredPhase2();
+            boss.hurt(level.damageSources().playerAttack(tester), 10000.0F);
+            boolean p1InterceptedAlive = boss.isAlive() && (boss.isTransitioningPhase() || boss.hasEnteredPhase2());
+
+            LootTable lootTable = level.getServer().reloadableRegistries().getLootTable(boss.getLootTable());
+            LootParams lootParams = new LootParams.Builder(level)
+                    .withParameter(LootContextParams.THIS_ENTITY, boss)
+                    .withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(origin))
+                    .withParameter(LootContextParams.DAMAGE_SOURCE, level.damageSources().playerAttack(tester))
+                    .withOptionalParameter(LootContextParams.ATTACKING_ENTITY, tester)
+                    .withOptionalParameter(LootContextParams.DIRECT_ATTACKING_ENTITY, tester)
+                    .withParameter(LootContextParams.LAST_DAMAGE_PLAYER, tester)
+                    .create(LootContextParamSets.ENTITY);
+
+            int rolls = 2000;
+            int heartDrops = 0;
+            int scaleRolls = 0;
+            int bookDrops = 0;
+            int minScales = Integer.MAX_VALUE;
+            int maxScales = 0;
+            for (int i = 0; i < rolls; i++) {
+                List<ItemStack> drops = lootTable.getRandomItems(lootParams);
+                int scalesThisRoll = 0;
+                for (ItemStack d : drops) {
+                    if (d.is(ModItems.CINDER_DRAGON_HEART)) {
+                        heartDrops += d.getCount();
+                    } else if (d.is(ModItems.CINDER_DRAGON_SCALE)) {
+                        scalesThisRoll += d.getCount();
+                    } else if (d.is(Items.ENCHANTED_BOOK)) {
+                        bookDrops += d.getCount();
+                    }
+                }
+                if (scalesThisRoll > 0) {
+                    scaleRolls++;
+                    minScales = Math.min(minScales, scalesThisRoll);
+                    maxScales = Math.max(maxScales, scalesThisRoll);
+                }
+            }
+            double heartRatePct = (heartDrops * 100.0) / rolls;
+            boolean lootOk = p1Before && p1InterceptedAlive
+                    && heartRatePct >= 3.4 && heartRatePct <= 6.6
+                    && scaleRolls == rolls && minScales >= 6 && maxScales <= 10
+                    && bookDrops > 700;
+            AbyssalRpgMod.LOGGER.info("[CINDER_ARMOR_AUDIT] 3. BOSS LOOT (P1 intercept + 2000 P2 rolls): p1Intercept={} heart={}/{} ({}%) scaleRolls={}/{} range={}..{} dualKnifeBooks={} -> {}",
+                    p1InterceptedAlive, heartDrops, rolls, String.format("%.2f", heartRatePct),
+                    scaleRolls, rolls, minScales, maxScales, bookDrops, lootOk ? "PASS" : "FAIL");
+
+            // 4. Full Set Bonus 4/4 (Fire Resistance I, +3.0 Attack Damage, 3s Ignite on hit, clean unequip)
+            tester.setItemSlot(EquipmentSlot.HEAD, helm.copy());
+            tester.setItemSlot(EquipmentSlot.CHEST, chest.copy());
+            tester.setItemSlot(EquipmentSlot.LEGS, legs.copy());
+            tester.setItemSlot(EquipmentSlot.FEET, boots.copy());
+            int equipped4 = CinderDragonArmorHandler.countEquippedPieces(tester);
+
+            // Sync 2 lần mô phỏng relog/đổi world -> không cộng dồn Attack Damage!
+            CinderDragonArmorHandler.syncPlayerImmediate(tester);
+            CinderDragonArmorHandler.syncPlayerImmediate(tester);
+
+            AttributeInstance atkAttr = tester.getAttribute(Attributes.ATTACK_DAMAGE);
+            double atk4 = tester.getAttributeValue(Attributes.ATTACK_DAMAGE);
+            boolean hasAtkMod4 = atkAttr != null && atkAttr.getModifier(CinderDragonArmorHandler.SET_ATTACK_DAMAGE_MODIFIER_ID) != null;
+            boolean atkBonusOk = hasAtkMod4 && Math.abs((atk4 - baseAtk) - 3.0) < 0.01;
+
+            MobEffectInstance fireEff = tester.getEffect(MobEffects.FIRE_RESISTANCE);
+            boolean fireOk = fireEff != null && fireEff.getAmplifier() == 0
+                    && fireEff.isAmbient() && !fireEff.isVisible() && fireEff.showIcon()
+                    && fireEff.getDuration() >= 50 && fireEff.getDuration() <= 60;
+
+            // Đánh mục tiêu sống -> đốt cháy 3s (60 ticks)
+            target = EntityType.ZOMBIE.create(level);
+            if (target == null) {
+                throw new IllegalStateException("Không thể tạo Zombie target test ignite");
+            }
+            target.moveTo(origin.getX() + 3.0, origin.getY() + 1.0, origin.getZ() + 0.5, 0.0F, 0.0F);
+            target.setNoAi(true);
+            target.clearFire();
+            level.addFreshEntity(target);
+            target.hurt(level.damageSources().playerAttack(tester), 4.0F);
+            boolean igniteOk = target.isOnFire() && target.getRemainingFireTicks() >= 40;
+
+            // Không chạm BossHealthHolder
+            CinderDragonArmorHandler.syncAttackDamageModifier(boss);
+            AttributeInstance bossAtk = boss.getAttribute(Attributes.ATTACK_DAMAGE);
+            boolean bossSafeOk = bossAtk == null || bossAtk.getModifier(CinderDragonArmorHandler.SET_ATTACK_DAMAGE_MODIFIER_ID) == null;
+
+            // Tháo 1 món -> gỡ ngay modifier Attack Damage
+            tester.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
+            CinderDragonArmorHandler.syncAttackDamageModifier(tester);
+            double atk3 = tester.getAttributeValue(Attributes.ATTACK_DAMAGE);
+            boolean modRemoved3 = atkAttr != null && atkAttr.getModifier(CinderDragonArmorHandler.SET_ATTACK_DAMAGE_MODIFIER_ID) == null
+                    && Math.abs(atk3 - baseAtk) < 0.01;
+
+            boolean setBonusSyncOk = (equipped4 == 4) && atkBonusOk && fireOk && igniteOk && bossSafeOk && modRemoved3;
+            AbyssalRpgMod.LOGGER.info("[CINDER_ARMOR_AUDIT] 4. FULL SET BONUS 4/4: pieces={} atk={}->{} (+3.0 ok={}) fireRes(amp0,{}t)={} ignite3s(ticks={})={} bossSafe={} unequipAtk={} modGone={} -> {}",
+                    equipped4, String.format("%.1f", baseAtk), String.format("%.1f", atk4), atkBonusOk,
+                    fireEff != null ? fireEff.getDuration() : -1, fireOk,
+                    target.getRemainingFireTicks(), igniteOk, bossSafeOk,
+                    String.format("%.1f", atk3), modRemoved3,
+                    setBonusSyncOk ? "PASS" : "FAIL");
+
+            // 5. Real-tick expiry check (65 server ticks ~3.25s) sau tháo mũ
+            wearer = EntityType.ZOMBIE.create(level);
+            if (wearer == null) {
+                throw new IllegalStateException("Không thể tạo Zombie real-tick audit");
+            }
+            wearer.moveTo(origin.getX() + 4.5, origin.getY() + 1.0, origin.getZ() + 0.5, 0.0F, 0.0F);
+            wearer.setNoAi(true);
+            wearer.setInvulnerable(true);
+            level.addFreshEntity(wearer);
+
+            wearer.setItemSlot(EquipmentSlot.HEAD, helm.copy());
+            wearer.setItemSlot(EquipmentSlot.CHEST, chest.copy());
+            wearer.setItemSlot(EquipmentSlot.LEGS, legs.copy());
+            wearer.setItemSlot(EquipmentSlot.FEET, boots.copy());
+            CinderDragonArmorHandler.syncPlayerImmediate(wearer);
+            boolean wearerHas4 = wearer.hasEffect(MobEffects.FIRE_RESISTANCE);
+            wearer.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
+            CinderDragonArmorHandler.syncAttackDamageModifier(wearer);
+
+            Zombie wearerForRealTick = wearer;
+            wearer = null;
+            boolean syncAllOk = statsOk && vanillaEnchOk && recipesOk && lootOk && setBonusSyncOk && wearerHas4;
+            activeCinderArmorAudit = new RealTickCinderArmorExpiryAudit(
+                    source, wearerForRealTick, syncAllOk,
+                    defTotal, mat.toughness(), mat.knockbackResistance(),
+                    helm.getMaxDamage(), chest.getMaxDamage(), legs.getMaxDamage(), boots.getMaxDamage(),
+                    heartRatePct, minScales, maxScales, baseAtk, atk4
+            );
+            return syncAllOk ? 1 : 0;
+        } catch (Exception e) {
+            AbyssalRpgMod.LOGGER.error("[CINDER_ARMOR_AUDIT] Lỗi kiểm định Cinder Dragon Armor:", e);
+            source.sendFailure(Component.literal("[Cinder Dragon Armor Audit] ERROR: " + e.getMessage()));
+            return 0;
+        } finally {
+            tester.removeAllEffects();
+            tester.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
+            tester.setItemSlot(EquipmentSlot.CHEST, ItemStack.EMPTY);
+            tester.setItemSlot(EquipmentSlot.LEGS, ItemStack.EMPTY);
+            tester.setItemSlot(EquipmentSlot.FEET, ItemStack.EMPTY);
+            CinderDragonArmorHandler.syncAttackDamageModifier(tester);
+            if (boss != null) boss.discard();
+            if (target != null) target.discard();
+            if (wearer != null) wearer.discard();
+        }
+    }
+
+    private static final class RealTickCinderArmorExpiryAudit {
+        private final CommandSourceStack source;
+        private final Zombie wearer;
+        private final boolean syncStagesOk;
+        private final int defTotal;
+        private final float toughness;
+        private final float kbRes;
+        private final int durH, durC, durL, durB;
+        private final double heartRatePct;
+        private final int minScales, maxScales;
+        private final double baseAtk, atk4;
+        private int elapsedTicks = 0;
+
+        RealTickCinderArmorExpiryAudit(CommandSourceStack source, Zombie wearer, boolean syncStagesOk,
+                                       int defTotal, float toughness, float kbRes,
+                                       int durH, int durC, int durL, int durB,
+                                       double heartRatePct, int minScales, int maxScales,
+                                       double baseAtk, double atk4) {
+            this.source = source;
+            this.wearer = wearer;
+            this.syncStagesOk = syncStagesOk;
+            this.defTotal = defTotal;
+            this.toughness = toughness;
+            this.kbRes = kbRes;
+            this.durH = durH;
+            this.durC = durC;
+            this.durL = durL;
+            this.durB = durB;
+            this.heartRatePct = heartRatePct;
+            this.minScales = minScales;
+            this.maxScales = maxScales;
+            this.baseAtk = baseAtk;
+            this.atk4 = atk4;
+        }
+
+        boolean tick() {
+            if (this.wearer.isRemoved() || !this.wearer.isAlive()) {
+                AbyssalRpgMod.LOGGER.error("[CINDER_ARMOR_AUDIT] 5. REAL-TICK EXPIRY: wearer removed prematurely -> FAIL");
+                AbyssalRpgMod.LOGGER.info("[CINDER_ARMOR_AUDIT] === TỔNG KẾT: FAIL ===");
+                return true;
+            }
+            CinderDragonArmorHandler.syncAttackDamageModifier(this.wearer);
+            if (this.elapsedTicks % 20 == 0) {
+                CinderDragonArmorHandler.applyPeriodicSetEffects(this.wearer);
+            }
+            if (this.elapsedTicks >= 65) {
+                boolean fireGone = !this.wearer.hasEffect(MobEffects.FIRE_RESISTANCE);
+                AttributeInstance attr = this.wearer.getAttribute(Attributes.ATTACK_DAMAGE);
+                boolean modGone = attr != null && attr.getModifier(CinderDragonArmorHandler.SET_ATTACK_DAMAGE_MODIFIER_ID) == null;
+                boolean expiryOk = fireGone && modGone;
+                AbyssalRpgMod.LOGGER.info("[CINDER_ARMOR_AUDIT] 5. REAL-TICK EXPIRY (65 ticks after unequip): fireGone={} atkModGone={} -> {}",
+                        fireGone, modGone, expiryOk ? "PASS" : "FAIL");
+                this.wearer.discard();
+
+                boolean allPass = this.syncStagesOk && expiryOk;
+                AbyssalRpgMod.LOGGER.info("[CINDER_ARMOR_AUDIT] === TỔNG KẾT: {} ===", allPass ? "ALL_PASS" : "FAIL");
+                this.source.sendSuccess(() -> Component.literal(String.format(
+                        "[Cinder Dragon Armor Audit] %s | Def=%d (3/8/6/3) Tough=%.1f KB=%.2f Dur=%d/%d/%d/%d | Recipes=4/4 | Heart=%.2f%% Scales=%d..%d | 4/4 Atk=%.1f->%.1f Ignite3s FireRes Expiry=%s",
+                        allPass ? "ALL PASS" : "FAIL", this.defTotal, this.toughness, this.kbRes,
+                        this.durH, this.durC, this.durL, this.durB,
+                        this.heartRatePct, this.minScales, this.maxScales,
+                        this.baseAtk, this.atk4, expiryOk
+                )).withStyle(allPass ? ChatFormatting.GREEN : ChatFormatting.RED), true);
+                return true;
+            }
+            this.elapsedTicks++;
+            return false;
         }
     }
 

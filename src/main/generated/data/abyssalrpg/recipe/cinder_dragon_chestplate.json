@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "H": {
+      "item": "abyssalrpg:cinder_dragon_heart"
+    },
+    "S": {
+      "item": "abyssalrpg:cinder_dragon_scale"
+    }
+  },
+  "pattern": [
+    "S S",
+    "SHS",
+    "SSS"
+  ],
+  "result": {
+    "count": 1,
+    "id": "abyssalrpg:cinder_dragon_chestplate"
+  }
+}

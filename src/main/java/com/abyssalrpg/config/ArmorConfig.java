@@ -16,13 +16,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Cấu hình JSON cho bộ Giáp Nightmare Knight Endgame (`config/abyssalrpg_armor.json`).
- * - Chỉ số giáp 4 món (4 / 10 / 8 / 4 = 26 Defense, Toughness 4.0/món, KB Res 0.15/món, Độ bền 48x, Enchantability 18).
- * - Full Set Bonus 4/4 (`Nightmare Sovereign`): Miễn Darkness, Kháng Lửa giao chiến, Giảm 12% sát thương cận chiến/Boss,
- *   Phản Gai 20% sát thương cận chiến (trần 15.0 dmg, hồi 20 ticks).
+ * Cấu hình JSON cho các bộ Giáp Boss Endgame (`config/abyssalrpg_armor.json`):
+ * 1. **Nightmare Knight Armor**: Defense 3/8/6/3 (= 20), Toughness 3.0 (= 12.0), KB Res 0.10 (= 40%),
+ *    Độ bền 37x (407/592/555/481); Full Set 4/4: Kháng Lửa I, Kháng Cự II, +4.0 Máu Tối Đa.
+ * 2. **Cinder Dragon Armor**: Defense 3/8/6/3 (= 20), Toughness 3.0 (= 12.0), KB Res 0.10 (= 40%),
+ *    Độ bền 37x (407/592/555/481); Full Set 4/4: Kháng Lửa I, +3.0 Sát Thương Đòn Đánh, Đốt Cháy 3s khi đánh trúng.
  */
 public final class ArmorConfig {
-    public static final int CURRENT_CONFIG_VERSION = 1;
+    public static final int CURRENT_CONFIG_VERSION = 3;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path CONFIG_PATH = FabricLoader.getInstance()
@@ -33,32 +34,53 @@ public final class ArmorConfig {
 
     public int configVersion = CURRENT_CONFIG_VERSION;
 
-    // --- Chỉ số Nightmare Knight Armor Material ---
-    public int helmetDefense = 4;
-    public int chestplateDefense = 10;
-    public int leggingsDefense = 8;
-    public int bootsDefense = 4;
-    public float toughness = 4.0f;
-    public float knockbackResistance = 0.15f;
-    public int durabilityMultiplier = 48;
+    // --- Chỉ số Nightmare Knight Armor Material (chuẩn Netherite 37x) ---
+    public int helmetDefense = 3;
+    public int chestplateDefense = 8;
+    public int leggingsDefense = 6;
+    public int bootsDefense = 3;
+    public float toughness = 3.0f;
+    public float knockbackResistance = 0.10f;
+    public int durabilityMultiplier = 37;
     public int enchantmentValue = 18;
 
-    // --- Full Set Bonus 4/4: Nightmare Sovereign ---
+    // --- Full Set Bonus 4/4: Nightmare Set ---
     public boolean enableSetBonus = true;
-    /** Miễn nhiễm hoàn toàn hiệu ứng Darkness (khắc chế Nightmare Realm của Nightmare Knight). */
-    public boolean darknessImmunity = true;
-    /** Kháng lửa nhẹ khi đang cháy hoặc giao chiến (không spam hạt potion). */
-    public boolean combatFireResistance = true;
-    /** Giảm thêm % sát thương từ đòn cận chiến / Boss khi mặc đủ 4/4 (mặc định 0.12 = 12%). */
-    public float meleeBossDamageReduction = 0.12f;
-    /** Tỉ lệ phản sát thương gai cận chiến (mặc định 0.20 = 20% sát thương nhận vào). */
-    public float spikedRetaliationRatio = 0.20f;
-    /** Trần sát thương phản gai tối đa mỗi lần kích hoạt (mặc định 15.0 dmg). */
-    public float spikedRetaliationCap = 15.0f;
-    /** Cooldown phản gai mỗi người chơi tính theo tick (mặc định 20 ticks = 1.0s). */
-    public int spikedRetaliationCooldownTicks = 20;
-    /** Bật/tắt 3-5 tia lửa đỏ nhỏ gọn khi kích hoạt Phản Gai (0 spam hạt khi đứng yên). */
-    public boolean enableRetaliationSparks = true;
+    /** Cấp Kháng Lửa I (MobEffects.FIRE_RESISTANCE, amplifier 0) khi mặc đủ 4/4 món. */
+    public boolean setBonusFireResistance = true;
+    /** Cấp Kháng Cự II (MobEffects.DAMAGE_RESISTANCE, amplifier 1) khi mặc đủ 4/4 món. */
+    public boolean setBonusResistance = true;
+    /** Bậc hiệu ứng Kháng Cự (0 = I, 1 = II, mặc định 1 = Kháng Cự II; không ghi đè cấp cao hơn). */
+    public int setBonusResistanceAmplifier = 1;
+    /** Máu tối đa cộng thêm khi mặc đủ 4/4 món (mặc định 4.0 HP = 2 tim). */
+    public double setBonusMaxHealth = 4.0;
+    /** Chu kỳ làm mới hiệu ứng potion trên server (mặc định 20 ticks = 1.0s). */
+    public int setBonusTickInterval = 20;
+    /** Thời lượng mỗi lần cấp hiệu ứng potion (mặc định 60 ticks = 3.0s, tránh nhấp nháy HUD). */
+    public int setBonusEffectDurationTicks = 60;
+
+    // --- Chỉ số Cinder Dragon Armor Material (chuẩn Netherite 37x, chỉnh được độc lập) ---
+    public int cinderHelmetDefense = 3;
+    public int cinderChestplateDefense = 8;
+    public int cinderLeggingsDefense = 6;
+    public int cinderBootsDefense = 3;
+    public float cinderToughness = 3.0f;
+    public float cinderKnockbackResistance = 0.10f;
+    public int cinderDurabilityMultiplier = 37;
+    public int cinderEnchantmentValue = 18;
+
+    // --- Full Set Bonus 4/4: Cinder Dragon Set ---
+    public boolean cinderEnableSetBonus = true;
+    /** Cấp Kháng Lửa I (MobEffects.FIRE_RESISTANCE, amp 0) khi mặc đủ 4/4 Cinder Dragon Armor. */
+    public boolean cinderSetBonusFireResistance = true;
+    /** Sát thương đòn đánh cộng thêm (`ADD_VALUE` trên `Attributes.ATTACK_DAMAGE`, mặc định +3.0). */
+    public double cinderSetBonusAttackDamageBonus = 3.0;
+    /** Thời gian đốt cháy mục tiêu khi đánh trúng tính theo giây (mặc định 3s, 0 để tắt). */
+    public int cinderSetBonusIgniteSeconds = 3;
+    /** Chu kỳ làm mới Kháng Lửa phía server (mặc định 20 ticks = 1.0s). */
+    public int cinderSetBonusTickInterval = 20;
+    /** Thời lượng mỗi lần cấp Kháng Lửa (mặc định 60 ticks = 3.0s, 0 nhấp nháy HUD). */
+    public int cinderSetBonusEffectDurationTicks = 60;
 
     public static ArmorConfig get() {
         return INSTANCE;
@@ -70,13 +92,30 @@ public final class ArmorConfig {
                 JsonElement el = JsonParser.parseReader(reader);
                 if (el != null && el.isJsonObject()) {
                     JsonObject obj = el.getAsJsonObject();
-                    ArmorConfig loaded = GSON.fromJson(obj, ArmorConfig.class);
-                    if (loaded != null) {
-                        boolean migrated = false;
-                        if (loaded.configVersion < CURRENT_CONFIG_VERSION) {
-                            loaded.configVersion = CURRENT_CONFIG_VERSION;
-                            migrated = true;
+                    int fileVersion = obj.has("configVersion") && obj.get("configVersion").isJsonPrimitive()
+                            ? obj.get("configVersion").getAsInt()
+                            : 0;
+                    ArmorConfig loaded;
+                    boolean migrated = false;
+                    if (fileVersion < 2) {
+                        // Nâng cấp tự động từ v1 (4/10/8/4, 48x, buff cũ) sang v3 mặc định mới
+                        loaded = new ArmorConfig();
+                        loaded.configVersion = CURRENT_CONFIG_VERSION;
+                        migrated = true;
+                        AbyssalRpgMod.LOGGER.info("Tự động nâng cấp ArmorConfig v{} -> v{} với thông số mới", fileVersion, CURRENT_CONFIG_VERSION);
+                    } else if (fileVersion < CURRENT_CONFIG_VERSION) {
+                        // Giữ nguyên tùy chỉnh Nightmare v2 và tự bổ sung nhóm cấu hình Cinder Dragon Armor v3
+                        loaded = GSON.fromJson(obj, ArmorConfig.class);
+                        if (loaded == null) {
+                            loaded = new ArmorConfig();
                         }
+                        loaded.configVersion = CURRENT_CONFIG_VERSION;
+                        migrated = true;
+                        AbyssalRpgMod.LOGGER.info("Tự động bổ sung cấu hình Cinder Dragon Armor: ArmorConfig v{} -> v{}", fileVersion, CURRENT_CONFIG_VERSION);
+                    } else {
+                        loaded = GSON.fromJson(obj, ArmorConfig.class);
+                    }
+                    if (loaded != null) {
                         loaded.sanitize();
                         INSTANCE = loaded;
                         if (migrated) {
@@ -116,10 +155,29 @@ public final class ArmorConfig {
         this.knockbackResistance = Math.max(0.0f, Math.min(0.25f, this.knockbackResistance));
         this.durabilityMultiplier = Math.max(15, Math.min(120, this.durabilityMultiplier));
         this.enchantmentValue = Math.max(1, Math.min(30, this.enchantmentValue));
-        this.meleeBossDamageReduction = Math.max(0.0f, Math.min(0.50f, this.meleeBossDamageReduction));
-        this.spikedRetaliationRatio = Math.max(0.0f, Math.min(0.50f, this.spikedRetaliationRatio));
-        this.spikedRetaliationCap = Math.max(1.0f, Math.min(60.0f, this.spikedRetaliationCap));
-        this.spikedRetaliationCooldownTicks = Math.max(5, Math.min(200, this.spikedRetaliationCooldownTicks));
+        this.setBonusResistanceAmplifier = Math.max(0, Math.min(4, this.setBonusResistanceAmplifier));
+        if (!Double.isFinite(this.setBonusMaxHealth)) {
+            this.setBonusMaxHealth = 4.0;
+        }
+        this.setBonusMaxHealth = Math.max(0.0, Math.min(40.0, this.setBonusMaxHealth));
+        this.setBonusTickInterval = Math.max(1, Math.min(40, this.setBonusTickInterval));
+        this.setBonusEffectDurationTicks = Math.max(40, Math.min(200, this.setBonusEffectDurationTicks));
+
+        this.cinderHelmetDefense = Math.max(1, Math.min(20, this.cinderHelmetDefense));
+        this.cinderChestplateDefense = Math.max(1, Math.min(24, this.cinderChestplateDefense));
+        this.cinderLeggingsDefense = Math.max(1, Math.min(22, this.cinderLeggingsDefense));
+        this.cinderBootsDefense = Math.max(1, Math.min(20, this.cinderBootsDefense));
+        this.cinderToughness = Math.max(0.0f, Math.min(12.0f, this.cinderToughness));
+        this.cinderKnockbackResistance = Math.max(0.0f, Math.min(0.25f, this.cinderKnockbackResistance));
+        this.cinderDurabilityMultiplier = Math.max(15, Math.min(120, this.cinderDurabilityMultiplier));
+        this.cinderEnchantmentValue = Math.max(1, Math.min(30, this.cinderEnchantmentValue));
+        if (!Double.isFinite(this.cinderSetBonusAttackDamageBonus)) {
+            this.cinderSetBonusAttackDamageBonus = 3.0;
+        }
+        this.cinderSetBonusAttackDamageBonus = Math.max(0.0, Math.min(20.0, this.cinderSetBonusAttackDamageBonus));
+        this.cinderSetBonusIgniteSeconds = Math.max(0, Math.min(20, this.cinderSetBonusIgniteSeconds));
+        this.cinderSetBonusTickInterval = Math.max(1, Math.min(40, this.cinderSetBonusTickInterval));
+        this.cinderSetBonusEffectDurationTicks = Math.max(40, Math.min(200, this.cinderSetBonusEffectDurationTicks));
     }
 }
 

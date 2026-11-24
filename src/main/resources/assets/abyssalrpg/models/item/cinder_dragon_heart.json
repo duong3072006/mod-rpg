@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "abyssalrpg:item/cinder_dragon_heart"
+  }
+}

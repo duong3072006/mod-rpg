@@ -148,33 +148,61 @@ public final class AbyssalRpgDataGenerator implements DataGeneratorEntrypoint {
             getOrCreateTagBuilder(ModEnchantments.DUAL_KNIFE_REPAIR_ITEMS)
                     .add(Items.DIAMOND);
 
-            // Hỗ trợ Unbreaking & Mending cho Dual Knife & toàn bộ 4 món Giáp Nightmare Knight
+            // Hỗ trợ Unbreaking & Mending cho Dual Knife, Giáp Nightmare Knight & Giáp Cinder Dragon
             getOrCreateTagBuilder(ItemTags.DURABILITY_ENCHANTABLE)
                     .add(ModItems.DUAL_KNIFE)
                     .add(ModItems.NIGHTMARE_HELMET)
                     .add(ModItems.NIGHTMARE_CHESTPLATE)
                     .add(ModItems.NIGHTMARE_LEGGINGS)
-                    .add(ModItems.NIGHTMARE_BOOTS);
+                    .add(ModItems.NIGHTMARE_BOOTS)
+                    .add(ModItems.CINDER_DRAGON_HELMET)
+                    .add(ModItems.CINDER_DRAGON_CHESTPLATE)
+                    .add(ModItems.CINDER_DRAGON_LEGGINGS)
+                    .add(ModItems.CINDER_DRAGON_BOOTS);
 
             // Tương thích đầy đủ hệ thống Enchant Giáp Vanilla MC 1.21.1 (Protection, Unbreaking, Mending, Respiration, Feather Falling...)
             getOrCreateTagBuilder(ItemTags.ARMOR_ENCHANTABLE)
                     .add(ModItems.NIGHTMARE_HELMET)
                     .add(ModItems.NIGHTMARE_CHESTPLATE)
                     .add(ModItems.NIGHTMARE_LEGGINGS)
-                    .add(ModItems.NIGHTMARE_BOOTS);
+                    .add(ModItems.NIGHTMARE_BOOTS)
+                    .add(ModItems.CINDER_DRAGON_HELMET)
+                    .add(ModItems.CINDER_DRAGON_CHESTPLATE)
+                    .add(ModItems.CINDER_DRAGON_LEGGINGS)
+                    .add(ModItems.CINDER_DRAGON_BOOTS);
             getOrCreateTagBuilder(ItemTags.EQUIPPABLE_ENCHANTABLE)
                     .add(ModItems.NIGHTMARE_HELMET)
                     .add(ModItems.NIGHTMARE_CHESTPLATE)
                     .add(ModItems.NIGHTMARE_LEGGINGS)
-                    .add(ModItems.NIGHTMARE_BOOTS);
-            getOrCreateTagBuilder(ItemTags.HEAD_ARMOR_ENCHANTABLE).add(ModItems.NIGHTMARE_HELMET);
-            getOrCreateTagBuilder(ItemTags.CHEST_ARMOR_ENCHANTABLE).add(ModItems.NIGHTMARE_CHESTPLATE);
-            getOrCreateTagBuilder(ItemTags.LEG_ARMOR_ENCHANTABLE).add(ModItems.NIGHTMARE_LEGGINGS);
-            getOrCreateTagBuilder(ItemTags.FOOT_ARMOR_ENCHANTABLE).add(ModItems.NIGHTMARE_BOOTS);
-            getOrCreateTagBuilder(ItemTags.HEAD_ARMOR).add(ModItems.NIGHTMARE_HELMET);
-            getOrCreateTagBuilder(ItemTags.CHEST_ARMOR).add(ModItems.NIGHTMARE_CHESTPLATE);
-            getOrCreateTagBuilder(ItemTags.LEG_ARMOR).add(ModItems.NIGHTMARE_LEGGINGS);
-            getOrCreateTagBuilder(ItemTags.FOOT_ARMOR).add(ModItems.NIGHTMARE_BOOTS);
+                    .add(ModItems.NIGHTMARE_BOOTS)
+                    .add(ModItems.CINDER_DRAGON_HELMET)
+                    .add(ModItems.CINDER_DRAGON_CHESTPLATE)
+                    .add(ModItems.CINDER_DRAGON_LEGGINGS)
+                    .add(ModItems.CINDER_DRAGON_BOOTS);
+            getOrCreateTagBuilder(ItemTags.HEAD_ARMOR_ENCHANTABLE)
+                    .add(ModItems.NIGHTMARE_HELMET)
+                    .add(ModItems.CINDER_DRAGON_HELMET);
+            getOrCreateTagBuilder(ItemTags.CHEST_ARMOR_ENCHANTABLE)
+                    .add(ModItems.NIGHTMARE_CHESTPLATE)
+                    .add(ModItems.CINDER_DRAGON_CHESTPLATE);
+            getOrCreateTagBuilder(ItemTags.LEG_ARMOR_ENCHANTABLE)
+                    .add(ModItems.NIGHTMARE_LEGGINGS)
+                    .add(ModItems.CINDER_DRAGON_LEGGINGS);
+            getOrCreateTagBuilder(ItemTags.FOOT_ARMOR_ENCHANTABLE)
+                    .add(ModItems.NIGHTMARE_BOOTS)
+                    .add(ModItems.CINDER_DRAGON_BOOTS);
+            getOrCreateTagBuilder(ItemTags.HEAD_ARMOR)
+                    .add(ModItems.NIGHTMARE_HELMET)
+                    .add(ModItems.CINDER_DRAGON_HELMET);
+            getOrCreateTagBuilder(ItemTags.CHEST_ARMOR)
+                    .add(ModItems.NIGHTMARE_CHESTPLATE)
+                    .add(ModItems.CINDER_DRAGON_CHESTPLATE);
+            getOrCreateTagBuilder(ItemTags.LEG_ARMOR)
+                    .add(ModItems.NIGHTMARE_LEGGINGS)
+                    .add(ModItems.CINDER_DRAGON_LEGGINGS);
+            getOrCreateTagBuilder(ItemTags.FOOT_ARMOR)
+                    .add(ModItems.NIGHTMARE_BOOTS)
+                    .add(ModItems.CINDER_DRAGON_BOOTS);
         }
     }
 
@@ -275,6 +303,43 @@ public final class AbyssalRpgDataGenerator implements DataGeneratorEntrypoint {
                     .define('S', ModItems.NIGHTMARE_ARMOR_SHARD)
                     .define('N', Items.NETHERITE_BOOTS)
                     .unlockedBy(getHasName(ModItems.NIGHTMARE_ARMOR_SHARD), has(ModItems.NIGHTMARE_ARMOR_SHARD))
+                    .save(exporter);
+
+            // --- Bộ 4 công thức Shaped Crafting Table cho Giáp Cinder Dragon (trực tiếp bằng Vảy & Trái Tim Rồng: 23 Scales + 1 Heart, 0 Netherite!) ---
+            // 1. Mũ (5 Vảy): SSS / S.S
+            ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, ModItems.CINDER_DRAGON_HELMET)
+                    .pattern("SSS")
+                    .pattern("S S")
+                    .define('S', ModItems.CINDER_DRAGON_SCALE)
+                    .unlockedBy(getHasName(ModItems.CINDER_DRAGON_SCALE), has(ModItems.CINDER_DRAGON_SCALE))
+                    .save(exporter);
+
+            // 2. Áo giáp (7 Vảy + 1 Trái Tim Rồng ở giữa): S.S / SHS / SSS
+            ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, ModItems.CINDER_DRAGON_CHESTPLATE)
+                    .pattern("S S")
+                    .pattern("SHS")
+                    .pattern("SSS")
+                    .define('S', ModItems.CINDER_DRAGON_SCALE)
+                    .define('H', ModItems.CINDER_DRAGON_HEART)
+                    .unlockedBy(getHasName(ModItems.CINDER_DRAGON_HEART), has(ModItems.CINDER_DRAGON_HEART))
+                    .unlockedBy(getHasName(ModItems.CINDER_DRAGON_SCALE), has(ModItems.CINDER_DRAGON_SCALE))
+                    .save(exporter);
+
+            // 3. Quần (7 Vảy): SSS / S.S / S.S
+            ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, ModItems.CINDER_DRAGON_LEGGINGS)
+                    .pattern("SSS")
+                    .pattern("S S")
+                    .pattern("S S")
+                    .define('S', ModItems.CINDER_DRAGON_SCALE)
+                    .unlockedBy(getHasName(ModItems.CINDER_DRAGON_SCALE), has(ModItems.CINDER_DRAGON_SCALE))
+                    .save(exporter);
+
+            // 4. Giày (4 Vảy): S.S / S.S
+            ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, ModItems.CINDER_DRAGON_BOOTS)
+                    .pattern("S S")
+                    .pattern("S S")
+                    .define('S', ModItems.CINDER_DRAGON_SCALE)
+                    .unlockedBy(getHasName(ModItems.CINDER_DRAGON_SCALE), has(ModItems.CINDER_DRAGON_SCALE))
                     .save(exporter);
         }
     }

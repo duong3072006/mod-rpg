@@ -54,19 +54,41 @@ public final class NightmareArmorTooltipHandler {
         ChatFormatting headerColor = active ? ChatFormatting.GOLD : ChatFormatting.DARK_RED;
         ChatFormatting detailColor = active ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY;
 
-        int dmgRedPct = Math.round(cfg.meleeBossDamageReduction * 100.0F);
-        int reflPct = Math.round(cfg.spikedRetaliationRatio * 100.0F);
-        int reflCap = Math.round(cfg.spikedRetaliationCap);
-
         lines.add(Component.empty());
         lines.add(Component.translatable("tooltip.abyssalrpg.nightmare_set.header", equipped)
                 .withStyle(headerColor, ChatFormatting.BOLD));
-        lines.add(Component.translatable("tooltip.abyssalrpg.nightmare_set.darkness")
-                .withStyle(detailColor));
-        lines.add(Component.translatable("tooltip.abyssalrpg.nightmare_set.reduction", dmgRedPct)
-                .withStyle(detailColor));
-        lines.add(Component.translatable("tooltip.abyssalrpg.nightmare_set.retaliation", reflPct, reflCap)
-                .withStyle(detailColor));
+        if (cfg.setBonusFireResistance) {
+            lines.add(Component.translatable("tooltip.abyssalrpg.nightmare_set.fire_resistance")
+                    .withStyle(detailColor));
+        }
+        if (cfg.setBonusResistance) {
+            lines.add(Component.translatable("tooltip.abyssalrpg.nightmare_set.resistance",
+                            romanLevel(cfg.setBonusResistanceAmplifier + 1))
+                    .withStyle(detailColor));
+        }
+        if (cfg.setBonusMaxHealth > 0.0) {
+            lines.add(Component.translatable("tooltip.abyssalrpg.nightmare_set.max_health",
+                            formatHealthAmount(cfg.setBonusMaxHealth))
+                    .withStyle(detailColor));
+        }
+    }
+
+    private static String romanLevel(int level) {
+        return switch (level) {
+            case 1 -> "I";
+            case 2 -> "II";
+            case 3 -> "III";
+            case 4 -> "IV";
+            case 5 -> "V";
+            default -> String.valueOf(level);
+        };
+    }
+
+    private static String formatHealthAmount(double value) {
+        if (Math.abs(value - Math.rint(value)) < 1e-6) {
+            return String.valueOf((int) Math.rint(value));
+        }
+        return String.format(java.util.Locale.ROOT, "%.1f", value);
     }
 }
 

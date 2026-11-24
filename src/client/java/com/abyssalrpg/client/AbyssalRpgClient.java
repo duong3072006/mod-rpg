@@ -3,6 +3,7 @@ package com.abyssalrpg.client;
 import com.abyssalrpg.client.hud.BossBarHudRenderer;
 import com.abyssalrpg.client.renderer.AltarEyeRenderer;
 import com.abyssalrpg.client.renderer.CerberusGeoRenderer;
+import com.abyssalrpg.client.renderer.CinderDragonArmorRenderer;
 import com.abyssalrpg.client.renderer.CinderDragonGeoRenderer;
 import com.abyssalrpg.client.renderer.CinderDragonHitboxPartRenderer;
 import com.abyssalrpg.client.renderer.DualBladeGeoRenderer;
@@ -34,6 +35,7 @@ import com.abyssalrpg.config.NightmareKnightConfig;
 import com.abyssalrpg.config.SpiritHydraConfig;
 import com.abyssalrpg.entity.mythic.JormungandrBossEntity;
 import com.abyssalrpg.entity.mythic.cerberus.CerberusForm;
+import com.abyssalrpg.item.CinderDragonArmorItem;
 import com.abyssalrpg.item.DualBladeItem;
 import com.abyssalrpg.item.NightmareArmorItem;
 import com.abyssalrpg.network.CerberusVfxPayload;
@@ -159,9 +161,25 @@ public class AbyssalRpgClient implements ClientModInitializer {
             }
         };
 
-        // Hiển thị ngay mô tả % rõ ràng trên Sách Enchant, Dual Knife & Full Set Bonus X/4 Nightmare Knight Armor
+        // Bơm GeoArmorRenderer 3D + AutoGlowingGeoLayer chọn lọc cho bộ 4 món Giáp Cinder Dragon
+        CinderDragonArmorItem.clientRenderProviderFactory = () -> new GeoRenderProvider() {
+            private CinderDragonArmorRenderer renderer;
+
+            @Override
+            public <T extends LivingEntity> HumanoidModel<?> getGeoArmorRenderer(
+                    @Nullable T livingEntity, ItemStack itemStack, @Nullable EquipmentSlot equipmentSlot,
+                    @Nullable HumanoidModel<T> original) {
+                if (this.renderer == null) {
+                    this.renderer = new CinderDragonArmorRenderer();
+                }
+                return this.renderer;
+            }
+        };
+
+        // Hiển thị ngay mô tả % rõ ràng trên Sách Enchant, Dual Knife, Nightmare Knight Armor & Cinder Dragon Armor
         ItemTooltipCallback.EVENT.register(DualBladeTooltipHandler::onItemTooltip);
         ItemTooltipCallback.EVENT.register(NightmareArmorTooltipHandler::onItemTooltip);
+        ItemTooltipCallback.EVENT.register(CinderDragonArmorTooltipHandler::onItemTooltip);
 
         // Render vệt kiếm thư pháp đôi Catmull-Rom kiểu EpicFight-Nightfall (`DualBladeTrailRenderer`) mượt 120+ FPS
         WorldRenderEvents.AFTER_TRANSLUCENT.register(context ->

@@ -20,10 +20,11 @@ import java.util.List;
  */
 public final class ModArmorMaterials {
     public static Holder<ArmorMaterial> NIGHTMARE_KNIGHT;
+    public static Holder<ArmorMaterial> CINDER_DRAGON;
 
     public static void init() {
         ArmorConfig cfg = ArmorConfig.get();
-        EnumMap<ArmorItem.Type, Integer> defense = Util.make(new EnumMap<>(ArmorItem.Type.class), map -> {
+        EnumMap<ArmorItem.Type, Integer> nightmareDef = Util.make(new EnumMap<>(ArmorItem.Type.class), map -> {
             map.put(ArmorItem.Type.BOOTS, cfg.bootsDefense);
             map.put(ArmorItem.Type.LEGGINGS, cfg.leggingsDefense);
             map.put(ArmorItem.Type.CHESTPLATE, cfg.chestplateDefense);
@@ -31,8 +32,8 @@ public final class ModArmorMaterials {
             map.put(ArmorItem.Type.BODY, cfg.chestplateDefense + 2);
         });
 
-        ArmorMaterial material = new ArmorMaterial(
-                defense,
+        ArmorMaterial nightmareMat = new ArmorMaterial(
+                nightmareDef,
                 cfg.enchantmentValue,
                 SoundEvents.ARMOR_EQUIP_NETHERITE,
                 () -> Ingredient.of(ModItems.NIGHTMARE_ARMOR_SHARD),
@@ -44,7 +45,31 @@ public final class ModArmorMaterials {
         NIGHTMARE_KNIGHT = Registry.registerForHolder(
                 BuiltInRegistries.ARMOR_MATERIAL,
                 AbyssalRpgMod.id("nightmare_knight"),
-                material
+                nightmareMat
+        );
+
+        EnumMap<ArmorItem.Type, Integer> cinderDef = Util.make(new EnumMap<>(ArmorItem.Type.class), map -> {
+            map.put(ArmorItem.Type.BOOTS, cfg.cinderBootsDefense);
+            map.put(ArmorItem.Type.LEGGINGS, cfg.cinderLeggingsDefense);
+            map.put(ArmorItem.Type.CHESTPLATE, cfg.cinderChestplateDefense);
+            map.put(ArmorItem.Type.HELMET, cfg.cinderHelmetDefense);
+            map.put(ArmorItem.Type.BODY, cfg.cinderChestplateDefense + 2);
+        });
+
+        ArmorMaterial cinderMat = new ArmorMaterial(
+                cinderDef,
+                cfg.cinderEnchantmentValue,
+                SoundEvents.ARMOR_EQUIP_NETHERITE,
+                () -> Ingredient.of(ModItems.CINDER_DRAGON_SCALE),
+                List.of(new ArmorMaterial.Layer(AbyssalRpgMod.id("cinder_dragon"))),
+                cfg.cinderToughness,
+                cfg.cinderKnockbackResistance
+        );
+
+        CINDER_DRAGON = Registry.registerForHolder(
+                BuiltInRegistries.ARMOR_MATERIAL,
+                AbyssalRpgMod.id("cinder_dragon"),
+                cinderMat
         );
     }
 

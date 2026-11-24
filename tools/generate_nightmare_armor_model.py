@@ -75,6 +75,31 @@ REG = {
     "CAPE_UPPER":          (0,  34, 8, 9),
     "CAPE_MID":            (10, 34, 8, 9),
     "CAPE_LOWER":          (20, 34, 8, 9),
+
+    # Hàng 4 (y=46..50): Các vùng 1:1 đối xứng tuyệt đối dành riêng cho mặt trước mũ (tấm trán nghiêng, thanh trán, đai ngang, khiên mũi, gọng má)
+    "BROW_STRIP":          (0,  46, 1, 3),
+    "BROW_STRIP_SIDE":     (2,  46, 1, 3),
+    "HELM_BAND":           (4,  46, 8, 1),
+    "HELM_BAND_SIDE":      (4,  48, 4, 1),
+    "NASAL_TAB":           (14, 46, 2, 1),
+    "NASAL_TIER1":         (18, 46, 4, 1),
+    "NASAL_TIER2":         (24, 46, 3, 1),
+    "NASAL_TIER3":         (28, 46, 2, 1),
+    "NASAL_SIDE":          (32, 46, 1, 2),
+    "STEEL_TOP":           (36, 46, 2, 2),
+    "STEEL_STEP_H":        (40, 46, 2, 1),
+    "STEEL_STEP_V":        (44, 46, 1, 2),
+    "STEEL_STEP_SQ":       (46, 46, 2, 2),
+    "OBS_CHEEK":           (50, 46, 3, 3),
+    "OBS_COLLAR_V":        (54, 46, 1, 2),
+    "OBS_COLLAR_H":        (56, 46, 2, 1),
+
+    # Hàng 5 (y=50..62): Ống tay giáp bọc kín bắp tay/khuỷu tay (`4x12` 1:1 vải giáp xích đen than) + ô trong suốt xóa viền thừa đỉnh găng
+    "ARM_SLEEVE_FB":       (0,  50, 4, 12),
+    "ARM_SLEEVE_OUT":      (6,  50, 4, 12),
+    "ARM_SLEEVE_IN":       (12, 50, 4, 12),
+    "ARM_SLEEVE_CAP":      (18, 50, 4, 4),
+    "EMPTY_TRANS":         (62, 50, 1, 1),
 }
 
 
@@ -116,13 +141,18 @@ def build_nightmare_armor_geo():
       - Y=0: đế giày | Y=12: hông | Y=22: vai | Y=24: cổ | Y=32: đỉnh đầu.
       - -Z = TRƯỚC | +Z = SAU | -X = PHẢI người chơi (vai phải gai góc + áo choàng) | +X = TRÁI người chơi.
     """
-    # ==================== 1. MŨ HỞ MẶT — OPEN-FACE NASAL HELM (`armorHead`, `horn_r`, `horn_l`) ====================
-    # Vỏ mũ rỗng bao quanh đầu Steve (x=[-4..4], y=[24..32], z=[-4..4]) & lớp hat ([-4.5..4.5]) bằng các vách riêng biệt:
-    # -> 0 z-fighting, mặt trong mũ có độ dày thực (0 mất backface), HỞ HOÀN TOÀN mắt + má + miệng + cằm người chơi!
+    # ==================== 1. MŨ HỞ MẶT — SLANTED BROW + SYMMETRIC NASAL SHIELD (`armorHead`, `horn_r`, `horn_l`) ====================
+    # Vỏ mũ rỗng bao quanh đầu Steve (x=[-4..4], y=[24..32], z=[-4..4]) & lớp hat ([-4.5..4.5]):
+    #   - Tấm trán nghiêng vát về phía trước (+12.5° quanh trục X trong GeckoLib -> mép trên nhô ra trước -Z hơn mép dưới!)
+    #   - 2 thanh dọc xám thép mảnh bám sát góc nghiêng tấm trán, dừng ở 65% chiều cao (chừa khoảng hở >1 px trên đai ngang!)
+    #   - Đai ngang xám thép vòng qua 2 bên thái dương + 2 thanh gọng má dọc mảnh màu xám sẫm chạy xuống sát cằm
+    #   - Tấm che mũi hình khiên ngược ĐỐI XỨNG 100% (có khuyết lõm giữa mép trên tạo 2 gờ nhô, thân sáng vát 2 bên, chóp trơn sạch 0 chấm đen!)
+    brow_piv = [0.0, 29.15, -4.90]
+    brow_rot = [+12.5, 0.0, 0.0]  # GeckoLib negates rotX -> +12.5° nghiêng mép trên về -Z (nhô mái che về phía trước!)
     head_cubes = [
-        # 1a. Đỉnh mũ (roof, y = 32.45 .. 33.10) — giữ nguyên họa tiết chữ X & 2 móc sáng trên đỉnh
+        # 1a. Đỉnh mũ (roof, y = 32.35 .. 32.95) — kéo sát z = -5.58 để khép kín hoàn toàn với mép trên tấm trán nghiêng (0 khe hở góc nghiêng!)
         make_cube(
-            [-4.65, 32.45, -4.65], [9.3, 0.65, 9.3], "OBS_DARK",
+            [-4.65, 32.35, -5.58], [9.30, 0.60, 10.23], "OBS_DARK",
             face_mats={"up": "HELM_TOP", "north": "OBS_PLATE", "south": "OBS_PLATE", "east": "OBS_PLATE", "west": "OBS_PLATE"}
         ),
         # 1b. Sau gáy (back wall, y = 24.0 .. 32.55, z = +4.05 .. +4.65)
@@ -130,32 +160,121 @@ def build_nightmare_armor_geo():
             [-4.65, 24.0, +4.05], [9.3, 8.55, 0.60], "OBS_DARK",
             face_mats={"south": "HELM_BACK"}
         ),
-        # 1c. Hai vách bên đầu (trên ôm sát góc trán tới z=-4.65; dưới vát gọn về z=-3.55 để lộ trọn mắt/má/miệng ở góc 3/4!)
+        # 1c. Hai vách bên đầu (trên nối kín tới tấm trán z=-4.95; dưới lùi gọn về z=-3.95 sau thanh gọng má để lộ trọn mắt/má/miệng!)
         # Vách phải (-X)
-        make_cube([-4.65, 28.55, -4.65], [0.60, 4.00, 9.30], "OBS_DARK", face_mats={"west": "HELM_SIDE_UP", "north": "OBS_PLATE"}),
-        make_cube([-4.65, 24.00, -3.55], [0.60, 4.60, 8.20], "OBS_DARK", face_mats={"west": "HELM_SIDE_LO", "north": "OBS_PLATE"}),
+        make_cube([-4.65, 28.55, -4.95], [0.60, 4.00, 9.60], "OBS_DARK", face_mats={"west": "HELM_SIDE_UP", "north": "OBS_PLATE"}),
+        make_cube([-4.65, 24.00, -3.95], [0.60, 4.60, 8.60], "OBS_DARK", face_mats={"west": "HELM_SIDE_LO", "north": "OBS_DARK"}),
         # Vách trái (+X)
-        make_cube([+4.05, 28.55, -4.65], [0.60, 4.00, 9.30], "OBS_DARK", face_mats={"east": "HELM_SIDE_UP", "north": "OBS_PLATE"}),
-        make_cube([+4.05, 24.00, -3.55], [0.60, 4.60, 8.20], "OBS_DARK", face_mats={"east": "HELM_SIDE_LO", "north": "OBS_PLATE"}),
-        # 1d. Tấm trán (brow plate): CHỈ che nửa trên mặt trước (y = 28.60 .. 32.55 = 3.95 px từ đỉnh xuống ngay trên mắt Steve!),
-        # giữ đúng 2 sọc dọc xám thép + đường viền ngang xám mảnh ở mép dưới trán!
+        make_cube([+4.05, 28.55, -4.95], [0.60, 4.00, 9.60], "OBS_DARK", face_mats={"east": "HELM_SIDE_UP", "north": "OBS_PLATE"}),
+        make_cube([+4.05, 24.00, -3.95], [0.60, 4.60, 8.60], "OBS_DARK", face_mats={"east": "HELM_SIDE_LO", "north": "OBS_DARK"}),
+
+        # 1d. Tấm trán nghiêng vát về phía trước (`y = 29.15 .. 32.80`, dài 3.65px, xoay +12.5° quanh mép dưới -> mép trên nhô tới z=-5.69!)
+        # Texture thuần thép đen obsidian 1:1 đối xứng (KHÔNG vẽ sọc xám nền bên dưới để xóa sạch viền mảnh sub-pixel!)
         make_cube(
-            [-4.65, 28.60, -4.65], [9.3, 3.95, 0.55], "OBS_DARK",
-            face_mats={"north": "HELM_BROW", "down": "ASH_DARK"}
+            [-4.65, 29.15, -4.90], [9.30, 3.65, 0.45], "OBS_DARK",
+            rot=brow_rot, pivot=brow_piv,
+            face_mats={"north": "HELM_BROW", "up": "OBS_PLATE", "down": "OBS_DARK"}
         ),
-        # 2 sọc dọc mảnh trên trán nhô nhẹ 0.25px (nằm gọn trong vùng trán y = 29.5 .. 32.4)
-        make_centered_cube([-1.75, 31.05, -4.72], [0.65, 2.75, 0.26], "ASH_LIGHT"),
-        make_centered_cube([+1.75, 31.05, -4.72], [0.65, 2.75, 0.26], "ASH_LIGHT"),
-        # 1e. Tấm che mũi nhọn gọn ở giữa (nasal guard): nối từ mép dưới trán (y=28.65) rủ xuống giữa 2 mắt (y=26.20, dài 2.45px),
-        # rộng 2.0px ở gốc -> vuốt nhọn 0.7px ở sống mũi -> TUYỆT ĐỐI không che 2 mắt trái/phải và không che miệng/cằm!
-        make_centered_cube([0.0, 28.15, -4.70], [2.05, 1.15, 0.44], "ASH_LIGHT"),
-        make_centered_cube([0.0, 27.15, -4.72], [1.25, 1.00, 0.42], "ASH_MID"),
-        make_centered_cube([0.0, 26.40, -4.68], [0.68, 0.60, 0.34], "ASH_DARK"),
+        # 2 thanh dọc xám thép 3D mảnh bám sát song song theo ĐÚNG góc nghiêng tấm trán (cùng pivot & rot!),
+        # chạy từ sát mép trên (y=32.82) xuống 65% chiều cao (y=30.42 -> chừa khoảng hở >1.15 px sạch đẹp trên đai ngang!)
+        make_cube(
+            [-2.10, 30.42, -5.12], [0.85, 2.40, 0.25], "BROW_STRIP_SIDE",
+            rot=brow_rot, pivot=brow_piv,
+            face_mats={"north": "BROW_STRIP", "up": "STEEL_TOP", "down": "BROW_STRIP_SIDE"}
+        ),
+        make_cube(
+            [+1.25, 30.42, -5.12], [0.85, 2.40, 0.25], "BROW_STRIP_SIDE",
+            rot=brow_rot, pivot=brow_piv,
+            face_mats={"north": "BROW_STRIP", "up": "STEEL_TOP", "down": "BROW_STRIP_SIDE"}
+        ),
+
+        # 1e-1. Đai ngang vành mũ xám thép (chạy ngay dưới mép tấm trán `y = 28.40 .. 29.25`, nhô nhẹ tới z=-5.15 tạo chiều sâu bóng râm trên mắt,
+        # vòng gọn sang 2 bên thái dương giống hệt ảnh 1!)
+        make_cube(
+            [-4.88, 28.40, -5.15], [9.76, 0.85, 0.62], "NASAL_SIDE",
+            face_mats={"north": "HELM_BAND", "up": "STEEL_TOP", "down": "NASAL_SIDE"}
+        ),
+        make_cube(
+            [-4.88, 28.40, -4.90], [0.55, 0.85, 3.50], "NASAL_SIDE",
+            face_mats={"west": "HELM_BAND_SIDE", "up": "STEEL_TOP"}
+        ),
+        make_cube(
+            [+4.33, 28.40, -4.90], [0.55, 0.85, 3.50], "NASAL_SIDE",
+            face_mats={"east": "HELM_BAND_SIDE", "up": "STEEL_TOP"}
+        ),
+
+        # 1e-2. ĐÃ XÓA 2 thanh má thẳng đứng -> thay bằng CỤM MÁ GIÁP CẮT BẬC CHỮ V 3D (Bậc 1 & Bậc 2 trên armorHead, dừng ở y=24.20 > 24.05 cổ áo!)
+        # (Phần tạo gương đối xứng tuyệt đối trái/phải được nối ngay bên dưới vòng lặp `for s in (-1.0, 1.0)`)
+
+        # 1e-3. Tấm che mũi hình khiên ngược ĐỐI XỨNG 100% (xóa sạch bậc lệch & cục thừa chấm đen!):
+        # - 2 gờ nhô đối xứng mép trên nối từ đai ngang (tổng rộng 3.70 px, chừa khuyết lõm 1.10 px chính giữa tại x=[-0.55..+0.55]!)
+        make_cube(
+            [-1.85, 28.95, -5.26], [1.30, 0.72, 0.56], "NASAL_SIDE",
+            face_mats={"north": "NASAL_TAB", "up": "STEEL_TOP"}
+        ),
+        make_cube(
+            [+0.55, 28.95, -5.26], [1.30, 0.72, 0.56], "NASAL_SIDE",
+            face_mats={"north": "NASAL_TAB", "up": "STEEL_TOP"}
+        ),
+        # - Thân trên khiên mũi (rộng 3.60 px, y=28.15..28.97, trên hẳn mắt Steve, bề mặt xám sáng giữa + vát xám đậm 2 mép bên)
+        make_cube(
+            [-1.80, 28.15, -5.30], [3.60, 0.82, 0.62], "NASAL_SIDE",
+            face_mats={"north": "NASAL_TIER1", "up": "STEEL_TOP"}
+        ),
+        # - Thân giữa khiên mũi (rộng 2.40 px, y=27.30..28.17, thuôn cân đối giữa 2 mắt, lộ sáng trọn mắt!)
+        make_cube(
+            [-1.20, 27.30, -5.30], [2.40, 0.87, 0.60], "NASAL_SIDE",
+            face_mats={"north": "NASAL_TIER2"}
+        ),
+        # - Chóp dưới khiên mũi (rộng 1.50 px, y=26.55..27.32, trơn sạch 100% đối xứng, KHÔNG chấm đen, KHÔNG cube thừa!)
+        make_cube(
+            [-0.75, 26.55, -5.26], [1.50, 0.77, 0.54], "NASAL_SIDE",
+            face_mats={"north": "NASAL_TIER3", "down": "NASAL_SIDE"}
+        ),
+
         # 1f. Giữ nguyên 100% mào gai đỉnh, chốt dọc sau gáy, viền cổ sau & 2 gai phụ tách rời góc dưới gáy!
         make_centered_cube([0.0, 33.45, +2.75], [1.35, 1.55, 3.2], "ASH_MID", rot=[+10.0, 0.0, 0.0], face_mats={"up": "ASH_LIGHT"}),
         make_centered_cube([0.0, 26.6, +4.75], [1.55, 2.55, 0.90], "ASH_MID", rot=[+8.0, 0.0, 0.0], face_mats={"up": "ASH_LIGHT"}),
         make_centered_cube([0.0, 24.25, +4.45], [9.2, 1.05, 0.85], "OBS_DARK"),
     ]
+    # CỤM MÁ GIÁP CẮT BẬC CHỮ V 3D ĐỐI XỨNG TUYỆT ĐỐI (Bậc 1 & Bậc 2 trên `armorHead`, y >= 24.20 -> xoay đầu ±35° KHÔNG chạm giáp ngực!)
+    for s in (-1.0, 1.0):
+        inner_f = "east" if s < 0 else "west"
+        outer_f = "west" if s < 0 else "east"
+
+        def sym_cube(xa, xb, y0, yh, z0, zd, mat, face_mats=None):
+            x0 = min(s * xa, s * xb)
+            return make_cube([x0, y0, z0], [abs(xb - xa), yh, zd], mat, face_mats=face_mats)
+
+        # Trụ nối thái dương màu thép đen obsidian dưới 2 góc ngoài đai ngang (y = 27.60..28.42)
+        head_cubes.append(sym_cube(
+            4.24, 4.82, 27.60, 0.82, -4.76, 0.72, "OBS_DARK",
+            face_mats={"north": "OBS_COLLAR_V", outer_f: "OBS_PLATE", inner_f: "OBS_DARK"}
+        ))
+        # Mảng giáp nền má màu thép đen obsidian phía sau & ngoài bậc xám (thay mảng đỏ ảnh mẫu, lùi nhẹ 0.34 px tạo chiều sâu 3D!)
+        head_cubes.append(sym_cube(
+            3.18, 4.82, 24.20, 2.72, -4.68, 0.66, "OBS_DARK",
+            face_mats={"north": "OBS_CHEEK", outer_f: "OBS_PLATE", inner_f: "OBS_DARK", "up": "OBS_PLATE", "down": "OBS_DARK"}
+        ))
+        # BẬC 1 (trên cùng, ngay dưới 2 góc ngoài đai ngang): nẹp xám thép chữ L ngang–dọc ôm góc ngoài gò má (x = ±3.10..±4.88, 0 che mắt ±1..±3!)
+        head_cubes.append(sym_cube(
+            3.10, 4.88, 26.85, 0.80, -5.06, 0.66, "NASAL_SIDE",
+            face_mats={"north": "STEEL_STEP_H", "up": "STEEL_TOP", "down": "NASAL_SIDE", inner_f: "NASAL_SIDE", outer_f: "NASAL_SIDE"}
+        ))
+        head_cubes.append(sym_cube(
+            4.22, 4.88, 26.30, 0.60, -5.02, 0.60, "NASAL_SIDE",
+            face_mats={"north": "STEEL_STEP_V", outer_f: "NASAL_SIDE", inner_f: "NASAL_SIDE", "down": "NASAL_SIDE"}
+        ))
+        # BẬC 2 (giữa, ngang miệng/hàm): nẹp xám thép giật vào trong 1 bậc (x = ±2.60..±3.78 -> ±2.35..±3.28), chừa hở 4.70 px giữa mặt!
+        head_cubes.append(sym_cube(
+            2.60, 3.78, 25.85, 1.03, -5.02, 0.62, "NASAL_SIDE",
+            face_mats={"north": "STEEL_STEP_SQ", "up": "STEEL_TOP", "down": "NASAL_SIDE", inner_f: "NASAL_SIDE", outer_f: "NASAL_SIDE"}
+        ))
+        head_cubes.append(sym_cube(
+            2.35, 3.28, 24.20, 1.70, -4.96, 0.58, "NASAL_SIDE",
+            face_mats={"north": "STEEL_STEP_V", "up": "STEEL_TOP", "down": "NASAL_SIDE", inner_f: "NASAL_SIDE", outer_f: "NASAL_SIDE"}
+        ))
+
     # 2 GAI PHỤ NHỎ TÁCH RỜI CHĨA NGƯỢC RA SAU Ở GÓC DƯỚI GÁY (thấy rất rõ ở cả 2 ảnh góc nghiêng mẫu!)
     for s in (-1.0, 1.0):
         head_cubes.append(make_centered_cube(
@@ -204,11 +323,38 @@ def build_nightmare_armor_geo():
                 "down":  "OBS_DARK",
             }
         ),
-        # Gờ chữ V cổ vai tinh tế ôm sát (0.25px) + chốt sau vai phải nối áo choàng
-        make_centered_cube([-2.3, 22.9, -2.50], [2.4, 1.0, 0.25], "ASH_MID", rot=[0.0, 0.0, +20.0]),
-        make_centered_cube([+2.3, 22.9, -2.50], [2.4, 1.0, 0.25], "ASH_MID", rot=[0.0, 0.0, -20.0]),
+        # Chốt sau vai phải nối áo choàng (giữ nguyên 100%)
         make_centered_cube([-3.2, 22.7, +2.55], [3.6, 1.5, 0.45], "ASH_DARK", rot=[0.0, 0.0, +10.0]),
     ]
+    # BẬC 3 — YẾM CỔ GIÁP CHỮ V NỐI NGỰC (`armorBody`, y = 22.05..24.05 — tách mặt phẳng rõ dưới armorHead y >= 24.20 để quay đầu ±35° 0 xuyên!):
+    # Khớp liền mạch với Bậc 1 & 2 khi đứng thẳng tạo thành 3 bậc chữ V đối xứng + viền nền chữ L thấp màu thép đen obsidian ôm góc vai–cổ!
+    for s in (-1.0, 1.0):
+        inner_f = "east" if s < 0 else "west"
+        outer_f = "west" if s < 0 else "east"
+
+        def body_sym_cube(xa, xb, y0, yh, z0, zd, mat, face_mats=None):
+            x0 = min(s * xa, s * xb)
+            return make_cube([x0, y0, z0], [abs(xb - xa), yh, zd], mat, face_mats=face_mats)
+
+        # Nẹp xám thép Bậc 3 — nhánh dọc trên ôm sát 2 bên cằm (giật vào trong tới x = ±1.90..±2.85, vát gọn vào ngực ở z=-4.25!)
+        body_cubes.append(body_sym_cube(
+            1.90, 2.85, 23.05, 1.00, -4.25, 1.83, "NASAL_SIDE",
+            face_mats={"north": "STEEL_STEP_V", "up": "STEEL_TOP", "down": "NASAL_SIDE", inner_f: "NASAL_SIDE", outer_f: "NASAL_SIDE"}
+        ))
+        # Nẹp xám thép Bậc 3 — chân chữ L giật vào trong ngang xương quai xanh (x = ±1.20..±2.85, chừa khe chữ V 2.40 px nối mượt vào V-ngực!)
+        body_cubes.append(body_sym_cube(
+            1.20, 2.85, 22.35, 0.73, -4.05, 1.63, "NASAL_SIDE",
+            face_mats={"north": "STEEL_STEP_H", "up": "STEEL_TOP", "down": "NASAL_SIDE", inner_f: "NASAL_SIDE", outer_f: "NASAL_SIDE"}
+        ))
+        # Viền nền giáp chữ L thấp màu thép đen obsidian ôm gọn góc vai–cổ (x <= ±4.22 hoàn toàn thoáng khỏi vai phải/trái!)
+        body_cubes.append(body_sym_cube(
+            3.55, 4.22, 22.40, 1.62, -4.18, 1.76, "OBS_DARK",
+            face_mats={"north": "OBS_COLLAR_V", "up": "OBS_PLATE", outer_f: "OBS_PLATE", inner_f: "OBS_DARK", "down": "OBS_DARK"}
+        ))
+        body_cubes.append(body_sym_cube(
+            2.80, 4.22, 22.40, 0.70, -4.12, 1.70, "OBS_DARK",
+            face_mats={"north": "OBS_COLLAR_H", "up": "OBS_PLATE", outer_f: "OBS_PLATE", inner_f: "OBS_DARK", "down": "OBS_DARK"}
+        ))
 
     # ==================== 2b. ÁO CHOÀNG ĐỔ CHÉO RÁCH BẬC 1 BÊN (`cape_upper/mid/lower` dưới `armorBody`) ====================
     # Siêu mỏng (0.18 px), rộng hơn & đổ chéo lệch sang bên từ dưới giáp vai phải (-X) xuống sát gót chân,
@@ -245,8 +391,29 @@ def build_nightmare_armor_geo():
         make_centered_cube([-8.7, 21.5, 0.0],  [2.2, 2.4, 3.4], "ASH_MID",         rot=[0.0,   0.0, +24.0], face_mats=pauld_faces),
     ]
 
-    # KHOẢNG HỞ BẮP TAY RÕ RÀNG (`y = 17.5 .. 19.6`)
-    # GĂNG GIÁP CẲNG TAY 3D DÀY RÕ RỆT (`5.6 x 5.6` — inflate lớn hơn tay Steve!) + CẮT VÁT CHÉO 45° CỰC GẮT!
+    # ỐNG TAY GIÁP ÔM SÁT BỌC KÍN 100% BẮP TAY & KHUỶU TAY (`armorRightArm` & `armorLeftArm`)
+    # + GĂNG GIÁP CẲNG TAY 3D DÀY RÕ RỆT (`5.6 x 5.6`) CẮT VÁT CHÉO 45° SẮC NÉT (xóa sạch đường kẻ mảnh ở mép trên găng!)
+    def build_arm_undersleeve(side_sign: float):
+        cx = side_sign * 6.0
+        outer_face = "west" if side_sign < 0 else "east"
+        inner_face = "east" if side_sign < 0 else "west"
+        # Kích thước [4.90 x 12.68 x 4.82] (từ y=11.70 sâu trong cổ găng lên tới y=24.38 phủ kín đỉnh vai):
+        # - Che kín 100% tay Steve (4x12x4) lẫn lớp sleeve ngoài (4.5x12.5x4.5: y=11.75..24.25) ở đủ 6 mặt (trước/sau/ngoài/nách/đỉnh/đáy)
+        # - Nhỏ hơn giáp vai (5.2..5.4) & găng tay (5.45..5.60) tối thiểu 0.30..0.70 px & lùi 0.04 px sau mặt ngực (4.90) -> 0 z-fighting!
+        return [
+            make_centered_cube(
+                [cx, 18.04, 0.0], [4.90, 12.68, 4.82], "ARM_SLEEVE_FB",
+                face_mats={
+                    "north":    "ARM_SLEEVE_FB",
+                    "south":    "ARM_SLEEVE_FB",
+                    outer_face: "ARM_SLEEVE_OUT",
+                    inner_face: "ARM_SLEEVE_IN",
+                    "up":       "ARM_SLEEVE_CAP",
+                    "down":     "ARM_SLEEVE_CAP",
+                }
+            ),
+        ]
+
     def build_thick_slanted_gauntlet(side_sign: float):
         # side_sign = -1 (Right arm, outer = -X = LEFT on Front view, RIGHT on Back view)
         # side_sign = +1 (Left  arm, outer = +X = RIGHT on Front view, LEFT on Back view)
@@ -258,7 +425,7 @@ def build_nightmare_armor_geo():
         south_fb = "GAUNTLET_HIGH_RIGHT" if side_sign < 0 else "GAUNTLET_HIGH_LEFT"
         return [
             # Hộp găng giáp 3D dày (5.6 x 5.8 x 5.6) bọc nửa dưới cẳng tay (`y = 11.6 .. 17.4`),
-            # mặt trước/sau cắt chéo 45° sắc nét bằng cutout alpha 1:1 + mặt ngoài đầy đặn có cổ tay xám thép!
+            # mặt trên dùng `EMPTY_TRANS` để XÓA SẠCH đường kẻ ngang siêu mảnh thừa ở mép trên vùng cắt chéo!
             make_centered_cube(
                 [cx, 14.5, 0.0], [5.6, 5.8, 5.6], "GAUNTLET_OUT",
                 face_mats={
@@ -266,7 +433,7 @@ def build_nightmare_armor_geo():
                     "south":    south_fb,
                     outer_face: "GAUNTLET_OUT",
                     inner_face: "GAUNTLET_INNER",
-                    "up":       "GAUNTLET_INNER",
+                    "up":       "EMPTY_TRANS",
                     "down":     "GAUNTLET_BOT",
                 }
             ),
@@ -282,9 +449,10 @@ def build_nightmare_armor_geo():
             ),
         ]
 
+    rarm_cubes.extend(build_arm_undersleeve(-1.0))
     rarm_cubes.extend(build_thick_slanted_gauntlet(-1.0))
 
-    # ==================== 4. VAI TRÁI GỌN HỘP VÁT CÓ VIỀN CHỮ U + GĂNG 3D VÁT XÉO (`armorLeftArm`, [+5, 22, 0]) ====================
+    # ==================== 4. VAI TRÁI GỌN HỘP VÁT CÓ VIỀN CHỮ U + ỐNG TAY BỌC KÍN + GĂNG 3D VÁT XÉO (`armorLeftArm`, [+5, 22, 0]) ====================
     larm_cubes = [
         # Tấm bọc vai trái hộp vát gọn có đường viền cong chữ U xám bạc rõ nét mặt ngoài (khớp góc trái mẫu!)
         make_centered_cube(
@@ -293,6 +461,7 @@ def build_nightmare_armor_geo():
             face_mats={"east": "PAULDRON_L", "north": "PAULDRON_L", "south": "PAULDRON_L", "up": "OBS_DARK", "down": "OBS_DARK"}
         ),
     ]
+    larm_cubes.extend(build_arm_undersleeve(+1.0))
     larm_cubes.extend(build_thick_slanted_gauntlet(+1.0))
 
     # ==================== 5. QUẦN + GIÁP HÔNG 3D HƠI LOE + GIÁP GỐI TRƠN (`armorRightLeg`, `armorLeftLeg`) ====================
@@ -447,6 +616,10 @@ def build_nightmare_armor_texture_64x64():
         "u": (22, 21, 25, 255),       # #161519 đùi đen than tối
         "U": (38, 36, 43, 255),       # #26242B đùi đen than sáng
 
+        "a": (20, 21, 27, 255),       # #14151B vải giáp / giáp xích ống tay tối
+        "A": (30, 32, 40, 255),       # #1E2028 vải giáp / giáp xích ống tay trung
+        "b": (43, 46, 58, 255),       # #2B2E3A vải giáp / giáp xích ống tay sáng
+
         "x": (140, 27, 36, 255),      # #8C1B24 đỏ sẫm lì (chữ X đỉnh / viền thoi ngực)
         "X": (184, 41, 52, 255),      # #B82934 đỏ sẫm lì sáng hơn nhẹ (tâm thoi ngực — 0 glow!)
     }
@@ -459,12 +632,124 @@ def build_nightmare_armor_texture_64x64():
             for x, ch in enumerate(row):
                 img[y0 + y, x0 + x] = P[ch]
 
-    # 1. MŨ HỞ MẶT (`HELM_BROW` 8x4: 2 sọc dọc trán + viền ngang xám mảnh mép dưới trán; 0 che mặt!)
+    # 1. MŨ HỞ MẶT (`HELM_BROW` 8x4 thuần thép đen obsidian 1:1 đối xứng — 0 sọc nền, 0 sub-pixel!)
     paint("HELM_BROW", [
-        "23S33S32",
-        "23W33W32",
-        "22S33S22",
-        "sSWWWWSs",
+        "23433432",
+        "23333332",
+        "12322321",
+        "12211221",
+    ])
+    # Các mảnh 1:1 đối xứng tuyệt đối dành riêng cho mặt trước mũ (hàng 4 y=46..50, KHÔNG động vào các bộ phận khác!)
+    paint("BROW_STRIP", [
+        "W",
+        "S",
+        "s",
+    ])
+    paint("BROW_STRIP_SIDE", [
+        "S",
+        "s",
+        "s",
+    ])
+    paint("HELM_BAND", [
+        "sSSWWSSs",
+    ])
+    paint("HELM_BAND_SIDE", [
+        "sSSs",
+    ])
+    paint("NASAL_TAB", [
+        "WW",
+    ])
+    paint("NASAL_TIER1", [
+        "SWWS",
+    ])
+    paint("NASAL_TIER2", [
+        "SWS",
+    ])
+    paint("NASAL_TIER3", [
+        "SS",
+    ])
+    paint("NASAL_SIDE", [
+        "S",
+        "s",
+    ])
+    paint("STEEL_TOP", [
+        "WW",
+        "SS",
+    ])
+    paint("STEEL_STEP_H", [
+        "WW",
+    ])
+    paint("STEEL_STEP_V", [
+        "W",
+        "S",
+    ])
+    paint("STEEL_STEP_SQ", [
+        "WW",
+        "SS",
+    ])
+    paint("OBS_CHEEK", [
+        "232",
+        "222",
+        "121",
+    ])
+    paint("OBS_COLLAR_V", [
+        "4",
+        "3",
+    ])
+    paint("OBS_COLLAR_H", [
+        "44",
+    ])
+    # Ống tay giáp 1:1 bọc kín bắp tay & khuỷu tay (vải giáp xích đen than + 2 nẹp khớp khuỷu #383E4E, đối xứng 100%!)
+    paint("EMPTY_TRANS", [
+        ".",
+    ])
+    paint("ARM_SLEEVE_FB", [
+        "aAAa",
+        "abba",
+        "aAAa",
+        "abba",
+        "aAAa",
+        "b33b",
+        "aAAa",
+        "b33b",
+        "aAAa",
+        "abba",
+        "aAAa",
+        "aaaa",
+    ])
+    paint("ARM_SLEEVE_OUT", [
+        "aAAa",
+        "abba",
+        "aAAa",
+        "bAAb",
+        "a33a",
+        "3333",
+        "aAAa",
+        "b33b",
+        "aAAa",
+        "abba",
+        "aAAa",
+        "aaaa",
+    ])
+    paint("ARM_SLEEVE_IN", [
+        "aaaa",
+        "aAAa",
+        "aAAa",
+        "aAAa",
+        "aAAa",
+        "a33a",
+        "aaaa",
+        "a33a",
+        "aAAa",
+        "aAAa",
+        "aAAa",
+        "aaaa",
+    ])
+    paint("ARM_SLEEVE_CAP", [
+        "aaaa",
+        "aAAa",
+        "aAAa",
+        "aaaa",
     ])
     paint("HELM_BACK", [
         "12333321",
@@ -827,13 +1112,13 @@ def build_six_item_icons_and_models():
             "OkRRO..OO..ORRkO",
             "ORRRO.OAWO.ORRRO",
             "ORRROOmssmOORRRO",
-            ".OrROdsmmsdORrO.",
-            "..OOdsWddWsdOO..",
-            "...OdsWddWsdO...",
-            "...OdsAWWAsdO...",
-            "...Od..WW..dO...",
-            "...Od..AA..dO...",
-            "...Od......dO...",
+            ".OrROdsWddWsdOrO",
+            "..OOdsAddAsdOO..",
+            "...OdsddddsdO...",
+            "...OaAWddWAaO...",
+            "...Oa.AWWA.aO...",
+            "...Oa..WW..aO...",
+            "...Oa......aO...",
             "...OO......OO...",
             "................",
             "................",
@@ -930,69 +1215,97 @@ def bedrock_rot_matrix(rot_deg):
     return Rz @ Ry @ Rx
 
 
-def build_steve_head_faces():
+def build_steve_body_faces(rarm_rot=None, larm_rot=None):
     """
-    Dựng đúng khối đầu Steve chuẩn Minecraft (8x8x8: x=[-4..4], y=[24..32], z=[-4..4])
-    có tóc, 2 mắt rõ (tròng trắng + mống mắt xanh tím), mũi, miệng & cằm để kiểm chứng trực quan:
-    mũ hở mặt KHÔNG che mắt/miệng/cằm và 0 z-fighting!
+    Dựng đầy đủ cơ thể Steve chuẩn Minecraft (Đầu 8x8x8 + Thân 8x12x4 + 2 Tay 4x12x4 kèm lớp sleeve 4.5x12.5x4.5 + 2 Chân)
+    với tông da sáng tương phản cao trên cánh tay để kiểm chứng trực quan:
+    - Mũ hở mặt lộ rõ mắt/miệng/cằm
+    - Ống tay giáp bọc kín 100% da & lớp sleeve cánh tay ở mọi góc nhìn & tư thế xoay Dual Knife, 0 z-fighting!
     """
     faces = []
 
-    def add_box(bmin, bmax, rgb):
+    def add_box(bmin, bmax, rgb, rot=None, pivot=None):
         x0, y0, z0 = bmin
         x1, y1, z1 = bmax
         corners = np.array([
             [x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0],
             [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1],
         ], dtype=np.float64)
+        if rot is not None and pivot is not None:
+            piv = np.array(pivot, dtype=np.float64)
+            R = bedrock_rot_matrix(rot)
+            corners = ((corners - piv) @ R.T) + piv
         for idxs in ([0, 1, 2, 3], [5, 4, 7, 6], [4, 0, 3, 7], [1, 5, 6, 2], [3, 2, 6, 7], [4, 5, 1, 0]):
             faces.append((corners[idxs], None, rgb))
 
-    # Khối đầu da Steve (8x8x8)
+    # 1. Đầu Steve (8x8x8)
     add_box((-4.0, 24.0, -4.0), (4.0, 32.0, 4.0), (192, 146, 114))
-    # Tóc trên đỉnh & gáy
     add_box((-4.02, 29.8, -4.02), (4.02, 32.02, 4.02), (62, 40, 26))
-    # Mắt trái & phải chuẩn tọa độ Steve (`y = 27.0 .. 28.0`, `x = ±1..±3`, z = -4.03)
-    add_box((-3.0, 27.0, -4.05), (-2.0, 28.0, -3.98), (244, 246, 250))  # Tròng trắng phải
-    add_box((-2.0, 27.0, -4.05), (-1.0, 28.0, -3.98), (74, 90, 178))    # Mống mắt phải
-    add_box((+2.0, 27.0, -4.05), (+3.0, 28.0, -3.98), (244, 246, 250))  # Tròng trắng trái
-    add_box((+1.0, 27.0, -4.05), (+2.0, 28.0, -3.98), (74, 90, 178))    # Mống mắt trái
-    # Sống mũi Steve (`y = 26.0 .. 27.0`, `x = -1..+1`)
+    add_box((-3.0, 27.0, -4.05), (-2.0, 28.0, -3.98), (244, 246, 250))
+    add_box((-2.0, 27.0, -4.05), (-1.0, 28.0, -3.98), (74, 90, 178))
+    add_box((+2.0, 27.0, -4.05), (+3.0, 28.0, -3.98), (244, 246, 250))
+    add_box((+1.0, 27.0, -4.05), (+2.0, 28.0, -3.98), (74, 90, 178))
     add_box((-1.0, 26.0, -4.04), (+1.0, 27.0, -3.98), (168, 120, 92))
-    # Miệng & râu cằm Steve (`y = 24.0 .. 26.0`, `x = -2..+2`)
     add_box((-1.5, 25.0, -4.04), (+1.5, 25.8, -3.98), (118, 72, 56))
     add_box((-2.0, 24.0, -4.04), (+2.0, 24.9, -3.98), (82, 52, 36))
+
+    # 2. Thân Steve (8x12x4) & 2 Chân Steve (4x12x4)
+    add_box((-4.0, 12.0, -2.0), (+4.0, 24.0, +2.0), (40, 148, 152))
+    add_box((-4.0,  0.0, -2.0), ( 0.0, 12.0, +2.0), (62, 66, 138))
+    add_box(( 0.0,  0.0, -2.0), (+4.0, 12.0, +2.0), (62, 66, 138))
+
+    # 3. Hai cánh tay Steve chuẩn 4x12x4 + lớp sleeve 4.5x12.5x4.5 (tông da sáng #E6AD84 nổi bật nếu bị hở dù 1 px!)
+    # Tay phải (`[-8..-4]`, sleeve `[-8.25..-3.75]`, pivot `[-5, 22, 0]`)
+    add_box((-8.25, 11.75, -2.25), (-3.75, 24.25, +2.25), (230, 173, 132), rot=rarm_rot, pivot=[-5.0, 22.0, 0.0])
+    # Tay trái (`[+4..+8]`, sleeve `[+3.75..+8.25]`, pivot `[+5, 22, 0]`)
+    add_box((+3.75, 11.75, -2.25), (+8.25, 24.25, +2.25), (230, 173, 132), rot=larm_rot, pivot=[+5.0, 22.0, 0.0])
     return faces
 
 
 def render_6_angle_preview(geo: dict, diff_img):
     """
-    Xuất bảng preview 6 góc (Chính diện, 3/4 Trái-Trước, Phải, Trái, Sau, Trên)
-    CÓ GHÉP ĐẦU STEVE CHUẨN 8x8x8 bên trong mũ hở mặt để kiểm chứng trực quan:
-    lộ rõ 2 mắt + má + miệng + cằm, tấm che mũi gọn giữa sống mũi, 0 z-fighting, 0 thay đổi các bộ phận còn lại!
+    Xuất ảnh preview có ghép đầy đủ cơ thể Steve + lớp sleeve cánh tay (`4.5x12.5x4.5`) ở 4 góc chính
+    (Trước, Sau, Phải, Trái) + Cận cảnh 2 cánh tay + Tư thế Dual Knife xoay tay kiểm chứng:
+    0 phần da tay bị hở, 0 z-fighting, 0 đường kẻ thừa đỉnh găng, rõ tầng 3D giáp vai & găng vát xéo!
     """
-    faces = build_steve_head_faces()
-    for b in geo["minecraft:geometry"][0]["bones"]:
-        for c in b.get("cubes", []):
-            ox, oy, oz = c["origin"]
-            sx, sy, sz = c["size"]
-            corners = np.array([
-                [ox, oy, oz], [ox + sx, oy, oz], [ox + sx, oy + sy, oz], [ox, oy + sy, oz],
-                [ox, oy, oz + sz], [ox + sx, oy, oz + sz], [ox + sx, oy + sy, oz + sz], [ox, oy + sy, oz + sz],
-            ], dtype=np.float64)
-            if "rotation" in c:
-                piv = np.array(c["pivot"], dtype=np.float64)
-                R = bedrock_rot_matrix(c["rotation"])
-                corners = ((corners - piv) @ R.T) + piv
-            uv_map = c["uv"]
-            for fname, idxs in (
-                ("north", [0, 1, 2, 3]), ("south", [5, 4, 7, 6]),
-                ("west",  [4, 0, 3, 7]), ("east",  [1, 5, 6, 2]),
-                ("up",    [3, 2, 6, 7]), ("down",  [4, 5, 1, 0]),
-            ):
-                faces.append((corners[idxs], uv_map[fname], None))
+    rarm_pivot = np.array([-5.0, 22.0, 0.0], dtype=np.float64)
+    larm_pivot = np.array([+5.0, 22.0, 0.0], dtype=np.float64)
 
-    def raster(view_mat, w, h, sc, center, ambient=0.58, bg=(22, 23, 27)):
+    def build_scene_faces(rarm_rot=None, larm_rot=None):
+        R_r = bedrock_rot_matrix(rarm_rot) if rarm_rot is not None else None
+        R_l = bedrock_rot_matrix(larm_rot) if larm_rot is not None else None
+        faces = build_steve_body_faces(rarm_rot=rarm_rot, larm_rot=larm_rot)
+        for b in geo["minecraft:geometry"][0]["bones"]:
+            bname = b["name"]
+            for c in b.get("cubes", []):
+                ox, oy, oz = c["origin"]
+                sx, sy, sz = c["size"]
+                corners = np.array([
+                    [ox, oy, oz], [ox + sx, oy, oz], [ox + sx, oy + sy, oz], [ox, oy + sy, oz],
+                    [ox, oy, oz + sz], [ox + sx, oy, oz + sz], [ox + sx, oy + sy, oz + sz], [ox, oy + sy, oz + sz],
+                ], dtype=np.float64)
+                if "rotation" in c:
+                    piv = np.array(c["pivot"], dtype=np.float64)
+                    R = bedrock_rot_matrix(c["rotation"])
+                    corners = ((corners - piv) @ R.T) + piv
+                if bname == "armorRightArm" and R_r is not None:
+                    corners = ((corners - rarm_pivot) @ R_r.T) + rarm_pivot
+                elif bname == "armorLeftArm" and R_l is not None:
+                    corners = ((corners - larm_pivot) @ R_l.T) + larm_pivot
+                uv_map = c["uv"]
+                for fname, idxs in (
+                    ("north", [0, 1, 2, 3]), ("south", [5, 4, 7, 6]),
+                    ("west",  [4, 0, 3, 7]), ("east",  [1, 5, 6, 2]),
+                    ("up",    [3, 2, 6, 7]), ("down",  [4, 5, 1, 0]),
+                ):
+                    faces.append((corners[idxs], uv_map[fname], None))
+        return faces
+
+    faces_idle = build_scene_faces()
+    # Tư thế chiến đấu Dual Knife vắt chéo 2 tầng (tay trái đưa cao ngang cằm, tay phải hạ ngang hông chéo vào trong)
+    faces_dualknife = build_scene_faces(rarm_rot=[-28.0, +16.0, +18.0], larm_rot=[-52.0, -24.0, -22.0])
+
+    def raster(faces, view_mat, w, h, sc, center, ambient=0.58, bg=(22, 23, 27)):
         fb = np.zeros((h, w, 3), dtype=np.float32)
         fb[:, :] = bg
         zbuf = np.full((h, w), -1e9, dtype=np.float32)
@@ -1066,24 +1379,24 @@ def render_6_angle_preview(geo: dict, diff_img):
         cp, sp = math.cos(p), math.sin(p)
         return np.array([[1, 0, 0], [0, cp, -sp], [0, sp, cp]]) @ np.array([[cy, 0, sy], [0, 1, 0], [-sy, 0, cy]])
 
-    ctr = np.array([-0.5, 18.0, 0.8], dtype=np.float64)
-    head_ctr = np.array([0.0, 28.5, -1.0], dtype=np.float64)
+    ctr = np.array([-0.4, 18.0, 0.5], dtype=np.float64)
+    arms_ctr = np.array([0.0, 18.2, -0.5], dtype=np.float64)
     pw, ph = 420, 460
-    im_front      = raster(cam_mat(180,   4), pw, ph, 10.6, ctr)
-    im_head_front = raster(cam_mat(180,   2), pw, ph, 22.0, head_ctr)
-    im_head_34    = raster(cam_mat(146,   6), pw, ph, 20.5, head_ctr)
-    im_right      = raster(cam_mat(90,    4), pw, ph, 10.6, ctr)
-    im_left       = raster(cam_mat(-90,   4), pw, ph, 10.6, ctr)
-    im_back       = raster(cam_mat(0,     4), pw, ph, 10.6, ctr)
+    im_front     = raster(faces_idle,      cam_mat(180,   4), pw, ph, 10.8, ctr)
+    im_back      = raster(faces_idle,      cam_mat(0,     4), pw, ph, 10.8, ctr)
+    im_right     = raster(faces_idle,      cam_mat(90,    4), pw, ph, 10.8, ctr)
+    im_left      = raster(faces_idle,      cam_mat(-90,   4), pw, ph, 10.8, ctr)
+    im_arms_zoom = raster(faces_idle,      cam_mat(180,   2), pw, ph, 22.0, arms_ctr)
+    im_dualknife = raster(faces_dualknife, cam_mat(156,   6), pw, ph, 13.5, ctr)
 
     sheet = Image.new("RGB", (pw * 3, ph * 2), (12, 13, 16))
     panels = [
-        (im_front,      0, 0, "1. FULL FRONT (OPEN-FACE HELM + BODY 100% UNCHANGED)"),
-        (im_head_front, 1, 0, "2. HEAD CLOSE-UP FRONT (EYES, MOUTH, CHIN CLEAR)"),
-        (im_head_34,    2, 0, "3. HEAD CLOSE-UP 3/4 (NASAL GUARD + ZERO Z-FIGHTING)"),
-        (im_right,      0, 1, "4. RIGHT SIDE (OPEN FACE PROFILE + HORNS/PAULDRON/CAPE)"),
-        (im_left,       1, 1, "5. LEFT SIDE (OPEN FACE PROFILE + HORNS/U-PAULDRON)"),
-        (im_back,       2, 1, "6. BACK (100% IDENTICAL TO APPROVED V3)"),
+        (im_front,     0, 0, "1. FRONT (FULL STEVE + SLEEVES: 0 ARM SKIN EXPOSED)"),
+        (im_back,      1, 0, "2. BACK (FULL STEVE + SLEEVES: 0 ARM SKIN EXPOSED)"),
+        (im_arms_zoom, 2, 0, "3. ARMS CLOSE-UP (DARK MAIL + ELBOW BANDS + 45 DEG GAUNTLET)"),
+        (im_right,     0, 1, "4. RIGHT SIDE (PAULDRON + UNDERSLEEVE + SLANTED GAUNTLET)"),
+        (im_left,      1, 1, "5. LEFT SIDE (U-PAULDRON + UNDERSLEEVE + SLANTED GAUNTLET)"),
+        (im_dualknife, 2, 1, "6. DUAL KNIFE POSE TEST (ARMPIT/ELBOW 100% SEALED)"),
     ]
     dr = ImageDraw.Draw(sheet)
     for im, gx, gy, title in panels:

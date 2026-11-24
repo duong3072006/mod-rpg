@@ -33,6 +33,14 @@ public final class ModCreativeTab {
                         }
                         output.accept(ModItems.NIGHTMARE_CORE);
                         output.accept(ModItems.NIGHTMARE_ARMOR_SHARD);
+                        if (ModItems.CINDER_DRAGON_HELMET != null) {
+                            output.accept(ModItems.CINDER_DRAGON_HELMET);
+                            output.accept(ModItems.CINDER_DRAGON_CHESTPLATE);
+                            output.accept(ModItems.CINDER_DRAGON_LEGGINGS);
+                            output.accept(ModItems.CINDER_DRAGON_BOOTS);
+                        }
+                        output.accept(ModItems.CINDER_DRAGON_HEART);
+                        output.accept(ModItems.CINDER_DRAGON_SCALE);
                         params.holders().lookup(Registries.ENCHANTMENT).ifPresent(enchantRegistry -> {
                             for (ResourceKey<Enchantment> key : ModEnchantments.ALL_DUAL_KNIFE_ENCHANTS) {
                                 enchantRegistry.get(key).ifPresent(holder -> {
