@@ -8,7 +8,8 @@
     "HumanoidModelMixin",
     "PlayerRendererMixin",
     "GameRendererMixin",
-    "CapeLayerMixin"
+    "CapeLayerMixin",
+    "MinecraftAttackMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -155,6 +155,12 @@ public final class DualBladeAnimState {
     public float prevStanceBlend = 0.0F;
     public float stanceBlend = 0.0F;
 
+    /** Pha chuyển mượt sang tư thế chạy Naruto Shinobi (`0.0` = đứng/đi bộ thế thủ 2 tầng, `1.0` = Naruto Run). */
+    public float prevSprintBlend = 0.0F;
+    public float sprintBlend = 0.0F;
+    /** Cửa sổ giữ đà chạy ngắn (5 tick) để khi chém trúng quái lúc đang chạy không bị giật thoát khỏi Naruto Run! */
+    public long sprintGraceUntilTick = -1000L;
+
     public boolean attacking = false;
     public DualBladeMoveType moveType = DualBladeMoveType.COMBO_1;
     public long startTick = -1000L;
@@ -175,6 +181,10 @@ public final class DualBladeAnimState {
 
     public float getStanceBlend(float partialTick) {
         return Mth.clamp(Mth.lerp(partialTick, this.prevStanceBlend, this.stanceBlend), 0.0F, 1.0F);
+    }
+
+    public float getSprintBlend(float partialTick) {
+        return Mth.clamp(Mth.lerp(partialTick, this.prevSprintBlend, this.sprintBlend), 0.0F, 1.0F);
     }
 
     public float getAttackAlpha(long clientTick, float partialTick) {

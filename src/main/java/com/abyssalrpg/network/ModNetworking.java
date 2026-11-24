@@ -1,6 +1,7 @@
 package com.abyssalrpg.network;
 
 import com.abyssalrpg.combat.DualBladeCombatHandler;
+import com.abyssalrpg.combat.TogetsuCombatHandler;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.level.ServerLevel;
@@ -22,10 +23,15 @@ public final class ModNetworking {
         PayloadTypeRegistry.playS2C().register(DualBladeVfxPayload.TYPE, DualBladeVfxPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(DualBladeComboPayload.TYPE, DualBladeComboPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(DualBladeDashVfxPayload.TYPE, DualBladeDashVfxPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(TogetsuSyncPayload.TYPE, TogetsuSyncPayload.CODEC);
 
         PayloadTypeRegistry.playC2S().register(DualBladeSlashC2SPayload.TYPE, DualBladeSlashC2SPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(DualBladeSlashC2SPayload.TYPE, (payload, context) ->
                 context.server().execute(() -> DualBladeCombatHandler.handleSlashPacket(context.player(), payload)));
+
+        PayloadTypeRegistry.playC2S().register(TogetsuActionC2SPayload.TYPE, TogetsuActionC2SPayload.CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(TogetsuActionC2SPayload.TYPE, (payload, context) ->
+                context.server().execute(() -> TogetsuCombatHandler.handleActionPacket(context.player(), payload)));
     }
 
     public static void sendShakeNearby(ServerLevel level, Vec3 center, double radius, float intensity, int ticks) {
@@ -147,6 +153,18 @@ public final class ModNetworking {
 
     /** Gửi 1 gói tin VFX duy nhất cho chiêu Chuột Phải Lướt Chém 10 Nhát (2 dải lụa 10 block + 10 vệt chém trên từng mục tiêu). */
     public static void sendDualBladeDashVfxNearby(ServerLevel level, Vec3 center, DualBladeDashVfxPayload payload) {
+        double syncDist = 64.0;
+        AABB box = new AABB(center.x - syncDist, center.y - 32.0, center.z - syncDist,
+                center.x + syncDist, center.y + 32.0, center.z + syncDist);
+        for (ServerPlayer p : level.getEntitiesOfClass(ServerPlayer.class, box)) {
+            if (p.position().distanceToSqr(center) <= syncDist * syncDist) {
+                ServerPlayNetworking.send(p, payload);
+            }
+        }
+    }
+
+    /** Gửi gói tin đồng bộ animation & VFX Togetsu / Song Nguyệt / Crescent Vorpal tới mọi người chơi trong bán kính 64 block. */
+    public static void sendTogetsuSyncNearby(ServerLevel level, Vec3 center, TogetsuSyncPayload payload) {
         double syncDist = 64.0;
         AABB box = new AABB(center.x - syncDist, center.y - 32.0, center.z - syncDist,
                 center.x + syncDist, center.y + 32.0, center.z + syncDist);

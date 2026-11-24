@@ -36,20 +36,58 @@ import org.joml.Vector3f;
  * - Hạt khí Xanh Kim Cương (tay phải thuận) & Sương Netherite–Lam (tay trái ngược) siêu nhẹ ở F5 + hạt giọt máu Bleeding.
  */
 public final class DualBladeClientState {
-    private static final DustParticleOptions DIAMOND_CYAN_WISP =
-            new DustParticleOptions(new Vector3f(0.24F, 0.90F, 0.96F), 0.78F);
-    private static final DustParticleOptions NETHERITE_MIST_WISP =
-            new DustParticleOptions(new Vector3f(0.16F, 0.14F, 0.20F), 0.84F);
+    private static final DustParticleOptions CRIMSON_WISP =
+            new DustParticleOptions(new Vector3f(0.92F, 0.12F, 0.20F), 0.78F);
+    private static final DustParticleOptions SILVER_ICE_WISP =
+            new DustParticleOptions(new Vector3f(0.62F, 0.88F, 0.98F), 0.78F);
     private static final DustParticleOptions BLOOD_DARK =
             new DustParticleOptions(new Vector3f(0.66F, 0.06F, 0.09F), 0.88F);
-    private static final DustParticleOptions CRIT_ICE_CYAN =
-            new DustParticleOptions(new Vector3f(0.76F, 1.00F, 1.00F), 1.05F);
+    private static final DustParticleOptions CRIT_ICE_SILVER =
+            new DustParticleOptions(new Vector3f(0.84F, 0.96F, 1.00F), 1.05F);
 
     private static long lastHoldPacketTick = -100L;
+    private static long lastAirSwingTick = -100L;
     private static boolean wasAttackKeyDown = false;
     private static int localPredictedStep = 0;
 
     private DualBladeClientState() {}
+
+    /**
+     * Được gọi trực tiếp từ `MinecraftAttackMixin` tại `@At("HEAD")` của `Minecraft.startAttack()`
+     * TRƯỚC khi vanilla reset `attackStrengthTicker` về 0 — đảm bảo mỗi cú click Chuột Trái chém gió
+     * (không có quái) đều kích hoạt ngay animation 5 nhịp / Sprint Thrust / Air Slash + vệt chém Ribbon!
+     */
+    public static void onClientAirSwing(Minecraft mc) {
+        LocalPlayer player = mc.player;
+        if (player == null || mc.level == null || mc.isPaused() || mc.screen != null
+                || player.isSpectator() || player.isHandsBusy()) {
+            return;
+        }
+        if (!player.getMainHandItem().is(ModItems.DUAL_KNIFE)) {
+            return;
+        }
+        if (DualBladeAnimManager.getMoveType(player.getId()).isFlashDashPhase()
+                && DualBladeAnimManager.getAttackProgress(player.getId(), 0.0F) > 0.001F) {
+            return;
+        }
+
+        long tick = DualBladeAnimManager.getClientTick();
+        double actualSpd = Math.max(1.2, player.getAttributeValue(Attributes.ATTACK_SPEED));
+        long minAirIntervalTicks = Math.max(5L, Math.round(20.0 / actualSpd) - 2L);
+        if (tick - lastAirSwingTick < minAirIntervalTicks) {
+            return;
+        }
+
+        lastAirSwingTick = tick;
+        lastHoldPacketTick = tick;
+        boolean offhandOccupied = !player.getOffhandItem().isEmpty();
+        DualBladeMoveType move = DualBladeCombatHandler.resolveMoveType(player, localPredictedStep, offhandOccupied);
+        float dur = DualBladeCombatHandler.computeComboDurationTicks(actualSpd, move);
+
+        DualBladeAnimManager.triggerLocalOptimistic(player, move, dur, (float) (actualSpd / 2.5));
+        advancePredictedStep(move, offhandOccupied);
+        ClientPlayNetworking.send(new DualBladeSlashC2SPayload(-1));
+    }
 
     public static void tickClient(Minecraft mc) {
         DualBladeAnimManager.tickClient(mc);
@@ -123,6 +161,8 @@ public final class DualBladeClientState {
         int targetId = -1;
         if (hit instanceof EntityHitResult ehr && ehr.getEntity().isAlive() && ehr.getEntity().isAttackable()) {
             targetId = ehr.getEntity().getId();
+        } else {
+            lastAirSwingTick = tick;
         }
 
         DualBladeMoveType move = DualBladeCombatHandler.resolveMoveType(player, localPredictedStep, offhandOccupied);
@@ -189,8 +229,8 @@ public final class DualBladeClientState {
             double by = p.getY() + 0.80 + rng.nextDouble() * 0.58;
             double bz = p.getZ() + rightZ * (0.64 * side) + (rng.nextDouble() - 0.5) * 0.22;
 
-            // Tay phải tỏa khí Xanh Kim Cương, tay trái (Reverse Grip) tỏa sương Netherite Tối!
-            level.addParticle(rightHandSide ? DIAMOND_CYAN_WISP : NETHERITE_MIST_WISP, bx, by, bz,
+            // Tay phải tỏa khí Đỏ Huyết, tay trái tỏa ánh sương Bạc–Lam Lạnh!
+            level.addParticle(rightHandSide ? CRIMSON_WISP : SILVER_ICE_WISP, bx, by, bz,
                     (rng.nextDouble() - 0.5) * 0.014, 0.020 + rng.nextDouble() * 0.016, (rng.nextDouble() - 0.5) * 0.014);
         }
     }
@@ -219,7 +259,7 @@ public final class DualBladeClientState {
         RandomSource rng = level.random;
         for (int i = 0; i < 6; i++) {
             double ang = (Math.PI * 2.0 * i) / 6.0;
-            DustParticleOptions dust = (i % 2 == 0) ? CRIT_ICE_CYAN : DIAMOND_CYAN_WISP;
+            DustParticleOptions dust = (i % 2 == 0) ? CRIT_ICE_SILVER : CRIMSON_WISP;
             level.addParticle(dust,
                     pos.x + Math.cos(ang) * 0.35,
                     pos.y + (rng.nextDouble() - 0.5) * 0.30,

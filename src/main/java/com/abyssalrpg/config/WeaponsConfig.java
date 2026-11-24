@@ -17,12 +17,12 @@ import java.nio.file.Path;
 
 /**
  * Cấu hình JSON cho hệ thống vũ khí & hiệu ứng Dual Knife (`config/abyssalrpg_weapons.json`).
- * - Version 5: giữ nguyên `30.0` sát thương, `2.5` tốc đánh (`8` tick/đòn), `7` tick i-frame,
- *   bộ 4 Enchant mới, `dashDamageMultiplier = 1.5`, nerf tầm lướt `dashDistance = 15.0` block,
- *   và bổ sung `knifeRenderScale = 0.72` (tỷ lệ dao găm sát thủ gọn sắc, tùy chỉnh nhanh ±15%).
+ * - Version 6: giữ nguyên `30.0` sát thương, `2.5` tốc đánh (`8` tick/đòn), `7` tick i-frame,
+ *   bộ 4 Enchant mới, `dashDamageMultiplier = 1.5`, tầm lướt `dashDistance = 15.0` block,
+ *   và nâng nhẹ tỷ lệ hiển thị `knifeRenderScale = 0.92` (~1.28× so với 0.72) để nhìn rõ họa tiết song sắc.
  */
 public final class WeaponsConfig {
-    public static final int CURRENT_CONFIG_VERSION = 5;
+    public static final int CURRENT_CONFIG_VERSION = 6;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path CONFIG_PATH = FabricLoader.getInstance()
@@ -59,8 +59,8 @@ public final class WeaponsConfig {
     public boolean firstPersonCameraTilt = true;
     /** Bật/tắt hiệu ứng co/giãn FOV nhẹ khi nén đà & phóng chiêu Lướt Chém 10 Block. */
     public boolean dashFovEffect = true;
-    /** Tỷ lệ hiển thị 3D của Dual Knife trên tay (mặc định `0.72` = gọn sắc chuẩn song dao găm; tùy chỉnh nhanh ±15% từ 0.50..1.15). */
-    public float knifeRenderScale = 0.72f;
+    /** Tỷ lệ hiển thị 3D của Dual Knife trên tay (mặc định `0.92` = gọn sắc đầm tay ~1.28× bản cũ, thấy rõ họa tiết; chỉnh từ 0.55..1.40). */
+    public float knifeRenderScale = 0.92f;
     /** Bật/tắt hạt giọt máu nhẹ (1-2 hạt mỗi 9 ticks) trên mục tiêu đang dính Chảy Máu. */
     public boolean enableBleedParticles = true;
 
@@ -174,10 +174,14 @@ public final class WeaponsConfig {
                             migrated = true;
                         }
                         if (loaded.configVersion < 5) {
-                            // Nâng cấp tự động sang chuẩn v5: Dual Knife (scale 0.72), dashDistance 15.0 block, dashDamageMultiplier 1.5
+                            // Nâng cấp tự động sang chuẩn v5: Dual Knife, dashDistance 15.0 block, dashDamageMultiplier 1.5
                             loaded.dashDamageMultiplier = 1.5;
                             loaded.dashDistance = 15.0;
-                            loaded.knifeRenderScale = 0.72f;
+                            migrated = true;
+                        }
+                        if (loaded.configVersion < 6) {
+                            // Nâng cấp tự động sang chuẩn v6: tăng nhẹ kích thước Dual Knife lên 0.92 (~1.28× so với 0.72) để nhìn rõ họa tiết song sắc
+                            loaded.knifeRenderScale = 0.92f;
                             loaded.configVersion = CURRENT_CONFIG_VERSION;
                             migrated = true;
                         }
@@ -219,7 +223,7 @@ public final class WeaponsConfig {
         this.dualBladeDurability = Math.max(64, Math.min(100000, this.dualBladeDurability));
         this.offhandOccupiedAttackSpeed = Math.max(0.5, Math.min(this.dualBladeAttackSpeed, this.offhandOccupiedAttackSpeed));
         this.dualBladeHurtResistanceTicks = Math.max(3, Math.min(10, this.dualBladeHurtResistanceTicks));
-        this.knifeRenderScale = Math.max(0.50f, Math.min(1.15f, this.knifeRenderScale));
+        this.knifeRenderScale = Math.max(0.55f, Math.min(1.40f, this.knifeRenderScale));
         this.bleedDurationTicks = Math.max(20, Math.min(600, this.bleedDurationTicks));
         this.bleedTickInterval = Math.max(5, Math.min(60, this.bleedTickInterval));
         this.bleedDamagePerStack = Math.max(0.5f, Math.min(50.0f, this.bleedDamagePerStack));

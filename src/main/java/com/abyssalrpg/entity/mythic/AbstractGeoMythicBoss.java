@@ -179,7 +179,9 @@ public abstract class AbstractGeoMythicBoss extends AbstractAbyssalBoss implemen
         if (source.is(DamageTypeTags.BYPASSES_ARMOR)) {
             return rawDamage;
         }
-        float pierce = com.abyssalrpg.combat.DualBladeCombatHandler.getActiveArmorPierceFraction(this, source);
+        float pierce = Math.max(
+                com.abyssalrpg.combat.DualBladeCombatHandler.getActiveArmorPierceFraction(this, source),
+                com.abyssalrpg.combat.TogetsuCombatHandler.getActiveArmorPierceFraction(this, source));
         float reduction = computeEffectiveDefensePoints(rawDamage, pierce) / 25.0f;
         float reduced = rawDamage * (1.0f - reduction);
         float minDmg = Math.max(0.0f, getMinDamagePerHit());

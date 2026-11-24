@@ -1,6 +1,7 @@
 package com.abyssalrpg.client;
 
 import com.abyssalrpg.client.hud.BossBarHudRenderer;
+import com.abyssalrpg.client.hud.TogetsuHudRenderer;
 import com.abyssalrpg.client.renderer.AltarEyeRenderer;
 import com.abyssalrpg.client.renderer.CerberusGeoRenderer;
 import com.abyssalrpg.client.renderer.CinderDragonArmorRenderer;
@@ -15,7 +16,9 @@ import com.abyssalrpg.client.renderer.NightmareArmorRenderer;
 import com.abyssalrpg.client.renderer.NightmareHitboxPartRenderer;
 import com.abyssalrpg.client.renderer.NightmareKnightGeoRenderer;
 import com.abyssalrpg.client.renderer.SpiritHydraGeoRenderer;
+import com.abyssalrpg.client.renderer.TogetsuGeoRenderer;
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
+import com.abyssalrpg.client.anim.TogetsuAnimManager;
 import com.abyssalrpg.client.renderer.vfx.AbyssalOrbRenderer;
 import com.abyssalrpg.client.renderer.vfx.DualBladeTrailRenderer;
 import com.abyssalrpg.client.renderer.vfx.EnergySlashRenderer;
@@ -24,6 +27,7 @@ import com.abyssalrpg.client.renderer.vfx.MagicCircleRenderer;
 import com.abyssalrpg.client.renderer.vfx.NightmareBoneSpikeRenderer;
 import com.abyssalrpg.client.renderer.vfx.SeveredHydraHeadRenderer;
 import com.abyssalrpg.client.renderer.vfx.ShockwaveRingRenderer;
+import com.abyssalrpg.client.renderer.vfx.TogetsuVfxRenderer;
 import com.abyssalrpg.client.renderer.vfx.VenomProjectileRenderer;
 import com.abyssalrpg.client.sculpt.SculptedBossRenderer;
 import com.abyssalrpg.client.sculpt.SculptedCoreRigs;
@@ -48,6 +52,7 @@ import com.abyssalrpg.network.JormungandrPathSyncPayload;
 import com.abyssalrpg.network.LeviathanVfxPayload;
 import com.abyssalrpg.network.NightmareVfxPayload;
 import com.abyssalrpg.network.ScreenShakePayload;
+import com.abyssalrpg.network.TogetsuSyncPayload;
 import com.abyssalrpg.registry.ModBlockEntities;
 import com.abyssalrpg.registry.ModBlocks;
 import com.abyssalrpg.registry.ModEntities;
@@ -130,6 +135,8 @@ public class AbyssalRpgClient implements ClientModInitializer {
         BlockEntityRenderers.register(ModBlockEntities.ALTAR_EYE, AltarEyeRenderer::new);
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.MYTHIC_SUMMON_ALTAR, RenderType.cutout());
         HudRenderCallback.EVENT.register(BossBarHudRenderer::render);
+        HudRenderCallback.EVENT.register(TogetsuHudRenderer::render);
+        TogetsuClientState.initKeybinds();
 
         // Đăng ký GeoItemRenderer 3D fullbright qua Fabric BuiltinItemRendererRegistry
         // (thuần client, 0 leak sang main)
@@ -140,6 +147,15 @@ public class AbyssalRpgClient implements ClientModInitializer {
                         dualBladeRendererHolder[0] = new DualBladeGeoRenderer();
                     }
                     dualBladeRendererHolder[0].renderByItem(stack, mode, matrices, vertexConsumers, light, overlay);
+                });
+
+        final TogetsuGeoRenderer[] togetsuRendererHolder = new TogetsuGeoRenderer[1];
+        BuiltinItemRendererRegistry.INSTANCE.register(ModItems.TOGETSU,
+                (stack, mode, matrices, vertexConsumers, light, overlay) -> {
+                    if (togetsuRendererHolder[0] == null) {
+                        togetsuRendererHolder[0] = new TogetsuGeoRenderer();
+                    }
+                    togetsuRendererHolder[0].renderByItem(stack, mode, matrices, vertexConsumers, light, overlay);
                 });
         DualBladeItem.clientIsOffhandOccupied = () -> {
             LocalPlayer p = Minecraft.getInstance().player;
@@ -181,9 +197,18 @@ public class AbyssalRpgClient implements ClientModInitializer {
         ItemTooltipCallback.EVENT.register(NightmareArmorTooltipHandler::onItemTooltip);
         ItemTooltipCallback.EVENT.register(CinderDragonArmorTooltipHandler::onItemTooltip);
 
-        // Render vệt kiếm thư pháp đôi Catmull-Rom kiểu EpicFight-Nightfall (`DualBladeTrailRenderer`) mượt 120+ FPS
-        WorldRenderEvents.AFTER_TRANSLUCENT.register(context ->
-                DualBladeTrailRenderer.renderWorld(context, DualBladeAnimManager.getClientTick()));
+        // Render vệt kiếm thư pháp đôi Catmull-Rom (`DualBladeTrailRenderer`) & Song Nguyệt (`TogetsuVfxRenderer`)
+        WorldRenderEvents.AFTER_TRANSLUCENT.register(context -> {
+            DualBladeTrailRenderer.renderWorld(context, DualBladeAnimManager.getClientTick());
+            TogetsuVfxRenderer.renderWorld(context, TogetsuAnimManager.getClientTick());
+        });
+
+        ClientPlayNetworking.registerGlobalReceiver(TogetsuSyncPayload.TYPE,
+                (payload, context) -> context.client().execute(() -> {
+                    if (context.client().level != null) {
+                        TogetsuClientState.handleSyncPayload(context.client().level, payload);
+                    }
+                }));
 
         ClientPlayNetworking.registerGlobalReceiver(DualBladeComboPayload.TYPE,
                 (payload, context) -> context.client().execute(() -> {
@@ -257,6 +282,7 @@ public class AbyssalRpgClient implements ClientModInitializer {
         // Bleeding Droplets
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             DualBladeClientState.tickClient(client);
+            TogetsuClientState.tickClient(client);
 
             LocalPlayer player = client.player;
             if (player == null || client.isPaused() || client.level == null)

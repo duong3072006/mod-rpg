@@ -24,27 +24,24 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 /**
- * Vệt Kiếm Thư Pháp Đôi Xanh Dương Kim Cương – Netherite Tối (`DualBladeTrailRenderer` v4 — NO_CULL, Fullbright):
- * - Đồng bộ 100% với Song Đao Netherite–Kim Cương (Standard Right + Reverse Left Grip):
- *   + Tay Phải (Standard Grip — `DIAMOND_ICE`): lõi cắt `#FFFFFF` -> **Xanh Kim Cương `#3EE8FA`** -> đuôi **Lam–Thép Tối `#112B3C`**.
- *   + Tay Trái (Reverse Grip — `NETHERITE_CYAN`): lõi cắt `#C2FFFF` -> **Lam Băng `#18B8D6`** -> đuôi **Netherite Tối `#1A1620`**
- *     với tọa độ đầu/đuôi ribbon `sampleReverseLeftArcStrip` bám sát quỹ đạo lưỡi ngược kéo ngoài cẳng tay (KHÔNG lệch sang chuôi!).
- * - Hỗ trợ chiêu Chuột Phải **Netherite–Diamond Flash Dash (18 Block)** từ 1 payload duy nhất (`DualBladeDashVfxPayload`):
- *   + 2 dải lụa song song Xanh Kim Cương – Netherite Tối kéo dài trọn **18 block** (`28` control knots -> `109` đoạn Catmull-Rom mượt).
- *   + 10 vệt chém chéo sắc lạnh Xanh Kim Cương – Netherite Tối cắt đan xen ngay trên thân từng mục tiêu (`TargetSlashCut`, mờ dần 8 tick).
+ * Vệt Kiếm Thư Pháp Song Sắc Đỏ Huyết – Bạc Lam Lạnh (`DualBladeTrailRenderer` v6 — NO_CULL, Fullbright):
+ * - Đồng bộ 100% với cặp Song Dao `Dual Knife`:
+ *   + Tay Trái (`Offhand` — Lưỡi Đen–Bạc Móng Vuốt Đồng, `DIAMOND_BLUE`): lõi `#FFFFFF` -> **Bạc Lam Lạnh `#9EE8FF` / `#4A98D8`** -> đuôi **Đen Thép `#161B26`**.
+ *   + Tay Phải (`Mainhand` — Lưỡi Đỏ–Đen Răng Sóng, `CRIMSON_BLOOD`): lõi `#FFFFFF` -> **Đỏ Huyết `#FF2236`** -> đuôi **Đen `#2B060B`**.
+ * - Chém 2 tay / Xoay 360° / Chữ X / Đường lướt **15 block** & **10 nhát chém** bùng nổ:
+ *   2 dải Đỏ Huyết – Đen và Bạc Lam – Đen đan xen song song nhau nổi bật (`NO_CULL` + `FULL_BRIGHT`), đồng bộ kích thước mới (`0.92`).
  */
 public final class DualBladeTrailRenderer {
     public static final ResourceLocation SLASH_ARC_TEX =
             AbyssalRpgMod.id("textures/vfx/dual_knife_slash_arc.png");
 
-    /** Hai bảng màu chuẩn Song Đao Netherite–Kim Cương: Xanh Kim Cương Băng (Tay Phải) & Netherite–Lam Lạnh (Tay Trái Cầm Ngược). */
+    /** Hai bảng màu chuẩn Song Dao: Bạc Lam Lạnh – Đen Thép (Tay Trái) & Đỏ Huyết – Đen (Tay Phải). */
     public enum RibbonPalette {
-        DIAMOND_ICE   (17, 43, 60,   62, 232, 250,  255, 255, 255),  // #112B3C -> #3EE8FA -> #FFFFFF
-        NETHERITE_CYAN(26, 22, 32,   24, 184, 214,  194, 255, 255);  // #1A1620 -> #18B8D6 -> #C2FFFF
+        DIAMOND_BLUE (22, 27, 38,  118, 206, 245,  255, 255, 255),  // #161B26 -> Bạc Lam Lạnh (#9EE8FF/#4A98D8) -> #FFFFFF
+        CRIMSON_BLOOD(43,  6, 11,  255,  34,  54,  255, 255, 255);  // #2B060B -> #FF2236 -> #FFFFFF
 
         final int tailR, tailG, tailB;
         final int midR, midG, midB;
@@ -359,17 +356,17 @@ public final class DualBladeTrailRenderer {
                 float u = i / (float) (knots - 1);
                 Vec3 pt = delta.scale(u);
                 float swirl = Mth.sin(u * Mth.PI * 3.0F) * 0.20F;
-                // Dải Xanh Kim Cương Băng (dao phải Standard Grip — gọn sắc theo tỷ lệ Dual Knife)
-                double rOffX = right.x * 0.52, rOffZ = right.z * 0.52;
+                // Dải Đỏ Huyết – Đen (dao phải Lưỡi Sóng Đỏ Huyết — đồng bộ kích thước mới 0.92)
+                double rOffX = right.x * 0.58, rOffZ = right.z * 0.58;
                 rightKnots.add(new BladeKnot(
-                        (float) (pt.x + rOffX * 0.34), (float) (pt.y - 0.24 + swirl), (float) (pt.z + rOffZ * 0.34),
-                        (float) (pt.x + rOffX * 1.50), (float) (pt.y + 0.36 + swirl), (float) (pt.z + rOffZ * 1.50)
+                        (float) (pt.x + rOffX * 0.34), (float) (pt.y - 0.28 + swirl), (float) (pt.z + rOffZ * 0.34),
+                        (float) (pt.x + rOffX * 1.62), (float) (pt.y + 0.42 + swirl), (float) (pt.z + rOffZ * 1.62)
                 ));
-                // Dải Netherite–Lam (dao trái Reverse Grip) chạy song song bên trái đối pha
-                double lOffX = -right.x * 0.52, lOffZ = -right.z * 0.52;
+                // Dải Xanh Kim Cương – Đen (dao trái Nanh Xanh Kim Cương) chạy song song bên trái đối pha
+                double lOffX = -right.x * 0.58, lOffZ = -right.z * 0.58;
                 leftKnots.add(new BladeKnot(
-                        (float) (pt.x + lOffX * 0.34), (float) (pt.y + 0.24 - swirl), (float) (pt.z + lOffZ * 0.34),
-                        (float) (pt.x + lOffX * 1.50), (float) (pt.y - 0.36 - swirl), (float) (pt.z + lOffZ * 1.50)
+                        (float) (pt.x + lOffX * 0.34), (float) (pt.y + 0.28 - swirl), (float) (pt.z + lOffZ * 0.34),
+                        (float) (pt.x + lOffX * 1.62), (float) (pt.y - 0.42 - swirl), (float) (pt.z + lOffZ * 1.62)
                 ));
             }
 
@@ -378,20 +375,20 @@ public final class DualBladeTrailRenderer {
             }
             DASH_RIBBONS.add(new WorldDashRibbon(
                     start,
-                    new RibbonStrip(rightKnots, 0.0F, 0.26F, RibbonPalette.DIAMOND_ICE),
-                    new RibbonStrip(leftKnots, 0.0F, 0.26F, RibbonPalette.NETHERITE_CYAN),
+                    new RibbonStrip(rightKnots, 0.0F, 0.26F, RibbonPalette.CRIMSON_BLOOD),
+                    new RibbonStrip(leftKnots, 0.0F, 0.26F, RibbonPalette.DIAMOND_BLUE),
                     clientTick,
                     11.2F
             ));
         }
 
-        // Bùng nổ 10 vệt chém chéo sắc lạnh Xanh Kim Cương & Netherite Tối ngay trên thân từng mục tiêu (mờ dần trong 8 tick!)
+        // Bùng nổ 10 vệt chém chéo song sắc Đỏ Huyết – Đen & Xanh Kim Cương – Đen đan xen ngay trên thân từng mục tiêu (mờ dần trong 8 tick!)
         Minecraft mc = Minecraft.getInstance();
         RandomSource rng = mc.level != null ? mc.level.random : RandomSource.create();
         int slashCount = Math.max(1, cfg.dashHitCount);
         for (Vec3 targetPos : p.targetCenters()) {
             for (int i = 0; i < slashCount; i++) {
-                RibbonPalette pal = (i % 2 == 0) ? RibbonPalette.DIAMOND_ICE : RibbonPalette.NETHERITE_CYAN;
+                RibbonPalette pal = (i % 2 == 0) ? RibbonPalette.CRIMSON_BLOOD : RibbonPalette.DIAMOND_BLUE;
                 float yaw = p.yawDeg() + (i * 37.0F) + (rng.nextFloat() - 0.5F) * 28.0F;
                 float pitch = -42.0F + (i % 5) * 22.0F + (rng.nextFloat() - 0.5F) * 14.0F;
                 float roll = ((i % 2 == 0) ? 38.0F : -38.0F) + (rng.nextFloat() - 0.5F) * 24.0F;
@@ -405,8 +402,8 @@ public final class DualBladeTrailRenderer {
                 FLURRY_CUTS.add(new TargetSlashCut(
                         targetPos.x + ox, targetPos.y + oy, targetPos.z + oz,
                         yaw, pitch, roll,
-                        1.78F + rng.nextFloat() * 0.55F,
-                        0.26F + rng.nextFloat() * 0.10F,
+                        1.92F + rng.nextFloat() * 0.58F,
+                        0.28F + rng.nextFloat() * 0.10F,
                         pal,
                         clientTick + delayTicks,
                         8.0F
@@ -416,7 +413,7 @@ public final class DualBladeTrailRenderer {
         }
     }
 
-    /** Tia lửa va chạm sắc lạnh Xanh Kim Cương `#3EE8FA` & Băng Trắng `#C2FFFF` tại điểm chạm. */
+    /** Tia lửa va chạm song sắc Đỏ Huyết `#FF2236` & Xanh Kim Cương `#3EE8FA` tại điểm chạm. */
     public static void spawnImpactSparks(Vec3 hitPos, long clientTick) {
         WeaponsConfig cfg = WeaponsConfig.get();
         if (!cfg.enableSlashRibbon && !cfg.enableSlashVfx) {
@@ -432,10 +429,10 @@ public final class DualBladeTrailRenderer {
             float vx = (float) (Math.cos(theta) * Math.cos(phi) * speed);
             float vy = (float) (Math.sin(phi) * speed + 0.08);
             float vz = (float) (Math.sin(theta) * Math.cos(phi) * speed);
-            boolean iceCore = (i % 2 == 0);
-            int r = iceCore ? 194 : 62;
-            int g = iceCore ? 255 : 232;
-            int b = iceCore ? 255 : 250;
+            boolean crimson = (i % 2 == 0);
+            int r = crimson ? 255 : 62;
+            int g = crimson ? 56 : 232;
+            int b = crimson ? 72 : 250;
             float size = 0.065F + rng.nextFloat() * 0.045F;
             if (SPARKS.size() >= MAX_ACTIVE_SPARKS) {
                 SPARKS.remove(0);
@@ -444,7 +441,7 @@ public final class DualBladeTrailRenderer {
         }
     }
 
-    /** Tia sáng Chí Mạng sắc lạnh Trắng Băng `#FFFFFF` & Kim Cương Xanh `#3CE6F5`. */
+    /** Tia sáng Chí Mạng song sắc Trắng Sáng `#FFFFFF`, Đỏ Huyết `#FF2236` & Xanh Kim Cương `#3EE8FA`. */
     public static void spawnCritBurst(Vec3 hitPos, long clientTick) {
         WeaponsConfig cfg = WeaponsConfig.get();
         if (!cfg.enableSlashRibbon && !cfg.enableSlashVfx) {
@@ -460,10 +457,10 @@ public final class DualBladeTrailRenderer {
             float vx = (float) (Math.cos(theta) * Math.cos(phi) * speed);
             float vy = (float) (Math.sin(phi) * speed + 0.12);
             float vz = (float) (Math.sin(theta) * Math.cos(phi) * speed);
-            boolean white = (i % 2 == 0);
-            int r = white ? 245 : 60;
-            int g = white ? 255 : 230;
-            int b = white ? 255 : 245;
+            int lane = i % 3;
+            int r = (lane == 0) ? 255 : (lane == 1 ? 255 : 62);
+            int g = (lane == 0) ? 250 : (lane == 1 ? 42 : 232);
+            int b = (lane == 0) ? 252 : (lane == 1 ? 64 : 250);
             float size = 0.095F + rng.nextFloat() * 0.055F;
             if (SPARKS.size() >= MAX_ACTIVE_SPARKS) {
                 SPARKS.remove(0);
@@ -473,53 +470,53 @@ public final class DualBladeTrailRenderer {
     }
 
     /**
-     * Dựng dải lụa Xanh Kim Cương (Tầng dưới Tay Phải) & Netherite–Lam (Tầng trên Tay Trái Cầm Ngược)
-     * đồng bộ chính xác theo kích thước Dao Găm Sát Thủ gọn mới (`~0.79 block`, gốc–mũi khít sát mũi dao,
-     * tách độ cao 2 tầng rõ ràng và tự scale theo `WeaponsConfig.knifeRenderScale`!).
+     * Dựng dải lụa Đỏ Huyết – Đen (Tay Phải) & Xanh Kim Cương – Đen (Tay Trái)
+     * đồng bộ chính xác theo kích thước mới của `Dual Knife` (`scale = 0.92`, ~1.02 block) và tự scale theo `WeaponsConfig.knifeRenderScale`!
      */
     private static List<RibbonStrip> buildNightfallStrips(DualBladeMoveType move) {
         List<RibbonStrip> list = new ArrayList<>(2);
         switch (move) {
             case COMBO_1 -> {
-                // Nhịp 1 (Tầng dưới Tay Phải — Diamond Ice): chém chéo gọn sắc bám khít mũi dao găm (~0.79 block)
-                list.add(sampleArcStrip(20, -118.0F, 112.0F, 0.36F, 1.54F, 0.42F, -0.30F, 0.10F, 0.0F, 0.34F, RibbonPalette.DIAMOND_ICE));
+                // Nhịp 1 (Tay Phải — Lưỡi Sóng Đỏ Huyết): chém chéo rộng bám khít gốc–mũi dao mới!
+                list.add(sampleArcStrip(20, -118.0F, 112.0F, 0.44F, 1.92F, 0.44F, -0.32F, 0.12F, 0.0F, 0.34F, RibbonPalette.CRIMSON_BLOOD));
             }
             case COMBO_2 -> {
-                // Nhịp 2 (Tầng trên Tay Trái Reverse Grip — Netherite Cyan): quét backhand tầng cao bám khít mũi dao ngược!
-                list.add(sampleReverseLeftArcStrip(20, -68.0F, 142.0F, 0.34F, 1.48F, 0.36F, 0.12F, 0.16F, 0.0F, 0.34F, RibbonPalette.NETHERITE_CYAN));
+                // Nhịp 2 (Tay Trái — Nanh Xanh Kim Cương): quét backhand tầng cao bám khít mũi dao!
+                list.add(sampleReverseLeftArcStrip(20, -68.0F, 142.0F, 0.42F, 1.84F, 0.38F, 0.14F, 0.18F, 0.0F, 0.34F, RibbonPalette.DIAMOND_BLUE));
             }
             case COMBO_3 -> {
-                // Nhịp 3 (2 tầng ngược chiều): Tay Trái tầng trên quét chéo cao + Tay Phải tầng dưới cắt ngang thấp đan xen!
-                list.add(sampleReverseLeftArcStrip(22, -88.0F, 138.0F, 0.35F, 1.56F, 0.42F, 0.62F, 0.18F, 0.0F, 0.36F, RibbonPalette.NETHERITE_CYAN));
-                list.add(sampleArcStrip(22, 116.0F, -128.0F, 0.36F, 1.56F, 0.10F, -0.40F, -0.14F, 0.04F, 0.36F, RibbonPalette.DIAMOND_ICE));
+                // Nhịp 3 (2 tầng song sắc ngược chiều): Tay Trái Xanh Kim Cương tầng trên + Tay Phải Đỏ Huyết tầng dưới đan xen!
+                list.add(sampleReverseLeftArcStrip(22, -88.0F, 138.0F, 0.43F, 1.94F, 0.44F, 0.64F, 0.20F, 0.0F, 0.36F, RibbonPalette.DIAMOND_BLUE));
+                list.add(sampleArcStrip(22, 116.0F, -128.0F, 0.44F, 1.94F, 0.10F, -0.42F, -0.15F, 0.04F, 0.36F, RibbonPalette.CRIMSON_BLOOD));
             }
             case COMBO_4 -> {
-                // Nhịp 4 (360° Cyclone): 2 vòng tròn 360° tách 2 tầng rõ nét (trên + dưới), bám sát tầm quét dao găm & AOE!
-                float outerR = (float) Mth.clamp(WeaponsConfig.get().cycloneRadius * 0.58, 1.75, 2.55);
-                list.add(sampleArcStrip(30, -180.0F, 195.0F, outerR * 0.28F, outerR, -0.14F, -0.14F, 0.05F, 0.0F, 0.48F, RibbonPalette.DIAMOND_ICE));
-                list.add(sampleReverseLeftArcStrip(30, -15.0F, 360.0F, outerR * 0.26F, outerR * 0.90F, 0.28F, 0.22F, -0.08F, 0.02F, 0.48F, RibbonPalette.NETHERITE_CYAN));
+                // Nhịp 4 (360° Cyclone): 2 vòng tròn 360° Đỏ Huyết (dưới) & Xanh Kim Cương (trên) quấn xoáy song song!
+                float outerR = (float) Mth.clamp(WeaponsConfig.get().cycloneRadius * 0.66, 2.00, 2.85);
+                list.add(sampleArcStrip(30, -180.0F, 195.0F, outerR * 0.28F, outerR, -0.14F, -0.14F, 0.05F, 0.0F, 0.48F, RibbonPalette.CRIMSON_BLOOD));
+                list.add(sampleReverseLeftArcStrip(30, -15.0F, 360.0F, outerR * 0.26F, outerR * 0.92F, 0.28F, 0.22F, -0.08F, 0.02F, 0.48F, RibbonPalette.DIAMOND_BLUE));
             }
             case COMBO_5 -> {
-                // Nhịp 5 Finisher (Asymmetric X-Rend Slam): chữ X sắc gọn bám mũi dao găm!
-                list.add(sampleDiagonalSlamStrip(20, -1.0F, 1.68F, 0.08F, 0.36F, RibbonPalette.DIAMOND_ICE));
-                list.add(sampleReverseDiagonalRendStrip(20, 1.62F, 0.12F, 0.36F, RibbonPalette.NETHERITE_CYAN));
+                // Nhịp 5 Finisher (Cross-X Slam): chữ X song sắc Đỏ Huyết + Xanh Kim Cương đan chéo rực sáng!
+                list.add(sampleDiagonalSlamStrip(20, -1.0F, 2.08F, 0.08F, 0.36F, RibbonPalette.CRIMSON_BLOOD));
+                list.add(sampleReverseDiagonalRendStrip(20, 2.02F, 0.12F, 0.36F, RibbonPalette.DIAMOND_BLUE));
             }
             case SPRINT_THRUST -> {
-                list.add(sampleThrustBeamStrip(14, -0.34F, -0.04F, 1.82F, 0.0F, 0.32F, RibbonPalette.DIAMOND_ICE));
-                list.add(sampleThrustBeamStrip(14, 0.36F, 0.16F, 1.72F, 0.08F, 0.32F, RibbonPalette.NETHERITE_CYAN));
+                // Sprint Opening Cross-Slash: 2 vòng cung chém chéo lệch pha bám sát tay phải (trước) & tay trái (sau 0.12 pha)!
+                list.add(sampleArcStrip(20, -108.0F, 102.0F, 0.42F, 1.88F, 0.32F, -0.26F, 0.10F, 0.0F, 0.34F, RibbonPalette.CRIMSON_BLOOD));
+                list.add(sampleReverseLeftArcStrip(20, -64.0F, 128.0F, 0.40F, 1.84F, 0.24F, 0.04F, 0.14F, 0.12F, 0.34F, RibbonPalette.DIAMOND_BLUE));
             }
             case AIR_SLASH -> {
-                list.add(sampleArcStrip(20, -108.0F, 112.0F, 0.36F, 1.52F, -0.30F, 0.48F, 0.16F, 0.0F, 0.36F, RibbonPalette.DIAMOND_ICE));
-                list.add(sampleReverseLeftArcStrip(20, 114.0F, -108.0F, 0.34F, 1.48F, -0.16F, 0.56F, -0.14F, 0.05F, 0.36F, RibbonPalette.NETHERITE_CYAN));
+                list.add(sampleArcStrip(20, -108.0F, 112.0F, 0.44F, 1.90F, -0.30F, 0.50F, 0.18F, 0.0F, 0.36F, RibbonPalette.CRIMSON_BLOOD));
+                list.add(sampleReverseLeftArcStrip(20, 114.0F, -108.0F, 0.42F, 1.84F, -0.16F, 0.58F, -0.14F, 0.05F, 0.36F, RibbonPalette.DIAMOND_BLUE));
             }
             case SKILL_DASH -> {
-                list.add(sampleArcStrip(20, -120.0F, 120.0F, 0.36F, 1.54F, -0.14F, -0.10F, 0.04F, 0.0F, 0.34F, RibbonPalette.DIAMOND_ICE));
-                list.add(sampleReverseLeftArcStrip(20, 126.0F, -114.0F, 0.34F, 1.46F, 0.22F, 0.18F, -0.04F, 0.03F, 0.34F, RibbonPalette.NETHERITE_CYAN));
+                list.add(sampleArcStrip(20, -120.0F, 120.0F, 0.44F, 1.92F, -0.14F, -0.10F, 0.04F, 0.0F, 0.34F, RibbonPalette.CRIMSON_BLOOD));
+                list.add(sampleReverseLeftArcStrip(20, 126.0F, -114.0F, 0.42F, 1.84F, 0.22F, 0.18F, -0.04F, 0.03F, 0.34F, RibbonPalette.DIAMOND_BLUE));
             }
             case FLASH_DASH_END -> {
-                // Cú hãm xoay chéo dứt khoát Xanh Kim Cương + Netherite–Lam kết thúc cú lướt 15 block!
-                list.add(sampleDiagonalSlamStrip(18, -1.0F, 1.58F, 0.0F, 0.34F, RibbonPalette.DIAMOND_ICE));
-                list.add(sampleReverseDiagonalRendStrip(18, 1.52F, 0.04F, 0.34F, RibbonPalette.NETHERITE_CYAN));
+                // Cú hãm xoay chữ X song sắc Đỏ Huyết + Xanh Kim Cương kết thúc cú lướt 15 block!
+                list.add(sampleDiagonalSlamStrip(18, -1.0F, 1.98F, 0.0F, 0.34F, RibbonPalette.CRIMSON_BLOOD));
+                list.add(sampleReverseDiagonalRendStrip(18, 1.92F, 0.04F, 0.34F, RibbonPalette.DIAMOND_BLUE));
             }
             case FLASH_DASH_CHARGE, FLASH_DASH_LAUNCH -> {
                 // Pha 1 & 2 dùng WorldDashRibbon 15 block riêng
@@ -644,31 +641,49 @@ public final class DualBladeTrailRenderer {
         int localPlayerId = mc.player != null ? mc.player.getId() : -1;
         boolean firstPerson = !camera.isDetached();
 
-        VertexConsumer bodyVc = consumers.getBuffer(RibbonRenderTypes.RIBBON_BODY);
-        VertexConsumer glowVc = consumers.getBuffer(RibbonRenderTypes.RIBBON_GLOW);
+        // Dọn sạch các hiệu ứng hết hạn trước khi tách pass vẽ (tránh lỗi MultiBufferSource.BufferSource "Not building!" khi giữ đồng thời 2 VertexConsumer không cố định trong Minecraft 1.21.1!)
+        TRAILS.removeIf(tr -> Math.max(0.0F, nowF - tr.startTick) >= tr.durationTicks);
+        DASH_RIBBONS.removeIf(dr -> Math.max(0.0F, nowF - dr.startTick) >= dr.durationTicks);
+        FLURRY_CUTS.removeIf(cut -> (nowF - cut.startTickF) >= cut.durationTicks);
+        SPARKS.removeIf(sp -> Math.max(0.0F, nowF - sp.startTick) >= sp.durationTicks);
 
-        // 1. Dải lụa combo 5 nhịp / Sprint / Air Đỏ–Đen & Vàng–Đen
-        Iterator<MoveTrail> it = TRAILS.iterator();
-        while (it.hasNext()) {
-            MoveTrail tr = it.next();
-            float age = Math.max(0.0F, nowF - tr.startTick);
-            if (age >= tr.durationTicks) {
-                it.remove();
-                continue;
-            }
-            float progress = Mth.clamp(age / tr.durationTicks, 0.0F, 1.0F);
-            renderMoveTrail(poseStack, bodyVc, glowVc, level, camPos, tr, progress, partialTick, localPlayerId, firstPerson);
+        boolean hasRibbons = !TRAILS.isEmpty() || !DASH_RIBBONS.isEmpty() || !FLURRY_CUTS.isEmpty();
+
+        // Pass 1: RIBBON_BODY (toàn bộ phần thân ribbon & 10 vệt chém)
+        if (hasRibbons) {
+            VertexConsumer bodyVc = consumers.getBuffer(RibbonRenderTypes.RIBBON_BODY);
+            renderRibbonPass(poseStack, bodyVc, false, level, camPos, nowF, partialTick, localPlayerId, firstPerson);
         }
 
-        // 2. 2 dải lụa song song Xanh Kim Cương & Netherite–Lam suốt hành lang 18 block của chiêu Flash Dash
-        Iterator<WorldDashRibbon> dit = DASH_RIBBONS.iterator();
-        while (dit.hasNext()) {
-            WorldDashRibbon dr = dit.next();
-            float age = Math.max(0.0F, nowF - dr.startTick);
-            if (age >= dr.durationTicks) {
-                dit.remove();
-                continue;
+        // Pass 2: RIBBON_GLOW (toàn bộ lớp hào quang additive — lấy buffer mới sau khi xong hoàn toàn Pass 1)
+        if (hasRibbons) {
+            VertexConsumer glowVc = consumers.getBuffer(RibbonRenderTypes.RIBBON_GLOW);
+            renderRibbonPass(poseStack, glowVc, true, level, camPos, nowF, partialTick, localPlayerId, firstPerson);
+        }
+
+        // Pass 3: Tia lửa va chạm sắc gọn (SPARK_GLOW)
+        if (!SPARKS.isEmpty()) {
+            VertexConsumer sparkVc = consumers.getBuffer(RibbonRenderTypes.SPARK_GLOW);
+            for (ImpactSpark sp : SPARKS) {
+                float age = Math.max(0.0F, nowF - sp.startTick);
+                renderImpactSpark(poseStack, sparkVc, camera, camPos, sp, age / sp.durationTicks);
             }
+        }
+    }
+
+    private static void renderRibbonPass(PoseStack poseStack, VertexConsumer vc, boolean glowPass,
+                                         ClientLevel level, Vec3 camPos, float nowF, float partialTick,
+                                         int localPlayerId, boolean firstPerson) {
+        // 1. Dải lụa combo 5 nhịp / Sprint / Air
+        for (MoveTrail tr : TRAILS) {
+            float age = Math.max(0.0F, nowF - tr.startTick);
+            float progress = Mth.clamp(age / tr.durationTicks, 0.0F, 1.0F);
+            renderMoveTrail(poseStack, vc, glowPass, level, camPos, tr, progress, partialTick, localPlayerId, firstPerson);
+        }
+
+        // 2. 2 dải lụa song song của chiêu Flash Dash
+        for (WorldDashRibbon dr : DASH_RIBBONS) {
+            float age = Math.max(0.0F, nowF - dr.startTick);
             float progress = Mth.clamp(age / dr.durationTicks, 0.0F, 1.0F);
             float fade = progress < 0.10F
                     ? (progress / 0.10F)
@@ -677,44 +692,23 @@ public final class DualBladeTrailRenderer {
             if (fade > 0.01F) {
                 poseStack.pushPose();
                 poseStack.translate(dr.originX - camPos.x, dr.originY - camPos.y, dr.originZ - camPos.z);
-                drawCalligraphicStrip(poseStack.last(), bodyVc, glowVc, dr.rightDiamondStrip, progress, fade);
-                drawCalligraphicStrip(poseStack.last(), bodyVc, glowVc, dr.leftNetheriteStrip, progress, fade);
+                drawCalligraphicStrip(poseStack.last(), vc, glowPass, dr.rightDiamondStrip, progress, fade);
+                drawCalligraphicStrip(poseStack.last(), vc, glowPass, dr.leftNetheriteStrip, progress, fade);
                 poseStack.popPose();
             }
         }
 
-        // 3. 10 vệt chém chéo sắc lẹm Đỏ–Đen & Vàng–Đen bùng nổ ngay trên thân từng mục tiêu (mờ dần 8 tick!)
-        Iterator<TargetSlashCut> cit = FLURRY_CUTS.iterator();
-        while (cit.hasNext()) {
-            TargetSlashCut cut = cit.next();
+        // 3. 10 vệt chém chéo sắc lẹm bùng nổ trên thân mục tiêu
+        for (TargetSlashCut cut : FLURRY_CUTS) {
             float age = nowF - cut.startTickF;
             if (age < 0.0F) {
                 continue; // Chưa tới nhịp trễ stagger
             }
-            if (age >= cut.durationTicks) {
-                cit.remove();
-                continue;
-            }
-            renderTargetSlashCut(poseStack, bodyVc, glowVc, camPos, cut, age / cut.durationTicks);
-        }
-
-        // 4. Tia lửa va chạm Đỏ–Vàng sắc gọn
-        if (!SPARKS.isEmpty()) {
-            VertexConsumer sparkVc = consumers.getBuffer(RibbonRenderTypes.SPARK_GLOW);
-            Iterator<ImpactSpark> sit = SPARKS.iterator();
-            while (sit.hasNext()) {
-                ImpactSpark sp = sit.next();
-                float age = Math.max(0.0F, nowF - sp.startTick);
-                if (age >= sp.durationTicks) {
-                    sit.remove();
-                    continue;
-                }
-                renderImpactSpark(poseStack, sparkVc, camera, camPos, sp, age / sp.durationTicks);
-            }
+            renderTargetSlashCut(poseStack, vc, glowPass, camPos, cut, age / cut.durationTicks);
         }
     }
 
-    private static void renderMoveTrail(PoseStack poseStack, VertexConsumer bodyVc, VertexConsumer glowVc,
+    private static void renderMoveTrail(PoseStack poseStack, VertexConsumer vc, boolean glowPass,
                                         ClientLevel level, Vec3 camPos, MoveTrail tr, float progress,
                                         float partialTick, int localPlayerId, boolean firstPerson) {
         double wx = tr.anchorX, wy = tr.anchorY, wz = tr.anchorZ;
@@ -727,8 +721,8 @@ public final class DualBladeTrailRenderer {
         }
 
         boolean localFp = firstPerson && tr.attackerId == localPlayerId;
-        float knifeRatio = Mth.clamp(WeaponsConfig.get().knifeRenderScale / 0.72F, 0.70F, 1.50F);
-        float scale = (1.0F + tr.powerTier * 0.05F) * knifeRatio * (localFp ? 0.76F : 1.00F);
+        float knifeRatio = Mth.clamp(WeaponsConfig.get().knifeRenderScale / 0.92F, 0.65F, 1.55F);
+        float scale = (1.0F + tr.powerTier * 0.05F) * knifeRatio * (localFp ? 0.78F : 1.00F);
 
         poseStack.pushPose();
         poseStack.translate(wx - camPos.x, wy - camPos.y, wz - camPos.z);
@@ -748,14 +742,14 @@ public final class DualBladeTrailRenderer {
 
         if (globalFade > 0.01F) {
             for (RibbonStrip strip : tr.strips) {
-                drawCalligraphicStrip(poseStack.last(), bodyVc, glowVc, strip, progress, globalFade);
+                drawCalligraphicStrip(poseStack.last(), vc, glowPass, strip, progress, globalFade);
             }
         }
 
         poseStack.popPose();
     }
 
-    private static void renderTargetSlashCut(PoseStack poseStack, VertexConsumer bodyVc, VertexConsumer glowVc,
+    private static void renderTargetSlashCut(PoseStack poseStack, VertexConsumer vc, boolean glowPass,
                                              Vec3 camPos, TargetSlashCut cut, float progress) {
         float expand = DualBladeAnimState.easeOutQuart(Mth.clamp(progress / 0.28F, 0.0F, 1.0F));
         float fade = progress < 0.14F
@@ -779,32 +773,32 @@ public final class DualBladeTrailRenderer {
         poseStack.mulPose(Axis.ZP.rotationDegrees(cut.rollDeg));
 
         PoseStack.Pose pose = poseStack.last();
-        // Cánh chém thư pháp sắc nhọn 2 đầu (2 nửa ghép thoi đối xứng theo trục X!)
-        float midW = w * 0.52F;
-        // Nửa trái -> giữa (màu Đỏ–Đen hoặc Vàng–Đen)
-        emitQuad(bodyVc, pose,
-                -len, 0.0F, 0.0F, 0.02F, 0.50F, pal.tailR, pal.tailG, pal.tailB, aTail,
-                0.0F, -w,   0.0F, 0.50F, 0.08F, pal.tailR, pal.tailG, pal.tailB, aTail,
-                0.0F,  w,   0.0F, 0.50F, 0.92F, pal.midR,  pal.midG,  pal.midB,  aMid,
-                -len, 0.0F, 0.0F, 0.02F, 0.50F, pal.midR,  pal.midG,  pal.midB,  aMid);
-        // Giữa -> phải
-        emitQuad(bodyVc, pose,
-                0.0F, -w,   0.0F, 0.50F, 0.08F, pal.tailR, pal.tailG, pal.tailB, aTail,
-                 len, 0.0F, 0.0F, 0.98F, 0.50F, pal.tailR, pal.tailG, pal.tailB, aTail,
-                 len, 0.0F, 0.0F, 0.98F, 0.50F, pal.midR,  pal.midG,  pal.midB,  aMid,
-                0.0F,  w,   0.0F, 0.50F, 0.92F, pal.midR,  pal.midG,  pal.midB,  aMid);
-
-        // Lõi trắng-băng chói siêu sắc (`RIBBON_GLOW` additive) dọc trung tâm đường chém!
-        emitQuad(glowVc, pose,
-                -len, 0.0F,  0.01F, 0.02F, 0.92F, pal.coreR, pal.coreG, pal.coreB, aCore,
-                0.0F, -midW, 0.01F, 0.50F, 0.80F, pal.midR,  pal.midG,  pal.midB,  aMid,
-                 len, 0.0F,  0.01F, 0.98F, 0.92F, pal.coreR, pal.coreG, pal.coreB, aCore,
-                0.0F,  midW, 0.01F, 0.50F, 0.98F, pal.coreR, pal.coreG, pal.coreB, aCore);
+        if (!glowPass) {
+            // Cánh chém thư pháp sắc nhọn 2 đầu (2 nửa ghép thoi đối xứng theo trục X)
+            emitQuad(vc, pose,
+                    -len, 0.0F, 0.0F, 0.02F, 0.50F, pal.tailR, pal.tailG, pal.tailB, aTail,
+                    0.0F, -w,   0.0F, 0.50F, 0.08F, pal.tailR, pal.tailG, pal.tailB, aTail,
+                    0.0F,  w,   0.0F, 0.50F, 0.92F, pal.midR,  pal.midG,  pal.midB,  aMid,
+                    -len, 0.0F, 0.0F, 0.02F, 0.50F, pal.midR,  pal.midG,  pal.midB,  aMid);
+            emitQuad(vc, pose,
+                    0.0F, -w,   0.0F, 0.50F, 0.08F, pal.tailR, pal.tailG, pal.tailB, aTail,
+                     len, 0.0F, 0.0F, 0.98F, 0.50F, pal.tailR, pal.tailG, pal.tailB, aTail,
+                     len, 0.0F, 0.0F, 0.98F, 0.50F, pal.midR,  pal.midG,  pal.midB,  aMid,
+                    0.0F,  w,   0.0F, 0.50F, 0.92F, pal.midR,  pal.midG,  pal.midB,  aMid);
+        } else {
+            // Lõi trắng-băng chói siêu sắc (`RIBBON_GLOW` additive) dọc trung tâm đường chém
+            float midW = w * 0.52F;
+            emitQuad(vc, pose,
+                    -len, 0.0F,  0.01F, 0.02F, 0.92F, pal.coreR, pal.coreG, pal.coreB, aCore,
+                    0.0F, -midW, 0.01F, 0.50F, 0.80F, pal.midR,  pal.midG,  pal.midB,  aMid,
+                     len, 0.0F,  0.01F, 0.98F, 0.92F, pal.coreR, pal.coreG, pal.coreB, aCore,
+                    0.0F,  midW, 0.01F, 0.50F, 0.98F, pal.coreR, pal.coreG, pal.coreB, aCore);
+        }
 
         poseStack.popPose();
     }
 
-    private static void drawCalligraphicStrip(PoseStack.Pose pose, VertexConsumer bodyVc, VertexConsumer glowVc,
+    private static void drawCalligraphicStrip(PoseStack.Pose pose, VertexConsumer vc, boolean glowPass,
                                               RibbonStrip strip, float progress, float globalFade) {
         float localP = Mth.clamp((progress - strip.startDelayFrac) / Math.max(0.15F, 1.0F - strip.startDelayFrac), 0.0F, 1.0F);
         float headFrac = DualBladeAnimState.easeOutQuart(Mth.clamp(localP / strip.sweepSpeedFrac, 0.0F, 1.0F));
@@ -835,42 +829,44 @@ public final class DualBladeTrailRenderer {
             float bz1 = Mth.lerp(1.0F - taper1, strip.bz[i + 1], strip.tz[i + 1]);
             float tx1 = strip.tx[i + 1], ty1 = strip.ty[i + 1], tz1 = strip.tz[i + 1];
 
-            float mx0 = Mth.lerp(0.54F, bx0, tx0), my0 = Mth.lerp(0.54F, by0, ty0), mz0 = Mth.lerp(0.54F, bz0, tz0);
-            float mx1 = Mth.lerp(0.54F, bx1, tx1), my1 = Mth.lerp(0.54F, by1, ty1), mz1 = Mth.lerp(0.54F, bz1, tz1);
-
-            float cx0 = Mth.lerp(0.74F, bx0, tx0), cy0 = Mth.lerp(0.74F, by0, ty0), cz0 = Mth.lerp(0.74F, bz0, tz0);
-            float cx1 = Mth.lerp(0.74F, bx1, tx1), cy1 = Mth.lerp(0.74F, by1, ty1), cz1 = Mth.lerp(0.74F, bz1, tz1);
-
             float f0 = globalFade * (0.36F + 0.64F * taper0);
             float f1 = globalFade * (0.36F + 0.64F * taper1);
 
-            int aTail0 = Mth.clamp(Math.round(f0 * 160.0F), 0, 255);
-            int aTail1 = Mth.clamp(Math.round(f1 * 160.0F), 0, 255);
             int aMid0 = Mth.clamp(Math.round(f0 * 246.0F), 0, 255);
             int aMid1 = Mth.clamp(Math.round(f1 * 246.0F), 0, 255);
             int aCore0 = Mth.clamp(Math.round(f0 * 255.0F), 0, 255);
             int aCore1 = Mth.clamp(Math.round(f1 * 255.0F), 0, 255);
 
-            // Tầng 1->2 (`RIBBON_BODY` NO_CULL): đuôi Netherite/Lam Tối -> dải giữa Xanh Kim Cương
-            emitQuad(bodyVc, pose,
-                    bx0, by0, bz0, u0, 0.04F, pal.tailR, pal.tailG, pal.tailB, aTail0,
-                    bx1, by1, bz1, u1, 0.04F, pal.tailR, pal.tailG, pal.tailB, aTail1,
-                    mx1, my1, mz1, u1, 0.56F, pal.midR,  pal.midG,  pal.midB,  aMid1,
-                    mx0, my0, mz0, u0, 0.56F, pal.midR,  pal.midG,  pal.midB,  aMid0);
+            if (!glowPass) {
+                float mx0 = Mth.lerp(0.54F, bx0, tx0), my0 = Mth.lerp(0.54F, by0, ty0), mz0 = Mth.lerp(0.54F, bz0, tz0);
+                float mx1 = Mth.lerp(0.54F, bx1, tx1), my1 = Mth.lerp(0.54F, by1, ty1), mz1 = Mth.lerp(0.54F, bz1, tz1);
+                int aTail0 = Mth.clamp(Math.round(f0 * 160.0F), 0, 255);
+                int aTail1 = Mth.clamp(Math.round(f1 * 160.0F), 0, 255);
 
-            // Tầng 2->3 (`RIBBON_BODY` NO_CULL): dải giữa Xanh Kim Cương -> lõi cạnh cắt trắng-băng #FFFFFF/#C2FFFF
-            emitQuad(bodyVc, pose,
-                    mx0, my0, mz0, u0, 0.56F, pal.midR,  pal.midG,  pal.midB,  aMid0,
-                    mx1, my1, mz1, u1, 0.56F, pal.midR,  pal.midG,  pal.midB,  aMid1,
-                    tx1, ty1, tz1, u1, 0.98F, pal.coreR, pal.coreG, pal.coreB, aCore1,
-                    tx0, ty0, tz0, u0, 0.98F, pal.coreR, pal.coreG, pal.coreB, aCore0);
+                // Tầng 1->2 (`RIBBON_BODY` NO_CULL): đuôi tối -> dải giữa
+                emitQuad(vc, pose,
+                        bx0, by0, bz0, u0, 0.04F, pal.tailR, pal.tailG, pal.tailB, aTail0,
+                        bx1, by1, bz1, u1, 0.04F, pal.tailR, pal.tailG, pal.tailB, aTail1,
+                        mx1, my1, mz1, u1, 0.56F, pal.midR,  pal.midG,  pal.midB,  aMid1,
+                        mx0, my0, mz0, u0, 0.56F, pal.midR,  pal.midG,  pal.midB,  aMid0);
 
-            // Lớp hào quang additive (`RIBBON_GLOW` NO_CULL) dọc mép cắt sáng chói
-            emitQuad(glowVc, pose,
-                    cx0, cy0 + 0.015F, cz0, u0, 0.74F, pal.midR,  pal.midG,  pal.midB,  aMid0,
-                    cx1, cy1 + 0.015F, cz1, u1, 0.74F, pal.midR,  pal.midG,  pal.midB,  aMid1,
-                    tx1, ty1 + 0.025F, tz1, u1, 0.98F, pal.coreR, pal.coreG, pal.coreB, aCore1,
-                    tx0, ty0 + 0.025F, tz0, u0, 0.98F, pal.coreR, pal.coreG, pal.coreB, aCore0);
+                // Tầng 2->3 (`RIBBON_BODY` NO_CULL): dải giữa -> lõi cạnh cắt trắng-băng
+                emitQuad(vc, pose,
+                        mx0, my0, mz0, u0, 0.56F, pal.midR,  pal.midG,  pal.midB,  aMid0,
+                        mx1, my1, mz1, u1, 0.56F, pal.midR,  pal.midG,  pal.midB,  aMid1,
+                        tx1, ty1, tz1, u1, 0.98F, pal.coreR, pal.coreG, pal.coreB, aCore1,
+                        tx0, ty0, tz0, u0, 0.98F, pal.coreR, pal.coreG, pal.coreB, aCore0);
+            } else {
+                float cx0 = Mth.lerp(0.74F, bx0, tx0), cy0 = Mth.lerp(0.74F, by0, ty0), cz0 = Mth.lerp(0.74F, bz0, tz0);
+                float cx1 = Mth.lerp(0.74F, bx1, tx1), cy1 = Mth.lerp(0.74F, by1, ty1), cz1 = Mth.lerp(0.74F, bz1, tz1);
+
+                // Lớp hào quang additive (`RIBBON_GLOW` NO_CULL) dọc mép cắt sáng chói
+                emitQuad(vc, pose,
+                        cx0, cy0 + 0.015F, cz0, u0, 0.74F, pal.midR,  pal.midG,  pal.midB,  aMid0,
+                        cx1, cy1 + 0.015F, cz1, u1, 0.74F, pal.midR,  pal.midG,  pal.midB,  aMid1,
+                        tx1, ty1 + 0.025F, tz1, u1, 0.98F, pal.coreR, pal.coreG, pal.coreB, aCore1,
+                        tx0, ty0 + 0.025F, tz0, u0, 0.98F, pal.coreR, pal.coreG, pal.coreB, aCore0);
+            }
         }
     }
 

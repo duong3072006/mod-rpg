@@ -41,14 +41,12 @@ public class ShockwaveRingRenderer extends EntityRenderer<ShockwaveRingEntity> {
         int rgb = entity.getColor();
         int cr = VfxRenderHelper.r(rgb), cg = VfxRenderHelper.g(rgb), cb = VfxRenderHelper.b(rgb);
 
-        VertexConsumer ringTrans = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.SHOCKWAVE_TEX));
-        VertexConsumer ringGlow = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.SHOCKWAVE_TEX));
-        VertexConsumer wallTrans = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.BEAM_TEX));
-
         // 1. Flat Ground Shockwave Disc (translucent colored + white-hot additive leading rim!)
         poseStack.pushPose();
         poseStack.mulPose(Axis.YP.rotationDegrees(age * 6f));
+        VertexConsumer ringTrans = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.SHOCKWAVE_TEX));
         VfxRenderHelper.drawHorizontalQuad(ringTrans, poseStack.last(), 0.04f, radius, cr, cg, cb, (int) (fade * 220));
+        VertexConsumer ringGlow = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.SHOCKWAVE_TEX));
         VfxRenderHelper.drawHorizontalQuad(ringGlow, poseStack.last(), 0.06f, radius * 1.01f,
                 VfxRenderHelper.mixWhite(cr, 0.65f), VfxRenderHelper.mixWhite(cg, 0.65f), VfxRenderHelper.mixWhite(cb, 0.65f),
                 (int) (fade * 235));
@@ -58,6 +56,7 @@ public class ShockwaveRingRenderer extends EntityRenderer<ShockwaveRingEntity> {
         float wallHeight = Math.min(2.4f, entity.getMaxRadius() * 0.24f) * (1.0f - t * 0.55f);
         poseStack.pushPose();
         poseStack.mulPose(Axis.YP.rotationDegrees(-age * 8f));
+        VertexConsumer wallTrans = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.BEAM_TEX));
         VfxRenderHelper.drawCylinder(wallTrans, poseStack.last(), 18,
                 0.02f, radius * 0.88f, wallHeight, radius * 1.04f,
                 0f, 1f, cr, cg, cb, (int) (fade * 145));

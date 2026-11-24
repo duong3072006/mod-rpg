@@ -52,14 +52,11 @@ public class LaserBeamRenderer extends EntityRenderer<LaserBeamEntity> {
         Vector3f dir = new Vector3f((float) delta.x, (float) delta.y, (float) delta.z).normalize();
         Quaternionf alignY = new Quaternionf().rotationTo(new Vector3f(0f, 1f, 0f), dir);
 
-        VertexConsumer beamTrans = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.BEAM_TEX));
-        VertexConsumer beamGlow = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.BEAM_TEX));
-        VertexConsumer sigilGlow = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.MAGIC_CIRCLE_TEX));
-
         poseStack.pushPose();
         poseStack.mulPose(alignY);
 
         // 1. Muzzle Casting Arcane Magic Circle right in front of the Boss's jaw!
+        VertexConsumer sigilGlow = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.MAGIC_CIRCLE_TEX));
         poseStack.pushPose();
         poseStack.mulPose(Axis.YP.rotationDegrees(age * 18f));
         VfxRenderHelper.drawHorizontalQuad(sigilGlow, poseStack.last(), 0.15f, radius * 2.6f,
@@ -68,6 +65,7 @@ public class LaserBeamRenderer extends EntityRenderer<LaserBeamEntity> {
         poseStack.popPose();
 
         // 2. Outer Rotating Colored Plasma Sheath (10-sided volumetric cylinder)
+        VertexConsumer beamTrans = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.BEAM_TEX));
         poseStack.pushPose();
         poseStack.mulPose(Axis.YP.rotationDegrees(age * 20f));
         VfxRenderHelper.drawCylinder(beamTrans, poseStack.last(), 10,
@@ -76,6 +74,7 @@ public class LaserBeamRenderer extends EntityRenderer<LaserBeamEntity> {
         poseStack.popPose();
 
         // 3. Counter-Rotating Mid Spiral Halo
+        VertexConsumer beamGlow = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.BEAM_TEX));
         poseStack.pushPose();
         poseStack.mulPose(Axis.YP.rotationDegrees(-age * 30f));
         VfxRenderHelper.drawCylinder(beamGlow, poseStack.last(), 8,

@@ -2,6 +2,7 @@ package com.abyssalrpg.client.mixin;
 
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
 import com.abyssalrpg.client.anim.DualBladeAnimState.FullBodyPose;
+import com.abyssalrpg.client.anim.TogetsuAnimManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.PlayerModel;
@@ -78,8 +79,8 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
             this.rightLeg.zRot = 0.0F;
             this.leftLeg.zRot = 0.0F;
 
-            // Tắt hoàn toàn độ vẩy tay mặc định của vanilla khi đang đánh bằng Dual Blade!
-            if (DualBladeAnimManager.isDualBladeAttacking(player)) {
+            // Tắt hoàn toàn độ vẩy tay mặc định của vanilla khi đang đánh bằng Dual Blade hoặc Togetsu!
+            if (DualBladeAnimManager.isDualBladeAttacking(player) || TogetsuAnimManager.isTogetsuAttacking(player)) {
                 HumanoidModel<?> self = (HumanoidModel<?>) (Object) this;
                 this.abyssalrpg$savedAttackTime = self.attackTime;
                 self.attackTime = 0.0F;
@@ -102,6 +103,9 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
         }
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
         FullBodyPose pose = DualBladeAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
+        if (pose == null) {
+            pose = TogetsuAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
+        }
         if (pose == null) {
             return;
         }

@@ -29,11 +29,8 @@ public class AbyssalOrbRenderer extends EntityRenderer<AbyssalOrbEntity> {
         int rgb = entity.getColor();
         int cr = VfxRenderHelper.r(rgb), cg = VfxRenderHelper.g(rgb), cb = VfxRenderHelper.b(rgb);
 
-        VertexConsumer beamTrans = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.BEAM_TEX));
-        VertexConsumer beamGlow = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.BEAM_TEX));
-        VertexConsumer ringGlow = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.MAGIC_CIRCLE_TEX));
-
         // 1. Inner White-Hot Spinning Crystal Core
+        VertexConsumer beamGlow = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.BEAM_TEX));
         poseStack.pushPose();
         poseStack.mulPose(Axis.YP.rotationDegrees(age * 14f));
         poseStack.mulPose(Axis.XP.rotationDegrees(age * 9f));
@@ -42,6 +39,7 @@ public class AbyssalOrbRenderer extends EntityRenderer<AbyssalOrbEntity> {
         poseStack.popPose();
 
         // 2. Outer Counter-Rotating Translucent Plasma Shell
+        VertexConsumer beamTrans = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.BEAM_TEX));
         poseStack.pushPose();
         poseStack.mulPose(Axis.YP.rotationDegrees(-age * 11f));
         poseStack.mulPose(Axis.ZP.rotationDegrees(age * 13f));
@@ -50,6 +48,7 @@ public class AbyssalOrbRenderer extends EntityRenderer<AbyssalOrbEntity> {
         poseStack.popPose();
 
         // 3. Two Orthogonal Gyroscopic Spinning Arcane Halo Rings!
+        VertexConsumer ringGlow = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.MAGIC_CIRCLE_TEX));
         poseStack.pushPose();
         poseStack.mulPose(Axis.XP.rotationDegrees(35f + age * 10f));
         poseStack.mulPose(Axis.YP.rotationDegrees(age * 15f));

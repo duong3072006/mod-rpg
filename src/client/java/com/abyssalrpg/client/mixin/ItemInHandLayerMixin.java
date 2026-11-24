@@ -2,6 +2,8 @@ package com.abyssalrpg.client.mixin;
 
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
 import com.abyssalrpg.client.anim.DualBladeAnimState.FullBodyPose;
+import com.abyssalrpg.client.anim.TogetsuAnimManager;
+import com.abyssalrpg.client.renderer.TogetsuGeoRenderer;
 import com.abyssalrpg.registry.ModItems;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -37,8 +39,17 @@ public abstract class ItemInHandLayerMixin {
     )
     private ItemStack abyssalrpg$mirrorDualBladeToEmptyOffhand(LivingEntity entity, Operation<ItemStack> original) {
         ItemStack realOffhand = original.call(entity);
-        if (realOffhand.isEmpty() && entity.getMainHandItem().is(ModItems.DUAL_KNIFE)) {
-            return entity.getMainHandItem();
+        if (realOffhand.isEmpty()) {
+            ItemStack main = entity.getMainHandItem();
+            if (main.is(ModItems.DUAL_KNIFE)) {
+                return main;
+            }
+            if (main.is(ModItems.TOGETSU) && entity instanceof Player player) {
+                float pt = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
+                if (TogetsuAnimManager.shouldMirrorOffhand(player, main, pt)) {
+                    return main;
+                }
+            }
         }
         return realOffhand;
     }
@@ -54,11 +65,18 @@ public abstract class ItemInHandLayerMixin {
                                                        ItemDisplayContext displayContext, HumanoidArm arm,
                                                        PoseStack poseStack, MultiBufferSource buffer,
                                                        int packedLight, CallbackInfo ci) {
-        if (!stack.is(ModItems.DUAL_KNIFE) || !(entity instanceof Player player) || !player.getOffhandItem().isEmpty()) {
+        boolean isDualKnife = stack.is(ModItems.DUAL_KNIFE);
+        boolean isTogetsu = stack.is(ModItems.TOGETSU);
+        if ((!isDualKnife && !isTogetsu) || !(entity instanceof Player player) || !player.getOffhandItem().isEmpty()) {
             return;
         }
+        if (isTogetsu) {
+            TogetsuGeoRenderer.setCurrentRenderEntityId(player.getId());
+        }
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
-        FullBodyPose pose = DualBladeAnimManager.evaluatePose(player, partialTick, 0.0F, player.tickCount + partialTick);
+        FullBodyPose pose = isDualKnife
+                ? DualBladeAnimManager.evaluatePose(player, partialTick, 0.0F, player.tickCount + partialTick)
+                : TogetsuAnimManager.evaluatePose(player, partialTick, 0.0F, player.tickCount + partialTick);
         if (pose == null) {
             return;
         }
@@ -76,6 +94,23 @@ public abstract class ItemInHandLayerMixin {
         }
         if (Math.abs(yaw) > 0.05F) {
             poseStack.mulPose(Axis.YP.rotationDegrees(yaw));
+        }
+    }
+
+    @Inject(
+            method = "renderArmWithItem",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/ItemInHandRenderer;renderItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemDisplayContext;ZLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
+                    shift = At.Shift.AFTER
+            )
+    )
+    private void abyssalrpg$resetTogetsuRenderEntity(LivingEntity entity, ItemStack stack,
+                                                     ItemDisplayContext displayContext, HumanoidArm arm,
+                                                     PoseStack poseStack, MultiBufferSource buffer,
+                                                     int packedLight, CallbackInfo ci) {
+        if (stack.is(ModItems.TOGETSU)) {
+            TogetsuGeoRenderer.setCurrentRenderEntityId(-1);
         }
     }
 }

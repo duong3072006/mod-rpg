@@ -2,6 +2,7 @@ package com.abyssalrpg.client.mixin;
 
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
 import com.abyssalrpg.client.anim.DualBladeAnimState.FullBodyPose;
+import com.abyssalrpg.client.anim.TogetsuAnimManager;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.player.AbstractClientPlayer;
@@ -29,6 +30,9 @@ public abstract class PlayerRendererMixin {
                                                          float bob, float yBodyRot, float partialTick,
                                                          float scale, CallbackInfo ci) {
         FullBodyPose pose = DualBladeAnimManager.evaluatePose(player, partialTick, 0.0F, bob);
+        if (pose == null) {
+            pose = TogetsuAnimManager.evaluatePose(player, partialTick, 0.0F, bob);
+        }
         if (pose == null) {
             return;
         }

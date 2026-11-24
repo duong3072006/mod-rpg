@@ -51,12 +51,11 @@ public class EnergySlashRenderer extends EntityRenderer<EnergySlashEntity> {
         }
         poseStack.mulPose(Axis.ZP.rotationDegrees(entity.getSlashRoll()));
 
-        VertexConsumer transVc = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.ENERGY_SLASH_TEX));
-        VertexConsumer glowVc = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.ENERGY_SLASH_TEX));
-
         // Build curved 3D swept crescent arc mesh (10 arched segments!)
+        VertexConsumer transVc = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.ENERGY_SLASH_TEX));
         drawCrescentArc(transVc, poseStack.last(), width, depth, 0.0f, cr, cg, cb, (int) (alpha * 225));
         // Thick volumetric cross-blade bevel (tilted +/- 14 deg so it reads boldly from ANY camera angle!)
+        VertexConsumer glowVc = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.ENERGY_SLASH_TEX));
         poseStack.pushPose();
         poseStack.mulPose(Axis.XP.rotationDegrees(15f));
         drawCrescentArc(glowVc, poseStack.last(), width * 0.96f, depth * 0.90f, 0.03f,

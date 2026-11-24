@@ -26,14 +26,13 @@ public final class VenomProjectileRenderer extends EntityRenderer<VenomProjectil
         int outer = entity.isEnraged() ? 0xB86BFF : 0x62E63C;
         int core = entity.isEnraged() ? 0xF0D8FF : 0xC8FF8A;
 
-        VertexConsumer vcOuter = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.AURA_SWIRL_TEX));
-        VertexConsumer vcCore = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.SHOCKWAVE_TEX));
-
         poseStack.pushPose();
         poseStack.mulPose(Axis.YP.rotationDegrees(age * 16.0f));
         poseStack.mulPose(Axis.XP.rotationDegrees(age * 11.0f));
+        VertexConsumer vcOuter = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.AURA_SWIRL_TEX));
         VfxRenderHelper.drawOctahedron(vcOuter, poseStack.last(), 0.58f,
                 VfxRenderHelper.r(outer), VfxRenderHelper.g(outer), VfxRenderHelper.b(outer), 215);
+        VertexConsumer vcCore = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.SHOCKWAVE_TEX));
         VfxRenderHelper.drawOctahedron(vcCore, poseStack.last(), 0.34f,
                 VfxRenderHelper.r(core), VfxRenderHelper.g(core), VfxRenderHelper.b(core), 255);
         poseStack.popPose();

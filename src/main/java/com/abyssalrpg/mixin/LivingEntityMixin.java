@@ -4,6 +4,7 @@ import com.abyssalrpg.api.BossDefenseHolder;
 import com.abyssalrpg.api.BossHealthHolder;
 import com.abyssalrpg.combat.CinderDragonArmorHandler;
 import com.abyssalrpg.combat.DualBladeCombatHandler;
+import com.abyssalrpg.combat.TogetsuCombatHandler;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
@@ -54,7 +55,8 @@ public abstract class LivingEntityMixin {
     private void abyssalrpg$cancelDamageDuringFlashDash(DamageSource source, float amount,
                                                         CallbackInfoReturnable<Boolean> cir) {
         LivingEntity self = (LivingEntity) (Object) this;
-        if (!self.level().isClientSide && DualBladeCombatHandler.isDashInvulnerable(self, source)) {
+        if (!self.level().isClientSide && (DualBladeCombatHandler.isDashInvulnerable(self, source)
+                || TogetsuCombatHandler.isPinInvulnerable(self, source))) {
             cir.setReturnValue(false);
         }
     }
@@ -70,7 +72,9 @@ public abstract class LivingEntityMixin {
         if (self instanceof BossDefenseHolder holder && holder.getBossDefense() > 0.0f) {
             return;
         }
-        float pierce = DualBladeCombatHandler.getActiveArmorPierceFraction(self, source);
+        float pierce = Math.max(
+                DualBladeCombatHandler.getActiveArmorPierceFraction(self, source),
+                TogetsuCombatHandler.getActiveArmorPierceFraction(self, source));
         if (pierce <= 0.0f) {
             return;
         }
@@ -96,6 +100,7 @@ public abstract class LivingEntityMixin {
         if (cir.getReturnValueZ()) {
             LivingEntity self = (LivingEntity) (Object) this;
             DualBladeCombatHandler.onLivingHurtReturn(self, source, true);
+            TogetsuCombatHandler.onLivingHurtReturn(self, source, true);
             CinderDragonArmorHandler.onTargetHurtByAttacker(self, source);
         }
     }

@@ -40,19 +40,18 @@ public final class NightmareBoneSpikeRenderer extends EntityRenderer<NightmareBo
         int outerRgb = cage ? 0xD2C6B2 : (enraged ? 0x3A1216 : 0x261E24);
         int coreRgb = enraged ? 0xFF3A1A : 0xD91628;
 
-        VertexConsumer outerVc = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.BEAM_TEX));
-        VertexConsumer glowVc = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.SHOCKWAVE_TEX));
-
         poseStack.pushPose();
         poseStack.mulPose(Axis.YP.rotationDegrees(entity.getYRot()));
 
         // Vỏ gai xương chóp lục giác nhọn
+        VertexConsumer outerVc = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.BEAM_TEX));
         VfxRenderHelper.drawCylinder(outerVc, poseStack.last(), 6,
                 0.0f, r, h, 0.04f,
                 0.0f, 1.0f,
                 VfxRenderHelper.r(outerRgb), VfxRenderHelper.g(outerRgb), VfxRenderHelper.b(outerRgb), 240);
 
         // Vòng sáng khe nứt đỏ ở gốc gai
+        VertexConsumer glowVc = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.SHOCKWAVE_TEX));
         VfxRenderHelper.drawCylinder(glowVc, poseStack.last(), 6,
                 0.0f, r * 1.05f, h * 0.48f, r * 0.35f,
                 0.0f, 1.0f,

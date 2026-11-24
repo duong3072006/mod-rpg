@@ -2,6 +2,7 @@ package com.abyssalrpg.client.mixin;
 
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
 import com.abyssalrpg.client.anim.DualBladeAnimState.FullBodyPose;
+import com.abyssalrpg.client.anim.TogetsuAnimManager;
 import com.abyssalrpg.config.WeaponsConfig;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -40,6 +41,9 @@ public abstract class GameRendererMixin {
         }
         FullBodyPose pose = DualBladeAnimManager.evaluatePose(player, partialTicks, 0.0F, player.tickCount + partialTicks);
         if (pose == null) {
+            pose = TogetsuAnimManager.evaluatePose(player, partialTicks, 0.0F, player.tickCount + partialTicks);
+        }
+        if (pose == null) {
             return;
         }
         float rollDeg = Mth.clamp(pose.firstPersonCameraRollDeg, -4.0F, 4.0F);
@@ -58,6 +62,9 @@ public abstract class GameRendererMixin {
             return original;
         }
         FullBodyPose pose = DualBladeAnimManager.evaluatePose(player, partialTicks, 0.0F, player.tickCount + partialTicks);
+        if (pose == null) {
+            pose = TogetsuAnimManager.evaluatePose(player, partialTicks, 0.0F, player.tickCount + partialTicks);
+        }
         if (pose == null || Math.abs(pose.fovOffsetDeg) < 0.05F) {
             return original;
         }

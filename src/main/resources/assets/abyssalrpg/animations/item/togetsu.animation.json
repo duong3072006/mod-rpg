@@ -1,0 +1,30 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.togetsu.idle": {
+      "loop": true,
+      "animation_length": 2.4,
+      "bones": {
+        "blade_edge": {
+          "scale": {
+            "0.0": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "1.2": [
+              1.01,
+              1.003,
+              1.005
+            ],
+            "2.4": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        }
+      }
+    }
+  }
+}

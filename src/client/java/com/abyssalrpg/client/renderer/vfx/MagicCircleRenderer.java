@@ -45,14 +45,13 @@ public class MagicCircleRenderer extends EntityRenderer<MagicCircleEntity> {
         float curRadius = radius * popScale;
         float spinSpeed = 2.8f + chargeProg * 5.2f;
 
-        VertexConsumer circleTrans = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.MAGIC_CIRCLE_TEX));
-        VertexConsumer circleGlow = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.MAGIC_CIRCLE_TEX));
-
         // 1. Primary Ground Arcane Sigil Circle (clockwise)
         poseStack.pushPose();
         poseStack.mulPose(Axis.YP.rotationDegrees(age * spinSpeed));
         int baseAlpha = (int) (fade * (185 + 65 * chargeProg));
+        VertexConsumer circleTrans = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.MAGIC_CIRCLE_TEX));
         VfxRenderHelper.drawHorizontalQuad(circleTrans, poseStack.last(), 0.03f, curRadius, cr, cg, cb, baseAlpha);
+        VertexConsumer circleGlow = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.MAGIC_CIRCLE_TEX));
         VfxRenderHelper.drawHorizontalQuad(circleGlow, poseStack.last(), 0.045f, curRadius * 0.98f,
                 VfxRenderHelper.mixWhite(cr, 0.45f), VfxRenderHelper.mixWhite(cg, 0.45f), VfxRenderHelper.mixWhite(cb, 0.45f),
                 (int) (fade * 215));
@@ -87,10 +86,8 @@ public class MagicCircleRenderer extends EntityRenderer<MagicCircleEntity> {
             float pillarHeight = 28.0f;
             float scroll = -age * 0.28f;
 
-            VertexConsumer beamTrans = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.BEAM_TEX));
-            VertexConsumer beamCore = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.BEAM_TEX));
-
             // Outer glowing colored plasma pillar
+            VertexConsumer beamTrans = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.BEAM_TEX));
             poseStack.pushPose();
             poseStack.mulPose(Axis.YP.rotationDegrees(age * 16f));
             VfxRenderHelper.drawCylinder(beamTrans, poseStack.last(), 12,
@@ -99,6 +96,7 @@ public class MagicCircleRenderer extends EntityRenderer<MagicCircleEntity> {
             poseStack.popPose();
 
             // Inner blinding white-hot laser core!
+            VertexConsumer beamCore = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.BEAM_TEX));
             poseStack.pushPose();
             poseStack.mulPose(Axis.YP.rotationDegrees(-age * 24f));
             VfxRenderHelper.drawCylinder(beamCore, poseStack.last(), 8,

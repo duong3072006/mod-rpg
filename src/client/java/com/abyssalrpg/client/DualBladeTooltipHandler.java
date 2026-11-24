@@ -32,7 +32,7 @@ public final class DualBladeTooltipHandler {
             return;
         }
         boolean isBook = stack.is(Items.ENCHANTED_BOOK);
-        boolean isDualKnife = stack.is(ModItems.DUAL_KNIFE);
+        boolean isDualKnife = stack.is(ModItems.DUAL_KNIFE) || stack.is(ModItems.TOGETSU);
         if (!isBook && !isDualKnife) {
             return;
         }

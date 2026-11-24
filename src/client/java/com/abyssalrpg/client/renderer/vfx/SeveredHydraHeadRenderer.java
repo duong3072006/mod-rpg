@@ -35,22 +35,20 @@ public final class SeveredHydraHeadRenderer extends EntityRenderer<SeveredHydraH
         int er = VfxRenderHelper.r(eyeRgb), eg = VfxRenderHelper.g(eyeRgb), eb = VfxRenderHelper.b(eyeRgb);
         int alpha = Math.max(20, Math.round(fade * 235f));
 
-        VertexConsumer shell = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.BEAM_TEX));
-        VertexConsumer glow = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.BEAM_TEX));
-        VertexConsumer ring = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.MAGIC_CIRCLE_TEX));
-
         poseStack.pushPose();
         poseStack.translate(0.0, 0.36 * sc, 0.0);
         poseStack.mulPose(Axis.YP.rotationDegrees(-Mth.wrapDegrees(yaw)));
         poseStack.mulPose(Axis.XP.rotationDegrees(entity.getSpinPitch()));
 
         // Hộp sọ đầu rồng thuôn dài xám đá
+        VertexConsumer shell = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.BEAM_TEX));
         poseStack.pushPose();
         poseStack.scale(0.78f * sc, 0.58f * sc, 1.48f * sc);
         VfxRenderHelper.drawOctahedron(shell, poseStack.last(), 0.54f, br, bg, bb, alpha);
         poseStack.popPose();
 
         // Mắt & sừng xanh băng phát sáng rực rỡ
+        VertexConsumer glow = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.BEAM_TEX));
         poseStack.pushPose();
         poseStack.translate(0.0, 0.12 * sc, -0.22 * sc);
         poseStack.scale(0.56f * sc, 0.32f * sc, 0.52f * sc);
@@ -60,6 +58,7 @@ public final class SeveredHydraHeadRenderer extends EntityRenderer<SeveredHydraH
         poseStack.popPose();
 
         // Vòng năng lượng hồn rỉ ra quanh đầu rơi trên mặt đất
+        VertexConsumer ring = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.MAGIC_CIRCLE_TEX));
         poseStack.pushPose();
         poseStack.translate(0.0, 0.06, 0.0);
         poseStack.mulPose(Axis.YP.rotationDegrees(age * 4.5f));

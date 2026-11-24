@@ -34,6 +34,16 @@ import java.util.Map;
 public final class DualBladeAnimManager {
     private static final float STANCE_BLEND_IN = 0.22F;  // ~4.5 ticks vào thế thủ vắt chéo 2 tầng
     private static final float STANCE_BLEND_OUT = 0.20F; // ~5 ticks trả mượt sạch về vanilla
+    private static final float SPRINT_BLEND_IN = 0.25F;  // ~4 ticks vào mượt tư thế chạy Naruto Shinobi
+    private static final float SPRINT_BLEND_OUT = 0.20F; // ~5 ticks thu mượt về thế thủ 2 tầng khi dừng
+
+    // Bộ góc lưỡi giải chính xác 1:1 theo ma trận Minecraft 1.21.1 cho tư thế chạy Naruto (2 lưỡi xuôi thẳng ra sau đối xứng, 0 xuyên tay!)
+    private static final float NARUTO_RIGHT_BLADE_PITCH = -115.96F;
+    private static final float NARUTO_RIGHT_BLADE_ROLL = -11.47F;
+    private static final float NARUTO_RIGHT_BLADE_YAW = -155.77F;
+    private static final float NARUTO_LEFT_BLADE_PITCH = 135.10F;
+    private static final float NARUTO_LEFT_BLADE_ROLL = -23.59F;
+    private static final float NARUTO_LEFT_BLADE_YAW = 5.23F;
 
     private static final Map<Integer, DualBladeAnimState> STATES = new HashMap<>();
     private static long clientTick = 0L;
@@ -94,9 +104,23 @@ public final class DualBladeAnimManager {
             }
             st.lastSeenTick = clientTick;
             st.prevStanceBlend = st.stanceBlend;
+            st.prevSprintBlend = st.sprintBlend;
 
             if (ready) {
                 st.stanceBlend = Math.min(1.0F, st.stanceBlend + STANCE_BLEND_IN);
+                boolean movingFast = player.walkAnimation.speed() > 0.22F
+                        || player.getDeltaMovement().horizontalDistanceSqr() > 0.008;
+                boolean sprintingNow = !player.isCrouching() && player.isSprinting() && movingFast;
+                if (sprintingNow) {
+                    st.sprintGraceUntilTick = clientTick + 6L;
+                }
+                boolean narutoActive = !player.isCrouching() && (sprintingNow
+                        || (clientTick <= st.sprintGraceUntilTick && movingFast));
+                if (narutoActive) {
+                    st.sprintBlend = Math.min(1.0F, st.sprintBlend + SPRINT_BLEND_IN);
+                } else {
+                    st.sprintBlend = Math.max(0.0F, st.sprintBlend - SPRINT_BLEND_OUT);
+                }
                 // Tự động nối nhịp cắt ngang gọn khi tiếp đất ngay sau AIR_SLASH
                 if (!st.wasOnGround && player.onGround() && clientTick <= st.pendingAirLandingUntilTick) {
                     st.pendingAirLandingUntilTick = -1000L;
@@ -105,6 +129,7 @@ public final class DualBladeAnimManager {
                 }
             } else {
                 st.stanceBlend = Math.max(0.0F, st.stanceBlend - STANCE_BLEND_OUT);
+                st.sprintBlend = Math.max(0.0F, st.sprintBlend - SPRINT_BLEND_OUT);
                 st.attacking = false;
                 st.hasTransitionFrom = false;
                 st.pendingAirLandingUntilTick = -1000L;
@@ -208,6 +233,16 @@ public final class DualBladeAnimManager {
         return st != null ? st.moveType : DualBladeMoveType.COMBO_1;
     }
 
+    /** Hệ số mượt [0..1] của tư thế chạy Naruto Shinobi (dùng đồng bộ cả F5 lẫn góc nhìn Thứ 1). */
+    public static float getSprintBlend(int playerId, float partialTick) {
+        DualBladeAnimState st = STATES.get(playerId);
+        if (st == null) {
+            return 0.0F;
+        }
+        float s = st.getSprintBlend(partialTick) * st.getStanceBlend(partialTick);
+        return s * s * (3.0F - 2.0F * s);
+    }
+
     @Nullable
     public static FullBodyPose evaluatePose(Player player, float partialTick, float limbSwingAmount, float ageInTicks) {
         DualBladeAnimState st = STATES.get(player.getId());
@@ -223,31 +258,30 @@ public final class DualBladeAnimManager {
         FullBodyPose pose = st.reusablePose;
         pose.reset();
 
-        // --- A. TƯ THẾ SÁT THỦ VẮT CHÉO 2 TẦNG RÕ RỆT (`Combat Stance` UDK v2 — Tách 2 tầng ~8.1 px / 0.51 block, 0 hình chữ M!) ---
+        // --- A. TƯ THẾ SÁT THỦ VẮT CHÉO 2 TẦNG RÕ RỆT (`Combat Stance` — GIỮ NGUYÊN 100% POSE F5!) ---
         float breath = Mth.sin(ageInTicks * 0.11F) * 0.028F;
-        float walkSpeed = Math.max(limbSwingAmount, player.walkAnimation.speed(partialTick));
-        float moveWeight = Mth.clamp(walkSpeed * 1.40F, 0.0F, 1.0F);
+        // Dùng thống nhất `walkAnimation.speed(partialTick)` để cả PlayerRenderer, HumanoidModel & ItemInHandLayer nhận cùng moveWeight!
+        float walkSpeed = player.walkAnimation.speed(partialTick);
+        float moveWeight = Mth.clamp(walkSpeed * 1.35F, 0.0F, 1.0F);
         float walkPhase = player.walkAnimation.position(partialTick);
         float strideSway = Mth.sin(walkPhase * 0.6662F) * moveWeight;
-        float strideBob = Math.abs(Mth.cos(walkPhase * 0.6662F)) * 0.028F * moveWeight;
+        float strideBob = Math.abs(Mth.cos(walkPhase * 0.6662F)) * 0.024F * moveWeight;
 
         // Đầu cúi gằm +18.3° (`+0.32 rad`) gườm mắt sát khí; thân hơi gù (`+0.20 rad`), xoay hông ~12.6° (`+0.22 rad`)!
         pose.rootPitchDeg = (-6.0F - moveWeight * 3.0F) * smoothStance;
-        pose.rootTranslateY = (-0.060F * (1.0F - moveWeight * 0.45F) + strideBob) * smoothStance;
-        pose.bodyX = (0.20F + moveWeight * 0.04F) * smoothStance;
-        pose.bodyY = (0.22F + strideSway * 0.12F) * smoothStance;
+        pose.rootTranslateY = (-0.060F * (1.0F - moveWeight * 0.55F) + strideBob) * smoothStance;
+        pose.bodyX = (0.20F * (1.0F - moveWeight * 0.25F)) * smoothStance;
+        pose.bodyY = (0.22F + strideSway * 0.10F) * smoothStance;
         pose.headAddX = (0.32F + moveWeight * 0.03F) * smoothStance;
-        pose.headAddY = (-0.18F - strideSway * 0.06F) * smoothStance;
+        pose.headAddY = (-0.18F - strideSway * 0.05F) * smoothStance;
 
-        // TẦNG TRÊN — Tay Trái + Dao Trái (`Reverse Grip`): đặt CAO HẲN ngang cằm/ngực trên (`xRot=-1.54, yRot=+0.92, zRot=-0.15`),
-        // lưỡi dao thon dốc chéo ~39.9° chạy từ trên-trái xuống dưới-phải (chính diện), 0 đâm xuyên mặt/ngực/giáp!
-        pose.leftArmX = (-1.54F + breath * 0.55F + strideBob * 1.5F) * smoothStance;
+        // TẦNG TRÊN — Tay Trái + Dao Trái (`Reverse Grip`): giữ nguyên 100% pose F5 2 tầng!
+        pose.leftArmX = (-1.54F + breath * 0.55F + strideBob * 1.4F) * smoothStance;
         pose.leftArmY = (0.92F + strideSway * 0.05F) * smoothStance;
         pose.leftArmZ = (-0.15F - breath * 0.25F) * smoothStance;
 
-        // TẦNG DƯỚI — Tay Phải + Dao Phải (`Reverse Grip Horizontal`): hạ THẤP HẲN ngang bụng/thắt lưng (`xRot=-0.78, yRot=-0.96, zRot=+0.26`),
-        // lưỡi dao duỗi NGANG HẲN sang phía bên phải nhân vật (trái màn hình) với mũi VỂNH LÊN +11.1°, 0 chúc đất!
-        pose.rightArmX = (-0.78F - breath * 0.55F - strideBob * 1.8F) * smoothStance;
+        // TẦNG DƯỚI — Tay Phải + Dao Phải (`Standard Grip`): giữ nguyên 100% pose F5 2 tầng!
+        pose.rightArmX = (-0.78F - breath * 0.55F - strideBob * 1.6F) * smoothStance;
         pose.rightArmY = (-0.96F + strideSway * 0.05F) * smoothStance;
         pose.rightArmZ = (0.26F + breath * 0.25F) * smoothStance;
 
@@ -260,8 +294,11 @@ public final class DualBladeAnimManager {
         pose.rightBladeRollDeg = -44.06F * smoothStance;
         pose.rightBladeYawDeg = -173.09F * smoothStance;
 
-        // 2 chân mở thế tấn sát thủ hơi chùng: chân trái bước nhẹ về trước (-0.26), chân phải lùi nhẹ về sau (+0.30)
-        float idleLeg = (1.0F - moveWeight) * smoothStance;
+        // 2 chân mở thế tấn sát thủ khi đứng yên; khi di chuyển/chạy trả hoàn toàn về bước chạy vanilla tự nhiên!
+        float rawSprint = st.getSprintBlend(partialTick);
+        float naruto = rawSprint * rawSprint * (3.0F - 2.0F * rawSprint);
+
+        float idleLeg = Mth.clamp(1.0F - moveWeight * 1.20F, 0.0F, 1.0F) * (1.0F - naruto) * smoothStance;
         pose.rightLegX = 0.30F * idleLeg;
         pose.rightLegY = -0.22F * idleLeg;
         pose.rightLegZ = 0.14F * idleLeg;
@@ -272,46 +309,84 @@ public final class DualBladeAnimManager {
         pose.armWeight = smoothStance;
         pose.legWeight = idleLeg * 0.92F;
 
-        // --- B. CHUỖI 5 NHỊP RÕ NÉT (11–14 TICK + POSE HOLD 40%–80%) + SPRINT + AIR ---
+        // --- A2. TƯ THẾ CHẠY NARUTO SHINOBI (hòa mượt từ Combat Stance 2 tầng khi chạy nước rút!) ---
+        // Đổ thân khí động học -24°, ngẩng mặt nhìn thẳng phía trước, 2 tay & 2 thanh dao duỗi vút đối xứng ra sau lưng!
+        if (naruto > 0.001F) {
+            float n = naruto;
+            float nBob = strideBob * 1.4F;
+            float nSway = strideSway * 0.08F;
+
+            pose.rootPitchDeg = Mth.lerp(n, pose.rootPitchDeg, -24.0F * smoothStance);
+            pose.rootTranslateY = Mth.lerp(n, pose.rootTranslateY, (-0.08F + strideBob * 0.85F) * smoothStance);
+            pose.bodyX = Mth.lerp(n, pose.bodyX, 0.12F * smoothStance);
+            pose.bodyY = Mth.lerp(n, pose.bodyY, nSway * smoothStance);
+            pose.headAddX = Mth.lerp(n, pose.headAddX, -0.26F * smoothStance);
+            pose.headAddY = Mth.lerp(n, pose.headAddY, -nSway * 0.5F * smoothStance);
+
+            pose.rightArmX = Mth.lerp(n, pose.rightArmX, (1.28F + nBob + nSway) * smoothStance);
+            pose.rightArmY = Mth.lerp(n, pose.rightArmY, -0.14F * smoothStance);
+            pose.rightArmZ = Mth.lerp(n, pose.rightArmZ, (0.34F + breath * 0.4F) * smoothStance);
+
+            pose.leftArmX = Mth.lerp(n, pose.leftArmX, (1.28F + nBob - nSway) * smoothStance);
+            pose.leftArmY = Mth.lerp(n, pose.leftArmY, 0.14F * smoothStance);
+            pose.leftArmZ = Mth.lerp(n, pose.leftArmZ, (-0.34F - breath * 0.4F) * smoothStance);
+
+            pose.rightBladePitchDeg = Mth.rotLerp(n, pose.rightBladePitchDeg, NARUTO_RIGHT_BLADE_PITCH * smoothStance);
+            pose.rightBladeRollDeg = Mth.rotLerp(n, pose.rightBladeRollDeg, NARUTO_RIGHT_BLADE_ROLL * smoothStance);
+            pose.rightBladeYawDeg = Mth.rotLerp(n, pose.rightBladeYawDeg, NARUTO_RIGHT_BLADE_YAW * smoothStance);
+
+            pose.leftBladePitchDeg = Mth.rotLerp(n, pose.leftBladePitchDeg, NARUTO_LEFT_BLADE_PITCH * smoothStance);
+            pose.leftBladeRollDeg = Mth.rotLerp(n, pose.leftBladeRollDeg, NARUTO_LEFT_BLADE_ROLL * smoothStance);
+            pose.leftBladeYawDeg = Mth.rotLerp(n, pose.leftBladeYawDeg, NARUTO_LEFT_BLADE_YAW * smoothStance);
+        }
+
+        // --- B. CHUỖI 5 NHỊP ĐỒNG BỘ HOÀN HẢO VỚI TƯ THẾ ĐỨNG 2 TẦNG LẪN TƯ THẾ CHẠY NARUTO ---
         if (!st.isAttackActive(clientTick, partialTick)) {
             st.lastComputedPose.copyFrom(pose);
             return pose;
         }
 
-        // Lưu lại khung Combat Stance 2 tầng để blend mượt vào đòn và trả mượt về thế thủ trong 4–6 tick cuối!
+        // Lưu khung hiện tại (Combat Stance 2 tầng khi đứng, hoặc Naruto Run Pose khi đang chạy!)
+        // -> Mọi cú chém khi chạy sẽ vung bật tay TỪ SAU LƯNG ra chém rồi vuốt thu TRỰC TIẾP VỀ LẠI NARUTO RUN!
         st.idleStancePose.copyFrom(pose);
 
         float alpha = st.getAttackAlpha(clientTick, partialTick);
-        float env = DualBladeAnimState.poseHoldEnvelope(alpha);
         float sweep = DualBladeAnimState.poseHoldSweep(alpha);
         float w = smoothStance;
+        float runDamp = 1.0F - moveWeight * 0.45F;
 
         pose.isAttacking = true;
         pose.armWeight = 1.0F;
-        pose.legWeight = w * (1.0F - moveWeight * 0.15F);
+        // Tách riêng thân trên & thân dưới khi chạy: khi chạy Naruto 2 chân bơm nhịp chạy tự nhiên 100%!
+        pose.legWeight = w * Mth.clamp(1.0F - moveWeight * 1.15F, 0.0F, 1.0F) * (1.0F - naruto);
+        pose.rightBladePitchDeg = 0.0F;
+        pose.rightBladeRollDeg = 0.0F;
+        pose.rightBladeYawDeg = 0.0F;
+        pose.leftBladePitchDeg = 0.0F;
+        pose.leftBladeRollDeg = 0.0F;
+        pose.leftBladeYawDeg = 0.0F;
 
         switch (st.moveType) {
-            case COMBO_1 -> applyHit1LungeRightCleave(pose, sweep, env, w);
-            case COMBO_2 -> applyHit2ReverseLeftRising(pose, sweep, env, w);
-            case COMBO_3 -> applyHit3TwinOpposingDoubleArc(pose, sweep, env, w);
-            case COMBO_4 -> applyHit4LowCrouchCyclone360(pose, alpha, env, w);
-            case COMBO_5 -> applyHit5AirborneTwistXRendSlam(pose, alpha, env, w);
-            case SPRINT_THRUST -> applySprintTwinFlashThrust(pose, alpha, env, w);
-            case AIR_SLASH -> applyAirCrossCut(pose, alpha, env, w);
-            case SKILL_DASH -> applyLandingHorizontalFollowUp(pose, sweep, env, w);
+            case COMBO_1 -> applyHit1LungeRightCleave(pose, sweep, w, runDamp, naruto);
+            case COMBO_2 -> applyHit2ReverseLeftRising(pose, sweep, w, runDamp, naruto);
+            case COMBO_3 -> applyHit3TwinOpposingDoubleArc(pose, sweep, w, runDamp, naruto);
+            case COMBO_4 -> applyHit4LowCrouchCyclone360(pose, alpha, w, runDamp, naruto);
+            case COMBO_5 -> applyHit5AirborneTwistXRendSlam(pose, alpha, w, runDamp, moveWeight, naruto);
+            case SPRINT_THRUST -> applySprintTwinFlashThrust(pose, alpha, w, naruto);
+            case AIR_SLASH -> applyAirCrossCut(pose, alpha, w);
+            case SKILL_DASH -> applyLandingHorizontalFollowUp(pose, sweep, w, runDamp);
             case FLASH_DASH_CHARGE -> applyFlashDashCharge(pose, alpha, w);
             case FLASH_DASH_LAUNCH -> applyFlashDashLaunch(pose, alpha, w);
             case FLASH_DASH_END -> applyFlashDashEndBrake(pose, alpha, w);
         }
 
-        // Cross-fade mượt lúc bắt đầu đòn (từ đòn trước khi nối combo hoặc từ Combat Stance 2 tầng!)
+        // Cross-fade 1 lớp mượt: vào đòn trực tiếp từ Naruto Run / Combat Stance và thu mượt thẳng về lại Naruto Run / Combat Stance!
         if (st.moveType != DualBladeMoveType.COMBO_4 && alpha < 0.16F) {
             float enterT = DualBladeAnimState.easeOutCubic(alpha / 0.16F);
             pose.blendFrom(st.hasTransitionFrom ? st.blendFromPose : st.idleStancePose, enterT);
-        } else if (alpha > 0.78F && st.moveType != DualBladeMoveType.FLASH_DASH_CHARGE
+        } else if (alpha > 0.74F && st.moveType != DualBladeMoveType.FLASH_DASH_CHARGE
                 && st.moveType != DualBladeMoveType.FLASH_DASH_LAUNCH) {
-            // Trả mượt từ pose kết đòn về lại Combat Stance 2 tầng trong ~3–5 tick cuối (0 giật xoay 360°!)
-            float backT = DualBladeAnimState.easeInOutCubic((alpha - 0.78F) / 0.22F);
+            float backT = DualBladeAnimState.easeInOutCubic((alpha - 0.74F) / 0.26F);
             pose.blendFrom(st.idleStancePose, 1.0F - backT);
             pose.isAttacking = true;
         }
@@ -321,174 +396,167 @@ public final class DualBladeAnimManager {
     }
 
     /**
-     * Nhịp 1 (`11.5t`): Đổ chúi người ~38°, bước tấn dài, xoay vai ±75° từ phải -> trái,
-     * Tay Phải vung chéo rộng hết cỡ từ trên-phải vắt sâu sang dưới-trái, giữ dáng kết đòn cực rõ!
+     * Nhịp 1 (`11.5t`): Khi đang chạy Naruto, giữ độ đổ người khí động học `-24°` & tay trái duỗi vút sau lưng kiểu Naruto,
+     * đồng thời tay phải vung bật từ sau lưng chém chéo cực sắc qua phía trước!
      */
-    private static void applyHit1LungeRightCleave(FullBodyPose p, float sweep, float env, float w) {
-        float rootYaw = Mth.lerp(sweep, -72.0F, 76.0F) * env;
+    private static void applyHit1LungeRightCleave(FullBodyPose p, float sweep, float w, float runDamp, float naruto) {
+        float rootYaw = Mth.lerp(sweep, -54.0F, 58.0F) * (0.68F + 0.32F * runDamp);
         p.rootYawDeg = rootYaw * w;
-        p.rootPitchDeg = (-38.0F * env) * w;
-        p.rootRollDeg = (-15.0F * env) * w;
-        p.rootTranslateY = (-0.15F * env) * w;
+        p.rootPitchDeg = Mth.lerp(naruto, -18.0F * runDamp - 6.0F, -24.0F) * w;
+        p.rootRollDeg = (-10.0F * runDamp) * w;
+        p.rootTranslateY = Mth.lerp(naruto, -0.11F * runDamp, -0.08F) * w;
 
-        p.bodyX = 0.42F * env * w;
-        p.bodyY = Mth.lerp(sweep, -0.45F, 0.56F) * env * w;
-        p.bodyZ = -0.14F * env * w;
-        p.headAddY = Mth.clamp(-rootYaw * Mth.DEG_TO_RAD * 0.50F, -0.75F, 0.75F) * w;
-        p.headAddX = 0.34F * env * w;
+        p.bodyX = Mth.lerp(naruto, 0.18F * runDamp + 0.06F, 0.14F) * w;
+        p.bodyY = Mth.lerp(sweep, -0.36F, 0.44F) * w;
+        p.bodyZ = (-0.08F * runDamp) * w;
+        p.headAddY = Mth.clamp(-rootYaw * Mth.DEG_TO_RAD * 0.58F, -0.78F, 0.78F) * w;
+        p.headAddX = Mth.lerp(naruto, 0.20F * runDamp + 0.08F, -0.20F) * w;
 
-        // Tay phải vắt chéo rộng tối đa từ trên-phải (-2.55 rad) xuống sâu dưới-trái (-0.42 rad, yaw +1.48 rad!)
-        p.rightArmX = Mth.lerp(sweep, -2.55F, -0.42F) * env * w;
-        p.rightArmY = Mth.lerp(sweep, -1.18F, 1.48F) * env * w;
-        p.rightArmZ = (1.32F * env + 0.22F) * w;
+        // Tay phải vung chéo sắc từ trên-phải (-2.38, hoặc bật từ sau lưng khi chạy) xuống sâu dưới-trái (-0.44)
+        p.rightArmX = Mth.lerp(sweep, Mth.lerp(naruto, -2.38F, -1.85F), -0.44F) * w;
+        p.rightArmY = Mth.lerp(sweep, -1.05F, 1.36F) * w;
+        p.rightArmZ = (1.18F + 0.16F) * w;
 
-        // Tay trái bung rộng ngược ra sau lưng làm đối trọng rõ nét
-        p.leftArmX = (1.05F * env) * w;
-        p.leftArmY = (-0.72F * env) * w;
-        p.leftArmZ = (-0.86F * env - 0.16F) * w;
+        // Tay trái giữ dáng duỗi vút sau lưng chuẩn Naruto khi đang chạy!
+        p.leftArmX = Mth.lerp(naruto, 0.82F, 1.26F) * w;
+        p.leftArmY = Mth.lerp(naruto, -0.58F, 0.12F) * w;
+        p.leftArmZ = Mth.lerp(naruto, -0.76F, -0.40F) * w;
 
-        // Tấn trước sâu, chân sau duỗi dài cực rõ
-        p.rightLegX = (-0.68F * env) * w;
-        p.rightLegY = (-0.32F * env) * w;
-        p.rightLegZ = (0.22F * env) * w;
-        p.leftLegX = (0.98F * env) * w;
-        p.leftLegY = (0.28F * env) * w;
-        p.leftLegZ = (-0.18F * env) * w;
+        p.rightLegX = -0.62F * w;
+        p.rightLegY = -0.24F * w;
+        p.rightLegZ = 0.18F * w;
+        p.leftLegX = 0.82F * w;
+        p.leftLegY = 0.22F * w;
+        p.leftLegZ = -0.16F * w;
 
-        p.rightBladePitchDeg = -64.0F * env * w;
-        p.rightBladeRollDeg = 72.0F * env * w;
-        p.leftBladePitchDeg = 32.0F * env * w;
-        p.leftBladeRollDeg = -28.0F * env * w;
-        p.firstPersonCameraRollDeg = -3.6F * env * w;
+        p.rightBladePitchDeg = -60.0F * w;
+        p.rightBladeRollDeg = 66.0F * w;
+        p.leftBladePitchDeg = Mth.rotLerp(naruto, 26.0F, NARUTO_LEFT_BLADE_PITCH) * w;
+        p.leftBladeRollDeg = Mth.rotLerp(naruto, -22.0F, NARUTO_LEFT_BLADE_ROLL) * w;
+        p.leftBladeYawDeg = Mth.rotLerp(naruto, 0.0F, NARUTO_LEFT_BLADE_YAW) * w;
+        p.firstPersonCameraRollDeg = -2.8F * w;
     }
 
     /**
-     * Nhịp 2 (`11.5t` — Reverse-Grip Backhand Left Slash): Xoay bật hông ngược,
-     * Tay Trái Cầm Ngược vung chém trái tay (`backhand`) sắc lạnh từ ngực-phải quét bung ngang ra ngoài-trái!
+     * Nhịp 2 (`11.5t` — Reverse-Grip Backhand Left Slash): Khi đang chạy Naruto, tay phải vuốt thẳng về sau lưng kiểu Shinobi,
+     * còn tay trái cầm ngược bật quét backhand rộng ra trước–trái cực mượt!
      */
-    private static void applyHit2ReverseLeftRising(FullBodyPose p, float sweep, float env, float w) {
-        float rootYaw = Mth.lerp(sweep, 68.0F, -78.0F) * env;
+    private static void applyHit2ReverseLeftRising(FullBodyPose p, float sweep, float w, float runDamp, float naruto) {
+        float rootYaw = Mth.lerp(sweep, 52.0F, -60.0F) * (0.68F + 0.32F * runDamp);
         p.rootYawDeg = rootYaw * w;
-        p.rootPitchDeg = (-34.0F * env) * w;
-        p.rootRollDeg = (16.0F * env) * w;
-        p.rootTranslateY = (-0.13F * env) * w;
+        p.rootPitchDeg = Mth.lerp(naruto, -16.0F * runDamp - 6.0F, -24.0F) * w;
+        p.rootRollDeg = (11.0F * runDamp) * w;
+        p.rootTranslateY = Mth.lerp(naruto, -0.10F * runDamp, -0.08F) * w;
 
-        p.bodyX = 0.36F * env * w;
-        p.bodyY = Mth.lerp(sweep, 0.52F, -0.58F) * env * w;
-        p.bodyZ = 0.16F * env * w;
-        p.headAddY = Mth.clamp(-rootYaw * Mth.DEG_TO_RAD * 0.50F, -0.75F, 0.75F) * w;
-        p.headAddX = 0.28F * env * w;
+        p.bodyX = Mth.lerp(naruto, 0.16F * runDamp + 0.06F, 0.14F) * w;
+        p.bodyY = Mth.lerp(sweep, 0.42F, -0.46F) * w;
+        p.bodyZ = (0.09F * runDamp) * w;
+        p.headAddY = Mth.clamp(-rootYaw * Mth.DEG_TO_RAD * 0.58F, -0.78F, 0.78F) * w;
+        p.headAddX = Mth.lerp(naruto, 0.18F * runDamp + 0.06F, -0.20F) * w;
 
-        // Tay trái Cầm Ngược vắt từ vai-phải (-1.58 rad, yaw -1.18) quét backhand bung cực rộng sang trái-trên (-0.82 rad, yaw +1.36)!
-        p.leftArmX = Mth.lerp(sweep, -1.58F, -0.82F) * env * w;
-        p.leftArmY = Mth.lerp(sweep, -1.18F, 1.36F) * env * w;
-        p.leftArmZ = (-1.24F * env - 0.18F) * w;
+        p.leftArmX = Mth.lerp(sweep, -1.52F, -0.82F) * w;
+        p.leftArmY = Mth.lerp(sweep, -1.08F, 1.28F) * w;
+        p.leftArmZ = -1.16F * w;
 
-        // Tay phải thu mở mạnh về phía sau lưng làm đối trọng
-        p.rightArmX = (0.96F * env) * w;
-        p.rightArmY = (0.68F * env) * w;
-        p.rightArmZ = (0.82F * env + 0.16F) * w;
+        // Tay phải vuốt ngược về sau lưng giữ dáng Naruto Run liền mạch!
+        p.rightArmX = Mth.lerp(naruto, 0.78F, 1.26F) * w;
+        p.rightArmY = Mth.lerp(naruto, 0.56F, -0.12F) * w;
+        p.rightArmZ = Mth.lerp(naruto, 0.74F, 0.40F) * w;
 
-        p.leftLegX = (-0.66F * env) * w;
-        p.leftLegY = (0.34F * env) * w;
-        p.leftLegZ = (-0.22F * env) * w;
-        p.rightLegX = (0.96F * env) * w;
-        p.rightLegY = (-0.30F * env) * w;
-        p.rightLegZ = (0.18F * env) * w;
+        p.leftLegX = -0.60F * w;
+        p.leftLegY = 0.26F * w;
+        p.leftLegZ = -0.18F * w;
+        p.rightLegX = 0.80F * w;
+        p.rightLegY = -0.24F * w;
+        p.rightLegZ = 0.16F * w;
 
-        // Căn góc mặt lưỡi cầm ngược nằm đúng mặt phẳng quét backhand (0 xuyên cẳng tay!)
-        p.leftBladePitchDeg = 18.0F * env * w;
-        p.leftBladeRollDeg = -68.0F * env * w;
-        p.leftBladeYawDeg = 22.0F * env * w;
-        p.rightBladePitchDeg = 28.0F * env * w;
-        p.rightBladeRollDeg = 28.0F * env * w;
-        p.firstPersonCameraRollDeg = 3.7F * env * w;
+        p.leftBladePitchDeg = 18.0F * w;
+        p.leftBladeRollDeg = -64.0F * w;
+        p.leftBladeYawDeg = 20.0F * w;
+        p.rightBladePitchDeg = Mth.rotLerp(naruto, 24.0F, NARUTO_RIGHT_BLADE_PITCH) * w;
+        p.rightBladeRollDeg = Mth.rotLerp(naruto, 24.0F, NARUTO_RIGHT_BLADE_ROLL) * w;
+        p.rightBladeYawDeg = Mth.rotLerp(naruto, 0.0F, NARUTO_RIGHT_BLADE_YAW) * w;
+        p.firstPersonCameraRollDeg = 3.0F * w;
     }
 
     /**
-     * Nhịp 3 (`12.5t` — *Ancient Sculk Twinblade*): Đổ chúi cực mạnh `~42°`, chân sau đá cao duỗi thẳng (`1.22 rad`),
-     * CẢ 2 TAY quét đồng thời 2 vòng cung ngược chiều rộng tối đa rồi giữ dáng 2 cánh mở cực uy lực!
+     * Nhịp 3 (`12.5t` — Twin Opposing Double-Arc): Giữ nguyên góc đổ Naruto Run khi đang chạy để 0 giật người!
      */
-    private static void applyHit3TwinOpposingDoubleArc(FullBodyPose p, float sweep, float env, float w) {
-        p.rootYawDeg = Mth.lerp(sweep, -36.0F, 42.0F) * env * w;
-        p.rootPitchDeg = (-42.0F * env) * w;
-        p.rootRollDeg = (-18.0F * env) * w;
-        p.rootTranslateY = (-0.18F * env) * w;
+    private static void applyHit3TwinOpposingDoubleArc(FullBodyPose p, float sweep, float w, float runDamp, float naruto) {
+        float rootYaw = Mth.lerp(sweep, -30.0F, 34.0F) * (0.70F + 0.30F * runDamp);
+        p.rootYawDeg = rootYaw * w;
+        p.rootPitchDeg = Mth.lerp(naruto, -20.0F * runDamp - 6.0F, -24.0F) * w;
+        p.rootRollDeg = (-12.0F * runDamp) * w;
+        p.rootTranslateY = Mth.lerp(naruto, -0.12F * runDamp, -0.08F) * w;
 
-        p.bodyX = 0.46F * env * w;
-        p.bodyY = Mth.lerp(sweep, -0.30F, 0.36F) * env * w;
-        p.bodyZ = -0.14F * env * w;
-        p.headAddX = 0.40F * env * w;
-        p.headAddY = Mth.clamp(-p.rootYawDeg * Mth.DEG_TO_RAD * 0.45F, -0.58F, 0.58F);
+        p.bodyX = Mth.lerp(naruto, 0.20F * runDamp + 0.06F, 0.14F) * w;
+        p.bodyY = Mth.lerp(sweep, -0.26F, 0.30F) * w;
+        p.bodyZ = (-0.08F * runDamp) * w;
+        p.headAddX = Mth.lerp(naruto, 0.22F * runDamp + 0.08F, -0.20F) * w;
+        p.headAddY = Mth.clamp(-rootYaw * Mth.DEG_TO_RAD * 0.50F, -0.58F, 0.58F) * w;
 
-        // Tay trái quét cao vòng lên trái; tay phải cắt thấp chéo vắt sang phải -> 2 vệt ngược chiều đan xen!
-        p.leftArmX = Mth.lerp(sweep, -1.55F, -2.56F) * env * w;
-        p.leftArmY = Mth.lerp(sweep, -0.95F, 1.38F) * env * w;
-        p.leftArmZ = (-1.45F * env - 0.16F) * w;
+        p.leftArmX = Mth.lerp(sweep, -1.48F, -2.18F) * w;
+        p.leftArmY = Mth.lerp(sweep, -0.88F, 1.24F) * w;
+        p.leftArmZ = -1.32F * w;
 
-        p.rightArmX = Mth.lerp(sweep, -1.35F, -0.35F) * env * w;
-        p.rightArmY = Mth.lerp(sweep, 1.18F, -1.42F) * env * w;
-        p.rightArmZ = (1.45F * env + 0.16F) * w;
+        p.rightArmX = Mth.lerp(sweep, -1.32F, -0.40F) * w;
+        p.rightArmY = Mth.lerp(sweep, 1.08F, -1.28F) * w;
+        p.rightArmZ = 1.32F * w;
 
-        // Chân trước trụ thấp, chân sau đá duỗi thẳng cao ra sau cực dễ thấy ở F5!
-        p.rightLegX = (-0.74F * env) * w;
-        p.rightLegZ = (0.24F * env) * w;
-        p.leftLegX = (1.22F * env) * w;
-        p.leftLegZ = (-0.20F * env) * w;
+        p.rightLegX = -0.68F * w;
+        p.rightLegZ = 0.20F * w;
+        p.leftLegX = 0.96F * w;
+        p.leftLegZ = -0.18F * w;
 
-        p.leftBladePitchDeg = -68.0F * env * w;
-        p.leftBladeRollDeg = -78.0F * env * w;
-        p.rightBladePitchDeg = -62.0F * env * w;
-        p.rightBladeRollDeg = 76.0F * env * w;
-        p.firstPersonCameraRollDeg = -3.9F * env * w;
+        p.leftBladePitchDeg = 20.0F * w;
+        p.leftBladeRollDeg = -66.0F * w;
+        p.leftBladeYawDeg = 16.0F * w;
+        p.rightBladePitchDeg = -58.0F * w;
+        p.rightBladeRollDeg = 72.0F * w;
+        p.firstPersonCameraRollDeg = -3.1F * w;
     }
 
     /**
-     * Nhịp 4 (`14.0t` — Low-Crouch `360°` Cyclone Spin-Sweep):
-     * Khuỵu trọng tâm sâu (`-0.22`), đổ thân `35°`, dang rộng cả 2 cánh tay ngang ngực song song mặt đất
-     * và XOAY TRÒN TOÀN THÂN `360°` siêu rõ ràng (`0%->62%` xoay, `62%->84%` hãm giữ thế, `84%->100%` thu)!
+     * Nhịp 4 (`14.0t` — `360°` Shinobi Cyclone Spin-Sweep): Xoay tròn 360° liền mạch ngay trên đà chạy Naruto!
      */
-    private static void applyHit4LowCrouchCyclone360(FullBodyPose p, float alpha, float env, float w) {
+    private static void applyHit4LowCrouchCyclone360(FullBodyPose p, float alpha, float w, float runDamp, float naruto) {
         float spin = DualBladeAnimState.cyclone360Spin(alpha);
+        float env = DualBladeAnimState.poseHoldEnvelope(alpha);
         p.rootYawDeg = (360.0F * spin) * w;
-        p.rootPitchDeg = (-35.0F * env) * w;
-        p.rootRollDeg = (-12.0F * Mth.sin(spin * Mth.TWO_PI) * env) * w;
-        p.rootTranslateY = (-0.22F * env) * w;
+        p.rootPitchDeg = Mth.lerp(naruto, (-18.0F * runDamp - 6.0F) * env, -22.0F) * w;
+        p.rootRollDeg = (-10.0F * Mth.sin(spin * Mth.TWO_PI) * runDamp * env) * w;
+        p.rootTranslateY = Mth.lerp(naruto, -0.14F * runDamp * env, -0.09F) * w;
 
-        p.bodyX = 0.40F * env * w;
-        p.bodyY = (0.22F * env) * w;
+        p.bodyX = Mth.lerp(naruto, (0.18F * runDamp + 0.06F) * env, 0.14F) * w;
+        p.bodyY = (0.18F * env) * w;
         p.bodyZ = 0.0F;
-        p.headAddX = 0.34F * env * w;
+        p.headAddX = Mth.lerp(naruto, (0.20F * runDamp + 0.06F) * env, -0.20F) * w;
         p.headAddY = 0.0F;
 
-        // Dang rộng 2 cánh tay ngang vai tạo vòng tròn xoay 360° (1 lưỡi thuận chĩa trước + 1 lưỡi ngược quét tiếp tuyến sau khuỷu!)
-        p.rightArmX = (-1.48F * env) * w;
-        p.leftArmX = (-1.32F * env) * w;
-        p.rightArmZ = (1.56F * env) * w;
-        p.leftArmZ = (-1.48F * env) * w;
-        p.rightArmY = (-0.22F * env) * w;
-        p.leftArmY = (0.34F * env) * w;
+        p.rightArmX = -1.44F * w;
+        p.leftArmX = -1.30F * w;
+        p.rightArmZ = 1.48F * w;
+        p.leftArmZ = -1.42F * w;
+        p.rightArmY = -0.20F * w;
+        p.leftArmY = 0.30F * w;
 
-        // Khuỵu gối tấn sâu đối xứng
-        p.rightLegX = (-0.72F * env) * w;
-        p.leftLegX = (0.68F * env) * w;
-        p.rightLegZ = (0.34F * env) * w;
-        p.leftLegZ = (-0.34F * env) * w;
+        p.rightLegX = -0.64F * w;
+        p.leftLegX = 0.62F * w;
+        p.rightLegZ = 0.28F * w;
+        p.leftLegZ = -0.28F * w;
 
-        p.rightBladePitchDeg = -74.0F * env * w;
-        p.rightBladeRollDeg = 88.0F * env * w;
-        p.leftBladePitchDeg = -14.0F * env * w;
-        p.leftBladeRollDeg = -78.0F * env * w;
-        p.firstPersonCameraRollDeg = -3.8F * Mth.sin(spin * Mth.TWO_PI) * env * w;
+        p.rightBladePitchDeg = -70.0F * w;
+        p.rightBladeRollDeg = 84.0F * w;
+        p.leftBladePitchDeg = 14.0F * w;
+        p.leftBladeRollDeg = -74.0F * w;
+        p.leftBladeYawDeg = 18.0F * w;
+        p.firstPersonCameraRollDeg = -3.2F * Mth.sin(spin * Mth.TWO_PI) * env * w;
     }
 
     /**
-     * Nhịp 5 Finisher (`13.5t` — Airborne Asymmetric X-Rend Slam: 1 Thuận Bổ + 1 Ngược Xé Chéo!):
-     * - `0% -> 24%`: Bật nhảy nhẹ lên không (`+0.30`), xoắn nghiêng thân `32°`, co gối trái cực cao (`-1.38 rad`), giơ 2 đao lên đỉnh.
-     * - `24% -> 46%`: Tay phải thuận bổ chéo cực mạnh từ trên xuống, tay trái cầm ngược xé chéo khóa chữ X bất đối xứng!
-     * - `46% -> 82%`: Giữ dáng kết đòn khuỵu thấp 2 tay bắt chéo chữ X cực ngầu!
+     * Nhịp 5 Finisher (`13.5t` — Airborne Asymmetric X-Rend Slam): đồng bộ liền mạch với đà chạy Naruto!
      */
-    private static void applyHit5AirborneTwistXRendSlam(FullBodyPose p, float alpha, float env, float w) {
+    private static void applyHit5AirborneTwistXRendSlam(FullBodyPose p, float alpha, float w, float runDamp, float moveWeight, float naruto) {
         float leap = Mth.sin(Mth.clamp(alpha / 0.44F, 0.0F, 1.0F) * Mth.PI);
         float windup = DualBladeAnimState.easeOutCubic(Mth.clamp(alpha / 0.24F, 0.0F, 1.0F));
         float slam = alpha < 0.22F
@@ -497,21 +565,20 @@ public final class DualBladeAnimManager {
                     ? DualBladeAnimState.easeOutQuart((alpha - 0.22F) / 0.24F)
                     : 1.0F);
 
-        p.rootTranslateY = (0.30F * leap - 0.18F * slam * env) * w;
-        p.rootYawDeg = Mth.lerp(slam, -42.0F, 22.0F) * env * w;
-        p.rootPitchDeg = (14.0F * leap * (1.0F - slam) - 40.0F * slam * env) * w;
-        p.rootRollDeg = (-32.0F * leap * (1.0F - slam * 0.55F)) * w;
+        p.rootTranslateY = (0.22F * leap - Mth.lerp(naruto, 0.12F * runDamp, 0.08F) * slam) * w;
+        p.rootYawDeg = Mth.lerp(slam, -34.0F, 18.0F) * (0.72F + 0.28F * runDamp) * w;
+        p.rootPitchDeg = (Mth.lerp(naruto, 10.0F, -10.0F) * leap * (1.0F - slam) - Mth.lerp(naruto, 20.0F * runDamp + 6.0F, 24.0F) * slam) * w;
+        p.rootRollDeg = (-20.0F * leap * (1.0F - slam * 0.55F)) * w;
 
-        p.bodyX = (-0.18F * leap + 0.44F * slam * env) * w;
-        p.bodyY = Mth.lerp(slam, -0.36F, 0.16F) * env * w;
-        p.bodyZ = (-0.22F * leap) * w;
-        p.headAddX = (0.34F * slam * env) * w;
+        p.bodyX = Mth.lerp(naruto, -0.10F * leap + (0.20F * runDamp + 0.06F) * slam, 0.14F) * w;
+        p.bodyY = Mth.lerp(slam, -0.28F, 0.14F) * w;
+        p.bodyZ = (-0.12F * leap) * w;
+        p.headAddX = Mth.lerp(naruto, 0.20F * slam, -0.22F) * w;
 
-        // Tay phải thuận giơ cao trên đầu (-2.80) bổ sâu; tay trái cầm ngược vung cao chéo (-2.32) xé ngược chữ X!
-        float rightArmX = Mth.lerp(slam, -2.80F * windup, -0.58F) * env;
-        float leftArmX = Mth.lerp(slam, -2.32F * windup, -0.94F) * env;
-        float armZ = Mth.lerp(slam, 0.96F * windup, -0.44F) * env;
-        float armY = Mth.lerp(slam, -0.34F * windup, 1.18F) * env;
+        float rightArmX = Mth.lerp(slam, -2.65F * windup, -0.58F);
+        float leftArmX = Mth.lerp(slam, -2.20F * windup, -0.92F);
+        float armZ = Mth.lerp(slam, 0.90F * windup, -0.40F);
+        float armY = Mth.lerp(slam, -0.30F * windup, 1.10F);
         p.rightArmX = rightArmX * w;
         p.leftArmX = leftArmX * w;
         p.rightArmZ = armZ * w;
@@ -519,92 +586,117 @@ public final class DualBladeAnimManager {
         p.rightArmY = armY * w;
         p.leftArmY = -armY * w;
 
-        // Co gối trái cực cao lúc nhảy, đạp chân tấn rộng lúc bổ xuống!
-        p.leftLegX = Mth.lerp(slam, -1.38F * leap, 0.78F * env) * w;
-        p.rightLegX = Mth.lerp(slam, 0.52F * leap, -0.76F * env) * w;
-        p.rightLegZ = (0.24F * env) * w;
-        p.leftLegZ = (-0.24F * env) * w;
+        p.legWeight = w * Math.max(leap * 0.80F, Mth.clamp(1.0F - moveWeight * 1.15F, 0.0F, 1.0F) * (1.0F - naruto));
+        p.leftLegX = Mth.lerp(slam, -1.18F * leap, 0.68F) * w;
+        p.rightLegX = Mth.lerp(slam, 0.45F * leap, -0.66F) * w;
+        p.rightLegZ = 0.20F * w;
+        p.leftLegZ = -0.20F * w;
 
-        p.rightBladePitchDeg = (-56.0F * slam * env) * w;
-        p.rightBladeRollDeg = (50.0F * slam * env) * w;
-        p.leftBladePitchDeg = (20.0F * slam * env) * w;
-        p.leftBladeRollDeg = (-56.0F * slam * env) * w;
-        p.firstPersonCameraRollDeg = 3.6F * Mth.sin(Mth.clamp((alpha - 0.18F) / 0.52F, 0.0F, 1.0F) * Mth.PI) * w;
+        p.rightBladePitchDeg = (-54.0F * slam) * w;
+        p.rightBladeRollDeg = (48.0F * slam) * w;
+        p.leftBladePitchDeg = (22.0F * slam) * w;
+        p.leftBladeRollDeg = (-54.0F * slam) * w;
+        p.leftBladeYawDeg = (14.0F * slam) * w;
+        p.firstPersonCameraRollDeg = 3.0F * Mth.sin(Mth.clamp((alpha - 0.18F) / 0.52F, 0.0F, 1.0F) * Mth.PI) * w;
     }
 
-    /** Sprint Attack (`11.0t` — Twin Flash-Thrust): lao chồm thấp `42°` đâm xiên song đao 2 nhịp cực mạnh + giữ thế đâm! */
-    private static void applySprintTwinFlashThrust(FullBodyPose p, float alpha, float env, float w) {
-        float pulse = 0.72F + 0.28F * Mth.sin(Math.min(1.0F, alpha / 0.65F) * Mth.TWO_PI);
-        p.rootPitchDeg = (-42.0F * env) * w;
-        p.rootYawDeg = (-18.0F * Mth.sin(Math.min(1.0F, alpha / 0.65F) * Mth.TWO_PI) * env) * w;
-        p.rootTranslateY = (-0.18F * env) * w;
+    /**
+     * Sprint Opening Slash (`11.0t` — Naruto Whip-Out Shinobi Cross-Slash!):
+     * Giữ trọn tư thế đổ người khí động học Naruto Run (`-24°`, mắt nhìn thẳng, chân bơm nhịp chạy tự nhiên 100%):
+     * - 2 cánh tay vung bật trực tiếp TỪ PHÍA SAU LƯNG (`+1.28 rad`) lao lên chém chéo lệch pha cực sắc:
+     *   Tay Phải (Đỏ–Đen) quất vắt chéo trước (`0%->36%`), Tay Trái (Đen–Bạc) quất ngược nối tiếp (`14%->52%`),
+     *   rồi vuốt mượt 2 cánh tay trở lại sau lưng về đúng dáng Naruto Run (hoặc nối thẳng sang `COMBO_2..5`)!
+     */
+    private static void applySprintTwinFlashThrust(FullBodyPose p, float alpha, float w, float naruto) {
+        float whipR = DualBladeAnimState.easeOutQuart(Mth.clamp(alpha / 0.36F, 0.0F, 1.0F));
+        float whipL = DualBladeAnimState.easeOutQuart(Mth.clamp((alpha - 0.14F) / 0.38F, 0.0F, 1.0F));
 
-        p.bodyX = 0.46F * env * w;
-        p.headAddX = 0.40F * env * w;
+        // Đồng bộ tuyệt đối thân trên & góc đầu với tư thế chạy Naruto (-24°, bodyX=0.14, headAddX=-0.24)
+        p.rootPitchDeg = -24.0F * w;
+        p.rootYawDeg = (Mth.lerp(whipR, -26.0F, 24.0F) - Mth.lerp(whipL, 0.0F, 36.0F)) * w;
+        p.rootRollDeg = (-7.0F + 14.0F * whipL) * w;
+        p.rootTranslateY = -0.08F * w;
 
-        p.rightArmX = (-1.68F * env * pulse) * w;
-        p.leftArmX = (-1.64F * env * (1.28F - pulse * 0.28F)) * w;
-        p.rightArmY = (-0.12F * env) * w;
-        p.leftArmY = (0.12F * env) * w;
-        p.rightArmZ = (0.18F * env) * w;
-        p.leftArmZ = (-0.18F * env) * w;
+        p.bodyX = 0.14F * w;
+        p.bodyY = (Mth.lerp(whipR, -0.22F, 0.24F) - 0.28F * whipL) * w;
+        p.bodyZ = (-0.05F + 0.10F * whipL) * w;
+        p.headAddX = -0.24F * w;
+        p.headAddY = Mth.clamp(-p.rootYawDeg * Mth.DEG_TO_RAD * 0.58F, -0.62F, 0.62F);
 
-        p.rightLegX = (-0.64F * env) * w;
-        p.leftLegX = (1.10F * env) * w;
+        // Tay Phải bật mạnh từ sau lưng kiểu Naruto (+1.28 -> -1.52 -> -0.58) vắt chéo qua ngực!
+        p.rightArmX = Mth.lerp(whipR, 0.85F * Math.max(0.5F, naruto), -0.64F) * w
+                - 0.95F * Mth.sin(whipR * Mth.PI) * w;
+        p.rightArmY = Mth.lerp(whipR, -0.55F, 1.18F) * w;
+        p.rightArmZ = Mth.lerp(whipR, 0.65F, 0.58F) * w;
 
-        p.rightBladePitchDeg = -86.0F * env * w;
-        p.leftBladePitchDeg = -86.0F * env * w;
-        p.rightBladeRollDeg = 14.0F * env * w;
-        p.leftBladeRollDeg = -14.0F * env * w;
-        p.firstPersonCameraRollDeg = -3.0F * Mth.sin(alpha * Mth.TWO_PI) * env * w;
+        // Tay Trái chờ sau lưng Naruto (+1.26) trong 0.14 pha đầu, rồi quất ngược backhand sắc ngang!
+        p.leftArmX = Mth.lerp(whipL, 1.24F, -0.82F) * w - 0.55F * Mth.sin(whipL * Mth.PI) * w;
+        p.leftArmY = Mth.lerp(whipL, 0.14F, 1.20F) * w;
+        p.leftArmZ = Mth.lerp(whipL, -0.36F, -1.20F) * w;
+
+        p.rightLegX = -0.52F * w;
+        p.leftLegX = 0.68F * w;
+
+        p.rightBladePitchDeg = Mth.rotLerp(whipR, NARUTO_RIGHT_BLADE_PITCH, -62.0F) * w;
+        p.rightBladeRollDeg = Mth.rotLerp(whipR, NARUTO_RIGHT_BLADE_ROLL, 64.0F) * w;
+        p.rightBladeYawDeg = Mth.rotLerp(whipR, NARUTO_RIGHT_BLADE_YAW, 0.0F) * w;
+
+        p.leftBladePitchDeg = Mth.rotLerp(whipL, NARUTO_LEFT_BLADE_PITCH, 20.0F) * w;
+        p.leftBladeRollDeg = Mth.rotLerp(whipL, NARUTO_LEFT_BLADE_ROLL, -60.0F) * w;
+        p.leftBladeYawDeg = Mth.rotLerp(whipL, NARUTO_LEFT_BLADE_YAW, 18.0F) * w;
+        p.firstPersonCameraRollDeg = Mth.lerp(whipL, -2.5F, 2.3F) * w;
     }
 
     /** Jump / Air Attack (`11.5t` — Aerial Cross-Cut): xoay trên không `180°` chém hất chéo 2 tay rõ nét! */
-    private static void applyAirCrossCut(FullBodyPose p, float alpha, float env, float w) {
-        float spin = DualBladeAnimState.poseHoldSweep(alpha);
-        p.rootYawDeg = (180.0F * Mth.clamp(spin, 0.0F, 1.0F) * env) * w;
-        p.rootPitchDeg = (-32.0F * env) * w;
-        p.rootRollDeg = (26.0F * env) * w;
+    private static void applyAirCrossCut(FullBodyPose p, float alpha, float w) {
+        float spin = Mth.clamp(DualBladeAnimState.poseHoldSweep(alpha), 0.0F, 1.0F);
+        p.rootYawDeg = (180.0F * spin) * w;
+        p.rootPitchDeg = -22.0F * w;
+        p.rootRollDeg = 18.0F * w;
 
-        p.bodyX = 0.28F * env * w;
-        p.rightArmX = Mth.lerp(Mth.clamp(spin, 0.0F, 1.0F), -0.60F, -2.48F) * env * w;
-        p.leftArmX = Mth.lerp(Mth.clamp(spin, 0.0F, 1.0F), -0.60F, -2.48F) * env * w;
-        p.rightArmZ = (1.30F * env) * w;
-        p.leftArmZ = (-1.30F * env) * w;
-        p.rightArmY = (-0.82F * env) * w;
-        p.leftArmY = (0.82F * env) * w;
+        p.bodyX = 0.18F * w;
+        p.rightArmX = Mth.lerp(spin, -0.64F, -2.30F) * w;
+        p.leftArmX = Mth.lerp(spin, -0.72F, -2.10F) * w;
+        p.rightArmZ = 1.24F * w;
+        p.leftArmZ = -1.24F * w;
+        p.rightArmY = -0.76F * w;
+        p.leftArmY = 0.76F * w;
 
-        p.rightLegX = (-0.95F * env) * w;
-        p.leftLegX = (0.68F * env) * w;
+        p.legWeight = w * 0.90F;
+        p.rightLegX = -0.82F * w;
+        p.leftLegX = 0.58F * w;
 
-        p.rightBladePitchDeg = -66.0F * env * w;
-        p.rightBladeRollDeg = 64.0F * env * w;
-        p.leftBladePitchDeg = -66.0F * env * w;
-        p.leftBladeRollDeg = -64.0F * env * w;
-        p.firstPersonCameraRollDeg = 3.5F * env * w;
+        p.rightBladePitchDeg = -62.0F * w;
+        p.rightBladeRollDeg = 60.0F * w;
+        // Sửa góc lưỡi tay trái Reverse Grip (không để -66° xuyên tay!)
+        p.leftBladePitchDeg = 22.0F * w;
+        p.leftBladeRollDeg = -62.0F * w;
+        p.leftBladeYawDeg = 16.0F * w;
+        p.firstPersonCameraRollDeg = 3.0F * w;
     }
 
     /** Nhịp cắt ngang tự động khi tiếp đất ngay sau AIR_SLASH (`SKILL_DASH`, `9.0t`). */
-    private static void applyLandingHorizontalFollowUp(FullBodyPose p, float sweep, float env, float w) {
-        p.rootYawDeg = Mth.lerp(sweep, -64.0F, 64.0F) * env * w;
-        p.rootPitchDeg = (-36.0F * env) * w;
-        p.rootTranslateY = (-0.18F * env) * w;
+    private static void applyLandingHorizontalFollowUp(FullBodyPose p, float sweep, float w, float runDamp) {
+        p.rootYawDeg = Mth.lerp(sweep, -52.0F, 52.0F) * (0.70F + 0.30F * runDamp) * w;
+        p.rootPitchDeg = (-18.0F * runDamp - 6.0F) * w;
+        p.rootTranslateY = (-0.12F * runDamp) * w;
 
-        p.bodyX = 0.38F * env * w;
-        p.rightArmX = (-1.48F * env) * w;
-        p.leftArmX = (-1.48F * env) * w;
-        p.rightArmZ = (1.46F * env) * w;
-        p.leftArmZ = (-1.46F * env) * w;
-        p.rightArmY = Mth.lerp(sweep, -1.05F, 1.25F) * env * w;
-        p.leftArmY = Mth.lerp(sweep, 1.05F, -1.25F) * env * w;
+        p.bodyX = (0.18F * runDamp + 0.06F) * w;
+        p.rightArmX = -1.42F * w;
+        p.leftArmX = -1.36F * w;
+        p.rightArmZ = 1.38F * w;
+        p.leftArmZ = -1.38F * w;
+        p.rightArmY = Mth.lerp(sweep, -0.96F, 1.18F) * w;
+        p.leftArmY = Mth.lerp(sweep, 0.96F, -1.18F) * w;
 
-        p.rightLegX = (-0.64F * env) * w;
-        p.leftLegX = (0.74F * env) * w;
-        p.rightBladePitchDeg = -70.0F * env * w;
-        p.rightBladeRollDeg = 82.0F * env * w;
-        p.leftBladePitchDeg = -70.0F * env * w;
-        p.leftBladeRollDeg = -82.0F * env * w;
-        p.firstPersonCameraRollDeg = -3.2F * env * w;
+        p.rightLegX = -0.58F * w;
+        p.leftLegX = 0.66F * w;
+        p.rightBladePitchDeg = -66.0F * w;
+        p.rightBladeRollDeg = 78.0F * w;
+        p.leftBladePitchDeg = 18.0F * w;
+        p.leftBladeRollDeg = -74.0F * w;
+        p.leftBladeYawDeg = 18.0F * w;
+        p.firstPersonCameraRollDeg = -2.8F * w;
     }
 
     /**

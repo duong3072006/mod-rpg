@@ -654,7 +654,9 @@ public final class DualBladeCombatHandler {
         if (!player.onGround() && !player.isInWater() && player.fallDistance > 0.05F) {
             return DualBladeMoveType.AIR_SLASH;
         }
-        if (player.isSprinting() && player.onGround()) {
+        // Khi chạy nhanh (Sprint): chỉ dùng SPRINT_THRUST làm đòn mở màn (nhịp 0), sau đó nối thẳng
+        // sang COMBO_2 -> COMBO_3 -> COMBO_4 (360°) -> COMBO_5 (chữ X) để không bị kẹt lặp mãi 1 đòn!
+        if (player.isSprinting() && player.onGround() && comboStep == 0) {
             return DualBladeMoveType.SPRINT_THRUST;
         }
         return DualBladeMoveType.comboByIndex(comboStep);
@@ -935,13 +937,14 @@ public final class DualBladeCombatHandler {
         if (!player.isAlive() || player.isSpectator() || !isHoldingDualBlade(player) || isPlayerDashing(player)) {
             return;
         }
-        if (player.getAttackStrengthScale(0.5F) < 0.90F) {
-            return;
-        }
 
         ServerLevel level = player.serverLevel();
         int targetId = payload.targetEntityId();
         if (targetId >= 0) {
+            // Đánh trúng quái: giữ nguyên xác thực chặt chẽ cooldown >= 90%, tầm đánh & đường nhìn (LOS)!
+            if (player.getAttackStrengthScale(0.5F) < 0.90F) {
+                return;
+            }
             Entity target = level.getEntity(targetId);
             if (target == null || !target.isAlive() || target == player || !target.isAttackable()) {
                 return;
@@ -965,8 +968,17 @@ public final class DualBladeCombatHandler {
             return;
         }
 
+        // Nhánh chém gió (`targetId == -1`, không có quái): chống spam bằng cooldown tick (>= 4 tick) thay vì
+        // chặn cứng bởi attackStrengthScale (do vanilla startAttack() đã reset ticker), giúp animation, VFX
+        // & âm thanh luôn mượt 100%; chỉ bật sát thương AOE 360° & bước lướt khi đủ lực (>= 85%) để giữ cân bằng!
         long now = level.getGameTime();
         PlayerCombatState st = PLAYER_STATES.computeIfAbsent(player.getUUID(), id -> new PlayerCombatState());
+        if (now - st.lastSwingGameTime < 4L) {
+            return;
+        }
+        float airStrength = player.getAttackStrengthScale(0.5F);
+        boolean fullPowerAirSlash = airStrength >= 0.85F;
+
         if (now - st.lastSwingGameTime > COMBO_RESET_TICKS) {
             st.nextComboStep = 0;
         }
@@ -985,7 +997,7 @@ public final class DualBladeCombatHandler {
         player.resetAttackStrengthTicker();
         player.swing(InteractionHand.MAIN_HAND, true);
 
-        if (moveType == DualBladeMoveType.COMBO_4 && !offhandOccupied) {
+        if (fullPowerAirSlash && moveType == DualBladeMoveType.COMBO_4 && !offhandOccupied) {
             ItemStack stack = player.getMainHandItem();
             WeaponsConfig cfg = WeaponsConfig.get();
             float piercePct = cfg.getArmorPiercePercent(ModEnchantments.getLevel(level, stack, ModEnchantments.ARMOR_PIERCE));
@@ -993,7 +1005,7 @@ public final class DualBladeCombatHandler {
             triggerCyclone360Aoe(level, player, null, stack,
                     (float) player.getAttributeValue(Attributes.ATTACK_DAMAGE), piercePct, woundsBonus);
         }
-        if (!offhandOccupied) {
+        if (fullPowerAirSlash && !offhandOccupied) {
             applySafeComboLunge(level, player, st, moveType, now);
         }
         emitComboAudioAndSync(level, player, moveType, 0, null);

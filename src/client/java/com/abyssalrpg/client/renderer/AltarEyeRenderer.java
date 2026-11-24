@@ -160,21 +160,19 @@ public class AltarEyeRenderer implements BlockEntityRenderer<AltarEyeBlockEntity
         //    (B) Outer Translucent Energy Swirl Ring
         //    (C) Four Smoothly Orbiting 3D Glowing Crystal Shards!
         // ---------------------------------------------------------------------
-        VertexConsumer ringGlow = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.MAGIC_CIRCLE_TEX));
-        VertexConsumer ringTrans = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.MAGIC_CIRCLE_TEX));
-        VertexConsumer auraSwirl = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.AURA_SWIRL_TEX));
-
-        // Outer Gyroscope Arcane Ring #1 (tilted +28 deg, rotating clockwise)
+        // Outer Gyroscope Arcane Ring #1 (translucent pass first)
         poseStack.pushPose();
         poseStack.translate(0.0, eyeY, 0.0);
         poseStack.mulPose(Axis.ZP.rotationDegrees(28.0f + Mth.sin(t * 0.03f) * 8.0f));
         poseStack.mulPose(Axis.YP.rotationDegrees(t * 3.1f));
+        VertexConsumer ringTrans = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.MAGIC_CIRCLE_TEX));
         VfxRenderHelper.drawHorizontalQuad(ringTrans, poseStack.last(), 0.0f, 0.72f * pulse, pr, pg, pb, 165);
+        VertexConsumer ringGlow = buffers.getBuffer(RenderType.eyes(VfxRenderHelper.MAGIC_CIRCLE_TEX));
         VfxRenderHelper.drawHorizontalQuad(ringGlow, poseStack.last(), 0.005f, 0.70f * pulse,
                 VfxRenderHelper.mixWhite(pr, 0.45f), VfxRenderHelper.mixWhite(pg, 0.45f), VfxRenderHelper.mixWhite(pb, 0.45f), 195);
         poseStack.popPose();
 
-        // Inner Gyroscope Arcane Ring #2 (tilted -34 deg, counter-rotating faster in accent color!)
+        // Inner Gyroscope Arcane Ring #2 (tilted -34 deg, counter-rotating faster in accent color — same ringGlow buffer!)
         poseStack.pushPose();
         poseStack.translate(0.0, eyeY, 0.0);
         poseStack.mulPose(Axis.XP.rotationDegrees(-34.0f + Mth.cos(t * 0.035f) * 10.0f));
@@ -186,6 +184,7 @@ public class AltarEyeRenderer implements BlockEntityRenderer<AltarEyeBlockEntity
         poseStack.pushPose();
         poseStack.translate(0.0, 1.02f + bob * 0.35f, 0.0);
         poseStack.mulPose(Axis.YP.rotationDegrees(-t * 2.2f));
+        VertexConsumer auraSwirl = buffers.getBuffer(RenderType.entityTranslucentEmissive(VfxRenderHelper.AURA_SWIRL_TEX));
         VfxRenderHelper.drawHorizontalQuad(auraSwirl, poseStack.last(), 0.0f, 0.64f, pr, pg, pb, 130);
         poseStack.popPose();
 

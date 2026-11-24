@@ -21,9 +21,12 @@ public final class ModCreativeTab {
                     .title(Component.translatable("itemGroup.abyssalrpg.main"))
                     .icon(() -> new ItemStack(ModItems.DUAL_KNIFE != null ? ModItems.DUAL_KNIFE : ModItems.OVERLORD_CROWN))
                     .displayItems((params, output) -> {
-                        // Signature Two-Handed Weapon (`abyssalrpg:dual_knife`) & Endgame Nightmare Knight Armor Set
+                        // Signature Two-Handed Weapons (`abyssalrpg:dual_knife`, `abyssalrpg:togetsu`) & Endgame Nightmare Knight Armor Set
                         if (ModItems.DUAL_KNIFE != null) {
                             output.accept(ModItems.DUAL_KNIFE);
+                        }
+                        if (ModItems.TOGETSU != null) {
+                            output.accept(ModItems.TOGETSU);
                         }
                         if (ModItems.NIGHTMARE_HELMET != null) {
                             output.accept(ModItems.NIGHTMARE_HELMET);

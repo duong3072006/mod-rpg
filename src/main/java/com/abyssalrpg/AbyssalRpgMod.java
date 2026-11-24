@@ -3,6 +3,7 @@ package com.abyssalrpg;
 import com.abyssalrpg.combat.CinderDragonArmorHandler;
 import com.abyssalrpg.combat.DualBladeCombatHandler;
 import com.abyssalrpg.combat.NightmareArmorHandler;
+import com.abyssalrpg.combat.TogetsuCombatHandler;
 import com.abyssalrpg.command.AbyssCommands;
 import com.abyssalrpg.config.ArmorConfig;
 import com.abyssalrpg.config.CerberusConfig;
@@ -66,6 +67,7 @@ public class AbyssalRpgMod implements ModInitializer {
 
         ServerTickEvents.END_SERVER_TICK.register(CerberusGroupManager::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(DualBladeCombatHandler::tickServer);
+        ServerTickEvents.END_SERVER_TICK.register(TogetsuCombatHandler::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(NightmareArmorHandler::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(CinderDragonArmorHandler::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(AbyssCommands::tickActiveAudits);

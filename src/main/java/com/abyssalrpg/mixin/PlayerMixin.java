@@ -1,6 +1,7 @@
 package com.abyssalrpg.mixin;
 
 import com.abyssalrpg.combat.DualBladeCombatHandler;
+import com.abyssalrpg.combat.TogetsuCombatHandler;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
@@ -21,10 +22,14 @@ public abstract class PlayerMixin {
     @Unique
     private DualBladeCombatHandler.ActiveHitContext abyssalrpg$activeDualBladeHit;
 
+    @Unique
+    private TogetsuCombatHandler.ActiveHitContext abyssalrpg$activeTogetsuHit;
+
     @Inject(method = "attack", at = @At("HEAD"))
     private void abyssalrpg$beginDualBladeAttack(Entity target, CallbackInfo ci) {
-        this.abyssalrpg$activeDualBladeHit =
-                DualBladeCombatHandler.beginPlayerAttack((Player) (Object) this, target);
+        Player self = (Player) (Object) this;
+        this.abyssalrpg$activeDualBladeHit = DualBladeCombatHandler.beginPlayerAttack(self, target);
+        this.abyssalrpg$activeTogetsuHit = TogetsuCombatHandler.beginPlayerAttack(self, target);
     }
 
     @ModifyArg(
@@ -39,6 +44,9 @@ public abstract class PlayerMixin {
         if (this.abyssalrpg$activeDualBladeHit != null) {
             return DualBladeCombatHandler.modifyAttackDamage(amount);
         }
+        if (this.abyssalrpg$activeTogetsuHit != null) {
+            return TogetsuCombatHandler.modifyAttackDamage(amount);
+        }
         return amount;
     }
 
@@ -48,6 +56,11 @@ public abstract class PlayerMixin {
             DualBladeCombatHandler.ActiveHitContext ctx = this.abyssalrpg$activeDualBladeHit;
             this.abyssalrpg$activeDualBladeHit = null;
             DualBladeCombatHandler.finishPlayerAttack(ctx);
+        }
+        if (this.abyssalrpg$activeTogetsuHit != null) {
+            TogetsuCombatHandler.ActiveHitContext ctx = this.abyssalrpg$activeTogetsuHit;
+            this.abyssalrpg$activeTogetsuHit = null;
+            TogetsuCombatHandler.finishPlayerAttack(ctx);
         }
     }
 }

@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "A": {
+      "item": "abyssalrpg:abyssal_core"
+    },
+    "N": {
+      "item": "minecraft:netherite_ingot"
+    },
+    "Q": {
+      "item": "minecraft:quartz_block"
+    },
+    "O": {
+      "item": "minecraft:crying_obsidian"
+    },
+    "S": {
+      "item": "minecraft:netherite_sword"
+    }
+  },
+  "pattern": [
+    "Q O",
+    "SAS",
+    " N "
+  ],
+  "result": {
+    "count": 1,
+    "id": "abyssalrpg:togetsu"
+  }
+}
