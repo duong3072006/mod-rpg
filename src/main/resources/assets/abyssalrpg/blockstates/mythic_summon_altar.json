@@ -1,0 +1,11 @@
+{
+  "variants": {
+    "boss_type=0": { "model": "abyssalrpg:block/mythic_summon_altar_quetzalcoatl" },
+    "boss_type=1": { "model": "abyssalrpg:block/mythic_summon_altar_apep" },
+    "boss_type=2": { "model": "abyssalrpg:block/mythic_summon_altar_fenrir" },
+    "boss_type=3": { "model": "abyssalrpg:block/mythic_summon_altar_hydra" },
+    "boss_type=4": { "model": "abyssalrpg:block/mythic_summon_altar_jormungandr" },
+    "boss_type=5": { "model": "abyssalrpg:block/mythic_summon_altar_tiamat" },
+    "boss_type=6": { "model": "abyssalrpg:block/mythic_summon_altar_leviathan" }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "package": "com.abyssalrpg.client.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "ItemInHandRendererMixin",
+    "ItemInHandLayerMixin",
+    "HumanoidModelMixin",
+    "PlayerRendererMixin",
+    "GameRendererMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
+

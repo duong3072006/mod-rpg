@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "C": {
+      "item": "abyssalrpg:abyssal_core"
+    },
+    "E": {
+      "item": "minecraft:emerald_block"
+    },
+    "N": {
+      "item": "minecraft:netherite_ingot"
+    },
+    "S": {
+      "item": "minecraft:diamond_sword"
+    }
+  },
+  "pattern": [
+    "E E",
+    "SCS",
+    " N "
+  ],
+  "result": {
+    "count": 1,
+    "id": "abyssalrpg:dual_knife"
+  }
+}

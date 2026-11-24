@@ -1,0 +1,113 @@
+plugins {
+	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+	id 'maven-publish'
+	id 'eclipse'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
+
+repositories {
+	maven {
+		name = 'GeckoLib'
+		url 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+		content {
+			includeGroup("software.bernie.geckolib")
+		}
+	}
+	maven {
+		name = 'MinecraftForge'
+		url 'https://maven.minecraftforge.net/'
+	}
+	maven {
+		name = 'Modrinth'
+		url 'https://api.modrinth.com/maven'
+		content {
+			includeGroup("maven.modrinth")
+		}
+	}
+}
+
+loom {
+	splitEnvironmentSourceSets()
+
+	mods {
+		"abyssalrpg" {
+			sourceSet sourceSets.main
+			sourceSet sourceSets.client
+		}
+	}
+}
+
+fabricApi {
+	configureDataGeneration {
+		client = true
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	mappings loom.officialMojangMappings()
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	modImplementation "software.bernie.geckolib:geckolib-fabric-1.21.1:${project.geckolib_version}"
+	include "software.bernie.geckolib:geckolib-fabric-1.21.1:${project.geckolib_version}"
+}
+
+processResources {
+	inputs.property "version", project.version
+
+	filesMatching("fabric.mod.json") {
+		expand "version": project.version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 21
+	it.options.encoding = "UTF-8"
+}
+
+java {
+	withSourcesJar()
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
+}
+
+jar {
+	from("LICENSE") {
+		rename { "${it}_${project.base.archivesName.get()}" }
+	}
+}
+
+// Làm sạch .classpath cho Eclipse / VS Code (redhat.java) để không còn lỗi thiếu build/resources/client,
+// không trùng lặp build/classes/java/client và không cảnh báo JRE JavaSE-21 trên máy cài JDK 27.
+eclipse {
+	classpath {
+		file {
+			whenMerged { cp ->
+				cp.entries.removeAll { entry ->
+					entry.kind == 'lib' && (
+						entry.path.replace('\\', '/').endsWith('/build/resources/client') ||
+						entry.path.replace('\\', '/').endsWith('/build/classes/java/client')
+					)
+				}
+				cp.entries.each { entry ->
+					if (entry.kind == 'con' && entry.path.startsWith('org.eclipse.jdt.launching.JRE_CONTAINER')) {
+						entry.path = 'org.eclipse.jdt.launching.JRE_CONTAINER'
+					}
+					if (entry.kind == 'lib' && entry.entryAttributes != null) {
+						entry.entryAttributes.remove('test')
+						if (entry.entryAttributes['gradle_used_by_scope'] == '') {
+							entry.entryAttributes['gradle_used_by_scope'] = 'client,main,test'
+						}
+					}
+				}
+			}
+		}
+	}
+}
+

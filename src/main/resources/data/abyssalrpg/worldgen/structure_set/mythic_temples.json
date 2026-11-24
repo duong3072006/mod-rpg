@@ -1,0 +1,15 @@
+{
+  "structures": [
+    {
+      "structure": "abyssalrpg:mythic_temple",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 77042026,
+    "spacing": 32,
+    "separation": 14
+  }
+}
+

@@ -1,0 +1,9 @@
+{
+  "parent": "abyssalrpg:block/abyssal_altar",
+  "textures": {
+    "top": "abyssalrpg:block/mythic_altar_top",
+    "side": "abyssalrpg:block/mythic_altar_side",
+    "bottom": "abyssalrpg:block/runic_deepslate",
+    "particle": "abyssalrpg:block/mythic_altar_side"
+  }
+}

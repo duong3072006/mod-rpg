@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "abyssalrpg",
+  "version": "${version}",
+  "name": "Abyssal Spire RPG",
+  "description": "Boss expansion featuring 13 colossal multi-phase bosses (6 GeckoLib bosses + 7 sculpted core & mythological titan bosses) and 7 Overworld Mythic Boss Temples.",
+  "authors": [
+    "Abyssal Spire RPG"
+  ],
+  "contact": {
+    "homepage": "[điền link Modrinth]",
+    "sources": "[điền link GitHub]",
+    "issues": "[điền link GitHub Issues]"
+  },
+  "license": "MIT",
+  "icon": "assets/abyssalrpg/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.abyssalrpg.AbyssalRpgMod"
+    ],
+    "client": [
+      "com.abyssalrpg.client.AbyssalRpgClient"
+    ],
+    "fabric-datagen": [
+      "com.abyssalrpg.client.datagen.AbyssalRpgDataGenerator"
+    ]
+  },
+  "mixins": [
+    "abyssalrpg.mixins.json",
+    {
+      "config": "abyssalrpg.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "1.21.1",
+    "java": ">=21",
+    "fabric-api": ">=0.116.0",
+    "geckolib": ">=4.8.0"
+  }
+}

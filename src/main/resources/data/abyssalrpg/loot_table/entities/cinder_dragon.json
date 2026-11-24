@@ -1,0 +1,120 @@
+{
+  "type": "minecraft:entity",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "abyssalrpg:abyssal_core",
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": { "min": 3, "max": 6 }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "abyssalrpg:soul_shard",
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": { "min": 20, "max": 36 }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:blaze_rod",
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": { "min": 6, "max": 12 }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:netherite_scrap",
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": { "min": 2, "max": 5 }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "conditions": [
+        {
+          "condition": "minecraft:random_chance_with_enchanted_bonus",
+          "unenchanted_chance": 0.40,
+          "enchanted_chance": {
+            "type": "minecraft:linear",
+            "base": 0.50,
+            "per_level_above_first": 0.12
+          },
+          "enchantment": "minecraft:looting"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "abyssalrpg:overlord_crown",
+          "weight": 2
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:netherite_ingot",
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "conditions": [
+        {
+          "condition": "minecraft:random_chance_with_enchanted_bonus",
+          "unenchanted_chance": 0.50,
+          "enchanted_chance": {
+            "type": "minecraft:linear",
+            "base": 0.60,
+            "per_level_above_first": 0.12
+          },
+          "enchantment": "minecraft:looting"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:book",
+          "functions": [
+            {
+              "function": "minecraft:enchant_randomly",
+              "options": "#abyssalrpg:dual_knife_boss_books"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+

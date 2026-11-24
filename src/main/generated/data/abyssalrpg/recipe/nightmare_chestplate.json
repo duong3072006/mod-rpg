@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "C": {
+      "item": "abyssalrpg:nightmare_core"
+    },
+    "N": {
+      "item": "minecraft:netherite_chestplate"
+    },
+    "S": {
+      "item": "abyssalrpg:nightmare_armor_shard"
+    }
+  },
+  "pattern": [
+    "SNS",
+    "SCS",
+    "SSS"
+  ],
+  "result": {
+    "count": 1,
+    "id": "abyssalrpg:nightmare_chestplate"
+  }
+}

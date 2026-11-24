@@ -1,0 +1,102 @@
+{
+  "carvers": {
+    "air": [
+      "minecraft:cave",
+      "minecraft:cave_extra_underground",
+      "minecraft:canyon"
+    ]
+  },
+  "downfall": 0.0,
+  "effects": {
+    "fog_color": 7547156,
+    "foliage_color": 5847848,
+    "grass_color": 4863272,
+    "mood_sound": {
+      "block_search_extent": 8,
+      "offset": 2.0,
+      "sound": "minecraft:ambient.basalt_deltas.mood",
+      "tick_delay": 4500
+    },
+    "particle": {
+      "options": {
+        "type": "minecraft:ash"
+      },
+      "probability": 0.025
+    },
+    "sky_color": 6036750,
+    "water_color": 9127187,
+    "water_fog_color": 3409926
+  },
+  "features": [
+    [],
+    [
+      "minecraft:lake_lava_underground",
+      "minecraft:lake_lava_surface"
+    ],
+    [
+      "minecraft:amethyst_geode"
+    ],
+    [
+      "minecraft:monster_room",
+      "minecraft:monster_room_deep"
+    ],
+    [],
+    [],
+    [
+      "minecraft:ore_dirt",
+      "minecraft:ore_gravel",
+      "minecraft:ore_granite_upper",
+      "minecraft:ore_granite_lower",
+      "minecraft:ore_tuff",
+      "minecraft:ore_coal_upper",
+      "minecraft:ore_coal_lower",
+      "minecraft:ore_iron_upper",
+      "minecraft:ore_iron_middle",
+      "minecraft:ore_gold",
+      "minecraft:ore_redstone",
+      "minecraft:ore_diamond",
+      "minecraft:ore_diamond_large",
+      "minecraft:ore_lapis",
+      "minecraft:ore_copper",
+      "minecraft:underwater_magma",
+      "minecraft:ore_gold_extra",
+      "minecraft:disk_gravel"
+    ],
+    [],
+    [
+      "minecraft:spring_water",
+      "minecraft:spring_lava"
+    ],
+    [
+      "minecraft:glow_lichen",
+      "minecraft:patch_grass_badlands",
+      "minecraft:patch_dead_bush_badlands"
+    ],
+    [
+      "minecraft:freeze_top_layer"
+    ]
+  ],
+  "has_precipitation": false,
+  "spawn_costs": {},
+  "spawners": {
+    "ambient": [
+      { "type": "minecraft:bat", "maxCount": 6, "minCount": 3, "weight": 8 }
+    ],
+    "axolotls": [],
+    "creature": [],
+    "misc": [],
+    "monster": [
+      { "type": "minecraft:magma_cube", "maxCount": 4, "minCount": 2, "weight": 55 },
+      { "type": "minecraft:blaze", "maxCount": 3, "minCount": 1, "weight": 30 },
+      { "type": "minecraft:wither_skeleton", "maxCount": 3, "minCount": 1, "weight": 45 },
+      { "type": "minecraft:skeleton", "maxCount": 4, "minCount": 2, "weight": 80 },
+      { "type": "minecraft:spider", "maxCount": 4, "minCount": 2, "weight": 60 },
+      { "type": "minecraft:creeper", "maxCount": 3, "minCount": 1, "weight": 60 }
+    ],
+    "underground_water_creature": [],
+    "water_ambient": [],
+    "water_creature": []
+  },
+  "temperature": 2.0
+}
+

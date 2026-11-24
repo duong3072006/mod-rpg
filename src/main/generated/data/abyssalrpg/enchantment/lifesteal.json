@@ -1,0 +1,20 @@
+{
+  "anvil_cost": 4,
+  "description": {
+    "translate": "enchantment.abyssalrpg.lifesteal"
+  },
+  "max_cost": {
+    "base": 48,
+    "per_level_above_first": 10
+  },
+  "max_level": 3,
+  "min_cost": {
+    "base": 14,
+    "per_level_above_first": 10
+  },
+  "slots": [
+    "mainhand"
+  ],
+  "supported_items": "#abyssalrpg:enchantable/dual_knife",
+  "weight": 4
+}

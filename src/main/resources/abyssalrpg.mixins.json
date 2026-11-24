@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "package": "com.abyssalrpg.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "LivingEntityAccessor",
+    "LivingEntityMixin",
+    "OverworldBiomeBuilderMixin",
+    "PlayerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
+

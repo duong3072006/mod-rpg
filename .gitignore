@@ -1,0 +1,16 @@
+.gradle/
+.settings/
+.vscode/
+bin/
+build/
+run/
+runs/
+.classpath
+.project
+*.launch
+*.iml
+.idea/
+*.log
+__pycache__/
+*.pyc
+.DS_Store

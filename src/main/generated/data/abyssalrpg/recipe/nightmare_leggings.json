@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "N": {
+      "item": "minecraft:netherite_leggings"
+    },
+    "S": {
+      "item": "abyssalrpg:nightmare_armor_shard"
+    }
+  },
+  "pattern": [
+    "SSS",
+    "SNS",
+    "S S"
+  ],
+  "result": {
+    "count": 1,
+    "id": "abyssalrpg:nightmare_leggings"
+  }
+}

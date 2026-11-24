@@ -1,0 +1,119 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.dual_blade.idle": {
+      "loop": true,
+      "animation_length": 2.4,
+      "bones": {
+        "blade_edge": {
+          "scale": {
+            "0.0": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "1.2": [
+              1.04,
+              1.01,
+              1.02
+            ],
+            "2.4": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        }
+      }
+    },
+    "animation.dual_blade.right_slash": {
+      "animation_length": 0.3,
+      "bones": {
+        "blade_root": {
+          "rotation": {
+            "0.0": [
+              -12,
+              18,
+              -10
+            ],
+            "0.12": [
+              42,
+              -32,
+              -28
+            ],
+            "0.30": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    },
+    "animation.dual_blade.left_slash": {
+      "animation_length": 0.3,
+      "bones": {
+        "blade_root": {
+          "rotation": {
+            "0.0": [
+              -12,
+              -18,
+              10
+            ],
+            "0.12": [
+              42,
+              32,
+              28
+            ],
+            "0.30": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    },
+    "animation.dual_blade.cross_slash": {
+      "animation_length": 0.34,
+      "bones": {
+        "blade_root": {
+          "rotation": {
+            "0.0": [
+              -24,
+              0,
+              0
+            ],
+            "0.14": [
+              58,
+              0,
+              -24
+            ],
+            "0.34": [
+              0,
+              0,
+              0
+            ]
+          },
+          "scale": {
+            "0.0": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "0.14": [
+              1.08,
+              1.06,
+              1.08
+            ],
+            "0.34": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        }
+      }
+    }
+  }
+}

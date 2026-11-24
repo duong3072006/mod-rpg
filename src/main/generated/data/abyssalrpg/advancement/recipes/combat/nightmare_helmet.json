@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_nightmare_armor_shard": {
+      "conditions": {
+        "items": [
+          {
+            "items": "abyssalrpg:nightmare_armor_shard"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "abyssalrpg:nightmare_helmet"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_nightmare_armor_shard"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "abyssalrpg:nightmare_helmet"
+    ]
+  }
+}
