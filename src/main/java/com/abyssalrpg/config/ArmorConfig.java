@@ -20,10 +20,10 @@ import java.nio.file.Path;
  * 1. **Nightmare Knight Armor**: Defense 3/8/6/3 (= 20), Toughness 3.0 (= 12.0), KB Res 0.10 (= 40%),
  *    Độ bền 37x (407/592/555/481); Full Set 4/4: Kháng Lửa I, Kháng Cự II, +4.0 Máu Tối Đa.
  * 2. **Cinder Dragon Armor**: Defense 8/20/15/7 (= 50, ×2.5 Netherite!), Toughness 7.5 (= 30.0), KB Res 0.10 (= 40%),
- *    Độ bền 37x (407/592/555/481); Full Set 4/4: Kháng Lửa, Đề Kháng I, Sức Mạnh II, Tốc Độ I, Nhảy Cao I, +16.0 Máu Tối Đa (+8 tim).
+ *    Độ bền 111x (×3 Netherite: 1221/1776/1665/1443); Full Set 4/4: Kháng Lửa, Đề Kháng I, Sức Mạnh II, Tốc Độ I, Nhảy Cao I, +16.0 Máu Tối Đa (+8 tim).
  */
 public final class ArmorConfig {
-    public static final int CURRENT_CONFIG_VERSION = 5;
+    public static final int CURRENT_CONFIG_VERSION = 6;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path CONFIG_PATH = FabricLoader.getInstance()
@@ -66,7 +66,7 @@ public final class ArmorConfig {
     public int cinderBootsDefense = 7;
     public float cinderToughness = 7.5f;
     public float cinderKnockbackResistance = 0.10f;
-    public int cinderDurabilityMultiplier = 37;
+    public int cinderDurabilityMultiplier = 111;
     public int cinderEnchantmentValue = 18;
 
     // --- Full Set Bonus 4/4: Cinder Dragon Set ---
@@ -142,6 +142,9 @@ public final class ArmorConfig {
                             loaded.cinderSetBonusAttackDamageBonus = 0.0;
                             loaded.cinderSetBonusIgniteSeconds = 0;
                         }
+                        if (fileVersion < 6) {
+                            loaded.cinderDurabilityMultiplier = 111;
+                        }
                         loaded.configVersion = CURRENT_CONFIG_VERSION;
                         migrated = true;
                         AbyssalRpgMod.LOGGER.info("Tự động cập nhật cấu hình Cinder Dragon Armor: ArmorConfig v{} -> v{}", fileVersion, CURRENT_CONFIG_VERSION);
@@ -202,7 +205,7 @@ public final class ArmorConfig {
         this.cinderBootsDefense = Math.max(1, Math.min(25, this.cinderBootsDefense));
         this.cinderToughness = Math.max(0.0f, Math.min(20.0f, this.cinderToughness));
         this.cinderKnockbackResistance = Math.max(0.0f, Math.min(0.25f, this.cinderKnockbackResistance));
-        this.cinderDurabilityMultiplier = Math.max(15, Math.min(120, this.cinderDurabilityMultiplier));
+        this.cinderDurabilityMultiplier = Math.max(15, Math.min(200, this.cinderDurabilityMultiplier));
         this.cinderEnchantmentValue = Math.max(1, Math.min(30, this.cinderEnchantmentValue));
         this.cinderSetBonusResistanceAmplifier = Math.max(0, Math.min(4, this.cinderSetBonusResistanceAmplifier));
         this.cinderSetBonusStrengthAmplifier = Math.max(0, Math.min(4, this.cinderSetBonusStrengthAmplifier));

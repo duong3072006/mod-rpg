@@ -16,7 +16,7 @@ public enum TogetsuMoveType {
     CRESCENT_VORPAL(9, 18.0F),
     DUAL_PIN_LUNGE(10, 6.0F),
     DUAL_PIN_FLURRY(11, 25.0F),
-    CRESCENT_VORPAL_CHARGE(12, 60.0F);
+    CRESCENT_VORPAL_CHARGE(12, 40.0F);
 
     public static final int DUAL_COMBO_COUNT = 4;
     public static final int FUSED_COMBO_COUNT = 3;

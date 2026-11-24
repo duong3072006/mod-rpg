@@ -10,15 +10,15 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.Locale;
 
 /**
- * HUD Thanh Đo Hợp Nhất (Fusion Gauge 0–100%) cho **Togetsu / Song Nguyệt**:
- * - Chỉ hiển thị gọn gàng phía trên thanh hotbar khi người chơi đang cầm `abyssalrpg:togetsu`.
- * - Hiển thị trực quan trạng thái Trăng Non (Trắng) / Trăng Khuyết (Đen), mốc sẵn sàng phím `[R]` Hợp Nhất,
- *   trạng thái Cường Hóa Trăng Non (+XX%), và thời gian hồi của tuyệt kỹ **Crescent Vorpal** khi đang ở dạng Song Nguyệt!
+ * HUD Thanh Đo Hợp Nhất (Fusion Gauge 0–100%) nhỏ gọn cho **Togetsu / Song Nguyệt**:
+ * - Đặt gọn ngang tầm và ngay bên trái thanh công cụ (Hotbar), tự chừa khoảng nếu ô tay phụ nằm bên trái.
+ * - Tự động co chữ tinh gọn nằm lọt hoàn toàn trong khung viền (`104 × 22 px`), 0 bao giờ tràn viền!
  */
 public final class TogetsuHudRenderer {
     private static float displayedGauge = 0.0F;
@@ -53,21 +53,30 @@ public final class TogetsuHudRenderer {
 
         int screenW = g.guiWidth();
         int screenH = g.guiHeight();
-        int cx = screenW / 2;
-        int barW = 152;
-        int barH = 6;
-        int barX = cx - barW / 2;
-        int barY = screenH - 86; // Đặt cao hẳn phía trên Action Bar vanilla (screenH - 68) -> 0 bao giờ bị chồng chữ!
+        int hotbarLeft = screenW / 2 - 91;
+
+        // Kích thước nhỏ gọn ngang bằng chiều cao thanh hotbar (22px), đặt sát bên trái thanh công cụ
+        int panelW = 104;
+        int panelH = 22;
+        boolean offhandOnLeft = !player.getOffhandItem().isEmpty() && player.getMainArm() == HumanoidArm.RIGHT;
+        int panelRight = offhandOnLeft ? (hotbarLeft - 33) : (hotbarLeft - 6);
+        int panelX = Math.max(4, panelRight - panelW);
+        int panelY = screenH - panelH;
+
+        int barW = panelW - 8;
+        int barH = 4;
+        int barX = panelX + 4;
+        int barY = panelY + 14;
         Font font = mc.font;
 
-        // Nền tối thanh lịch phía sau thanh năng lượng
-        g.fill(barX - 4, barY - 12, barX + barW + 4, barY + barH + 4, 0xA80B0D14);
+        // Nền tối thanh lịch + viền gọn khớp chuẩn chiều cao hotbar
+        g.fill(panelX, panelY, panelX + panelW, panelY + panelH, 0xB80B0D14);
         int borderCol = fused
                 ? lerpArgb(0xFF7ADFFF, 0xFFFFFFFF, pulse * 0.6F)
                 : (readyToFuse ? lerpArgb(0xFFFFD866, 0xFFFFFFFF, pulse) : 0xCC6B7894);
-        g.renderOutline(barX - 4, barY - 12, barW + 8, barH + 16, borderCol);
+        g.renderOutline(panelX, panelY, panelW, panelH, borderCol);
 
-        // Tiêu đề trạng thái, đếm ngược 15s Song Nguyệt, hồi đổi dạng (6s) & hồi chiêu ĐỘC LẬP giữa 2 dạng!
+        // Nhãn gọn sạch hiển thị trạng thái, đếm ngược Song Nguyệt & phím tắt
         String keyName = TogetsuClientState.getFuseKeyDisplayName();
         int transformRemTicks = TogetsuItem.getTransformCooldownRemainingTicks(stack, gameTime);
         int vorpalRemTicks = TogetsuItem.getVorpalCooldownRemainingTicks(stack, gameTime);
@@ -77,26 +86,38 @@ public final class TogetsuHudRenderer {
         if (fused) {
             String leftStr = String.format(Locale.ROOT, "%.1fs", fuseTicksLeft / 20.0F);
             if (vorpalRemTicks > 0) {
-                label = "☾ SONG NGUYỆT " + leftStr + " · Vorpal " + String.format(Locale.ROOT, "%.1fs", vorpalRemTicks / 20.0F);
+                label = "☾ SONG NGUYỆT " + leftStr + " · " + String.format(Locale.ROOT, "%.1fs", vorpalRemTicks / 20.0F);
                 labelCol = 0xFFA8D8FF;
             } else {
-                label = "✦ SONG NGUYỆT " + leftStr + " · [Shift+RMB] Vorpal";
+                label = "✦ SONG NGUYỆT " + leftStr + " · [RMB]";
                 labelCol = lerpArgb(0xFF8CE6FF, 0xFFFFFFFF, pulse);
             }
         } else if (transformRemTicks > 0) {
-            label = "☾ TOGETSU " + Math.round(rawGauge) + " · Đổi dạng " + String.format(Locale.ROOT, "%.1fs", transformRemTicks / 20.0F);
+            label = "☾ " + Math.round(rawGauge) + "% · Đổi " + String.format(Locale.ROOT, "%.1fs", transformRemTicks / 20.0F);
             labelCol = 0xFFFFDF80;
         } else if (readyToFuse) {
-            label = "✦ SONG NGUYỆT SẴN SÀNG · [" + keyName + " / RMB]";
+            label = "✦ SẴN SÀNG · [" + keyName + "/RMB]";
             labelCol = lerpArgb(0xFFFFD85A, 0xFFFFFFFF, pulse);
         } else if (pinRemTicks > 0) {
-            label = "☾ TOGETSU " + Math.round(rawGauge) + "/100 · Liên Đâm " + String.format(Locale.ROOT, "%.1fs", pinRemTicks / 20.0F);
+            label = "☾ " + Math.round(rawGauge) + "% · Đâm " + String.format(Locale.ROOT, "%.1fs", pinRemTicks / 20.0F);
             labelCol = 0xFFD4DCEB;
         } else {
-            label = "☾ TOGETSU " + Math.round(rawGauge) + "/100 · [RMB] 12 Liên Đâm";
+            label = "☾ TOGETSU " + Math.round(rawGauge) + "/100";
             labelCol = 0xFFE6EEF8;
         }
-        g.drawCenteredString(font, label, cx, barY - 10, labelCol);
+
+        // Tự động co tỷ lệ chữ <= 0.72f để luôn nằm gọn 100% bên trong khung
+        int rawTextW = Math.max(1, font.width(label));
+        float maxTextW = panelW - 8.0F;
+        float textScale = Math.min(0.72F, maxTextW / rawTextW);
+        float centerX = panelX + panelW * 0.5F;
+        float textY = panelY + 4.0F;
+
+        g.pose().pushPose();
+        g.pose().translate(centerX, textY, 0.0F);
+        g.pose().scale(textScale, textScale, 1.0F);
+        g.drawString(font, label, -rawTextW / 2, 0, labelCol, true);
+        g.pose().popPose();
 
         // Rãnh thanh gauge & vạch năng lượng Trắng–Xanh Nguyệt Quang
         g.fill(barX, barY, barX + barW, barY + barH, 0xFF141824);
@@ -108,16 +129,23 @@ public final class TogetsuHudRenderer {
             g.fill(barX, barY, barX + fillW, barY + 1, 0xCCFFFFFF);
         }
 
-        // Huy hiệu Cường Hóa Trăng Non (Waxing Empowered) khi đang tích sát thương cộng thêm!
+        // Huy hiệu Cường Hóa Trăng Non (Waxing Empowered) nhỏ gọn nằm ngay phía trên bảng thanh nộ
         if (empowered) {
             int pct = Math.round(TogetsuItem.getWaxingEmpowerBonus(stack) * 100.0F);
             String buff = "✦ Trăng Non +" + pct + "%";
-            int bw = font.width(buff) + 8;
-            int bx = barX + barW + 8;
-            int by = barY - 7;
-            g.fill(bx, by, bx + bw, by + 13, 0xCC3B0A16);
-            g.renderOutline(bx, by, bw, 13, 0xFFFF6680);
-            g.drawString(font, buff, bx + 4, by + 3, 0xFFFFDCE2, true);
+            float bScale = 0.70F;
+            int rawBw = font.width(buff);
+            int pillW = Math.min(panelW, Math.round(rawBw * bScale) + 8);
+            int pillH = 10;
+            int bx = panelX + (panelW - pillW) / 2;
+            int by = panelY - pillH - 2;
+            g.fill(bx, by, bx + pillW, by + pillH, 0xCC3B0A16);
+            g.renderOutline(bx, by, pillW, pillH, 0xFFFF6680);
+            g.pose().pushPose();
+            g.pose().translate(bx + pillW * 0.5F, by + 2.5F, 0.0F);
+            g.pose().scale(bScale, bScale, 1.0F);
+            g.drawString(font, buff, -rawBw / 2, 0, 0xFFFFDCE2, true);
+            g.pose().popPose();
         }
     }
 

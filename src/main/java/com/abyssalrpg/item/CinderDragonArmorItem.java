@@ -17,7 +17,7 @@ import java.util.function.Supplier;
 /**
  * 4 món Giáp Cinder Dragon 3D GeckoLib 4.8.3 (`helmet`, `chestplate`, `leggings`, `boots`).
  * - An toàn 100% split sourceSet (`src/main` vs `src/client`): dùng `getRenderProvider()` trả `Object`.
- * - Độ bền chuẩn Netherite 37x (`407 / 592 / 555 / 481`), kháng lửa/dung nham (`fireResistant()`),
+ * - Độ bền 111x (×3 Netherite: `1221 / 1776 / 1665 / 1443`), kháng lửa/dung nham (`fireResistant()`),
  *   sửa trên Đe bằng `abyssalrpg:cinder_dragon_scale` & tương thích đầy đủ Enchant giáp vanilla.
  * - Animation cánh & đuôi được điều khiển tập trung 100% tại `CinderDragonArmorModel.setCustomAnimations(...)`
  *   (tránh áp chồng với keyframe `.animation.json`).

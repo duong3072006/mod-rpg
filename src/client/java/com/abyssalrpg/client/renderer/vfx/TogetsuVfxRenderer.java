@@ -282,7 +282,8 @@ public final class TogetsuVfxRenderer {
         }
         for (int i = SLASHES.size() - 1; i >= 0; i--) {
             SlashEffect ex = SLASHES.get(i);
-            if (ex.attackerId == attackerId && ex.move == move && (clientTick - ex.startTick) <= 2L) {
+            if (ex.attackerId == attackerId && (clientTick - ex.startTick) <= 4L
+                    && (ex.move == move || (ex.move.isFusedMove() && move.isFusedMove()))) {
                 return;
             }
         }
@@ -367,19 +368,16 @@ public final class TogetsuVfxRenderer {
                 list.add(new ArcStrip(28, 110.0F, -110.0F, 0.48F, 2.25F, 0.64F, -0.52F, -0.12F, 0.08F, 0.36F, LunarPalette.WANING_BLACK));
             }
             case FUSED_1 -> {
-                // Đại Đao Song Nguyệt bổ chéo khổng lồ (2 tầng Trắng Ngọc ngoài + Đen Obsidian trong!)
-                list.add(new ArcStrip(34, -128.0F, 128.0F, 0.85F, 3.25F, 1.05F, -0.78F, 0.25F, 0.06F, 0.40F, LunarPalette.WAXING_WHITE));
-                list.add(new ArcStrip(34, -122.0F, 122.0F, 0.55F, 2.60F, 0.90F, -0.68F, 0.20F, 0.09F, 0.40F, LunarPalette.WANING_BLACK));
+                // Đại Đao Song Nguyệt: duy nhất 1 vết chém bổ chéo dứt khoát!
+                list.add(new ArcStrip(34, -128.0F, 128.0F, 0.62F, 3.25F, 1.05F, -0.78F, 0.25F, 0.04F, 0.40F, LunarPalette.WAXING_WHITE));
             }
             case FUSED_2 -> {
-                // Đại Đao Song Nguyệt quét ngang 240° siêu rộng!
-                list.add(new ArcStrip(36, 138.0F, -138.0F, 0.80F, 3.35F, -0.18F, 0.28F, 0.12F, 0.0F, 0.42F, LunarPalette.WAXING_WHITE));
-                list.add(new ArcStrip(36, 132.0F, -132.0F, 0.52F, 2.70F, -0.26F, 0.18F, 0.08F, 0.04F, 0.42F, LunarPalette.WANING_BLACK));
+                // Đại Đao Song Nguyệt: duy nhất 1 vết chém quét ngang 240° rộng!
+                list.add(new ArcStrip(36, 138.0F, -138.0F, 0.62F, 3.35F, -0.18F, 0.28F, 0.12F, 0.0F, 0.42F, LunarPalette.VORPAL_LUNAR));
             }
             case FUSED_3 -> {
-                // Đại Đao Song Nguyệt hất ngược cực mạnh!
-                list.add(new ArcStrip(34, -126.0F, 126.0F, 0.82F, 3.30F, -0.74F, 0.98F, 0.26F, 0.02F, 0.40F, LunarPalette.VORPAL_LUNAR));
-                list.add(new ArcStrip(34, -120.0F, 120.0F, 0.52F, 2.65F, -0.64F, 0.84F, 0.20F, 0.06F, 0.40F, LunarPalette.WANING_BLACK));
+                // Đại Đao Song Nguyệt: duy nhất 1 vết chém hất ngược cực mạnh!
+                list.add(new ArcStrip(34, -126.0F, 126.0F, 0.62F, 3.30F, -0.74F, 0.98F, 0.26F, 0.02F, 0.40F, LunarPalette.WAXING_WHITE));
             }
             default -> {
             }

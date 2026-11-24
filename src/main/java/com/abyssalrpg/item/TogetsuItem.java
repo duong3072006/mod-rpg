@@ -3,6 +3,7 @@ package com.abyssalrpg.item;
 import com.abyssalrpg.AbyssalRpgMod;
 import com.abyssalrpg.combat.TogetsuCombatHandler;
 import com.abyssalrpg.registry.ModEnchantments;
+import com.abyssalrpg.registry.ModItems;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
@@ -61,7 +62,7 @@ public final class TogetsuItem extends Item implements GeoItem {
     public static final double DUAL_DAMAGE = 32.0;
     public static final double FUSED_DAMAGE = 48.0; // 32.0 * 1.5
     public static final double DUAL_ATTACK_SPEED = 2.4;
-    public static final double FUSED_ATTACK_SPEED = 1.6;
+    public static final double FUSED_ATTACK_SPEED = 1.5;
     public static final double FUSED_BONUS_REACH = 1.5; // 3.0 -> 4.5 blocks
     public static final int NETHERITE_DURABILITY = 2031;
 
@@ -190,6 +191,25 @@ public final class TogetsuItem extends Item implements GeoItem {
         }
     }
 
+    /** Đảm bảo vật phẩm Togetsu đã hợp nhất từ save cũ cũng được cập nhật tốc đánh 1.5 ngay lập tức. */
+    public static void ensureFusedAttributesUpToDate(ItemStack stack) {
+        if (stack == null || stack.isEmpty() || !isFused(stack)) return;
+        ItemAttributeModifiers mods = stack.get(DataComponents.ATTRIBUTE_MODIFIERS);
+        double expectedSpdMod = FUSED_ATTACK_SPEED - 4.0;
+        if (mods != null) {
+            for (ItemAttributeModifiers.Entry entry : mods.modifiers()) {
+                if (entry.attribute().equals(Attributes.ATTACK_SPEED)
+                        && entry.modifier().id().equals(Item.BASE_ATTACK_SPEED_ID)) {
+                    if (Math.abs(entry.modifier().amount() - expectedSpdMod) > 1e-4) {
+                        stack.set(DataComponents.ATTRIBUTE_MODIFIERS, createAttributeModifiers(true));
+                    }
+                    return;
+                }
+            }
+        }
+        stack.set(DataComponents.ATTRIBUTE_MODIFIERS, createAttributeModifiers(true));
+    }
+
     public static void setWaxingEmpower(ItemStack stack, boolean active, float bonusFraction) {
         if (stack == null || stack.isEmpty()) return;
         CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
@@ -254,6 +274,17 @@ public final class TogetsuItem extends Item implements GeoItem {
         return (int) diff;
     }
 
+    /**
+     * Ngăn vanilla tụt tay (re-equip dip) khi thanh nộ `fusion_charge` tăng/giảm hoặc cập nhật cooldown/buff trên `CUSTOM_DATA`.
+     * Chỉ cho phép hiệu ứng nâng tay khi đổi vật phẩm khác hoặc biến hình giữa Song Đao <-> Song Nguyệt!
+     */
+    @Override
+    public boolean allowComponentsUpdateAnimation(Player player, InteractionHand hand, ItemStack oldStack, ItemStack newStack) {
+        return !oldStack.is(ModItems.TOGETSU)
+                || !newStack.is(ModItems.TOGETSU)
+                || isFused(oldStack) != isFused(newStack);
+    }
+
     /** Khi `fusion_charge` đạt 100 điểm hoặc đang ở dạng Hợp Nhất Song Nguyệt -> tự bật hiệu ứng Enchantment Glint! */
     @Override
     public boolean isFoil(ItemStack stack) {
@@ -275,17 +306,8 @@ public final class TogetsuItem extends Item implements GeoItem {
             return InteractionResultHolder.pass(stack);
         }
 
-        // 1. Dạng Hợp Nhất (Song Nguyệt): Ngồi xuống (Shift) + Chuột Phải -> Tuyệt kỹ Crescent Vorpal (hồi 7s độc lập với dạng tách!)
+        // 1. Dạng Hợp Nhất (Song Nguyệt): chỉ cần Chuột Phải (RMB) -> Tuyệt kỹ Crescent Vorpal (gồng 2s, hồi 7s độc lập với dạng tách!)
         if (isFused(stack)) {
-            if (!player.isShiftKeyDown()) {
-                if (!level.isClientSide) {
-                    player.displayClientMessage(
-                            Component.translatable("message.abyssalrpg.togetsu.crouch_for_vorpal")
-                                    .withStyle(ChatFormatting.AQUA),
-                            true);
-                }
-                return InteractionResultHolder.pass(stack);
-            }
             int vorpalRem = getVorpalCooldownRemainingTicks(stack, level.getGameTime());
             if (vorpalRem > 0) {
                 if (!level.isClientSide) {

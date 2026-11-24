@@ -29,7 +29,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
@@ -83,7 +82,7 @@ public final class TogetsuCombatHandler {
     private static final float CHARGE_DECAY_PER_TICK = 0.20F;  // -4.0 điểm / giây
     private static final float SLASH_CHARGE_GAIN = 10.0F;      // +10 điểm nguyện lực mỗi nhát chém ở dạng tách!
     private static final float WAXING_EMPOWER_BONUS = 0.30F;   // +30% sát thương đòn kế tiếp
-    public static final int VORPAL_CHARGE_TICKS = 60;          // Gồng lực tư thế rút kiếm Zenitsu 3.0 giây (60 ticks)!
+    public static final int VORPAL_CHARGE_TICKS = 40;          // Gồng lực tư thế rút kiếm Zenitsu 2.0 giây (40 ticks)!
     private static final float VORPAL_BASE_MULT = 3.60F;       // 360% sát thương cơ bản (× 1.5 Crit, xuyên 100% DEF!)
     private static final int VORPAL_WEAKNESS_TICKS = 100;      // Dính Suy Yếu (Weakness I) trong 5 giây sau khi dùng!
     private static final double VORPAL_RANGE = 20.0;           // Tầm xa 20 block!
@@ -252,19 +251,6 @@ public final class TogetsuCombatHandler {
         return 0.0F;
     }
 
-    private static void applyUnderdogAttackSpeed(Player player, float gapRatio, long now) {
-        AttributeInstance inst = player.getAttribute(Attributes.ATTACK_SPEED);
-        if (inst == null) return;
-        inst.removeModifier(UNDERDOG_SPEED_ID);
-        if (gapRatio > 0.05F) {
-            double bonus = Mth.clamp(gapRatio * 0.40, 0.0, 0.40); // Tối đa +40% tốc đánh khi đấu kẻ địch trâu hơn!
-            inst.addTransientModifier(new AttributeModifier(
-                    UNDERDOG_SPEED_ID, bonus, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
-            PlayerTogetsuState st = PLAYER_STATES.computeIfAbsent(player.getUUID(), id -> new PlayerTogetsuState());
-            st.underdogSpeedUntilTick = now + 60L; // Duy trì 3 giây sau mỗi đòn
-        }
-    }
-
     private static void clearUnderdogAttackSpeed(Player player) {
         AttributeInstance inst = player.getAttribute(Attributes.ATTACK_SPEED);
         if (inst != null) {
@@ -281,9 +267,8 @@ public final class TogetsuCombatHandler {
             PlayerTogetsuState st = PLAYER_STATES.get(player.getUUID());
             ItemStack main = player.getMainHandItem();
 
-            // Gỡ buff tốc đánh Kẻ Thách Thức nếu hết hạn hoặc đổi vũ khí
-            if (st != null && st.underdogSpeedUntilTick > 0L
-                    && (now > st.underdogSpeedUntilTick || !main.is(ModItems.TOGETSU) || !TogetsuItem.isFused(main))) {
+            // Gỡ mọi buff tốc đánh cũ (giữ chuẩn tốc đánh 1.5 ở dạng Hợp Nhất)
+            if (st != null && st.underdogSpeedUntilTick > 0L) {
                 clearUnderdogAttackSpeed(player);
                 st.underdogSpeedUntilTick = -1000L;
             }
@@ -296,6 +281,8 @@ public final class TogetsuCombatHandler {
                 // Duy trì buff Sức Mạnh II (Strength II) & Tốc Độ II (Speed II) trong suốt thời gian ở form kết hợp!
                 if ((now % 10L) == 0L) {
                     applyFusedPotionBuffs(player);
+                    TogetsuItem.ensureFusedAttributesUpToDate(main);
+                    clearUnderdogAttackSpeed(player);
                 }
                 // Trạng thái Song Nguyệt duy trì đúng 15 giây (300 ticks) dùng mốc fusion_end_tick cố định -> 0 rung tay FP!
                 int left = TogetsuItem.getFusionTicksRemaining(main, now);
@@ -330,10 +317,10 @@ public final class TogetsuCombatHandler {
                 cast.player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 6, 3, false, false, false));
 
                 if (cast.tick < VORPAL_CHARGE_TICKS) {
-                    if (cast.tick % 6 == 0) {
+                    if (cast.tick % 4 == 0) {
                         float frac = cast.tick / (float) VORPAL_CHARGE_TICKS;
                         int pct = Math.round(frac * 100.0F);
-                        if (cast.tick % 12 == 0) {
+                        if (cast.tick % 8 == 0) {
                             cast.level.playSound(null, cast.player.getX(), cast.player.getY() + 0.9, cast.player.getZ(),
                                     ModSounds.DUAL_BLADE_DASH_CHARGE, SoundSource.PLAYERS, 0.78F, 0.76F + frac * 0.88F);
                             ModNetworking.sendShakeNearby(cast.level, cast.player.position(), 14.0, 0.16F + frac * 0.24F, 4);
@@ -969,7 +956,7 @@ public final class TogetsuCombatHandler {
         }
         ctx.hitLanded = true;
         if (ctx.directFullHit) {
-            int resTicks = ctx.fused ? 9 : 7;
+            int resTicks = ctx.fused ? 10 : 7;
             victim.invulnerableTime = 10 + resTicks;
             victim.hurtTime = Math.min(victim.hurtTime, resTicks);
         }
@@ -1037,8 +1024,7 @@ public final class TogetsuCombatHandler {
                     st.nextCritIsWaxing = !st.nextCritIsWaxing;
                 }
             } else {
-                // Dạng Song Nguyệt: kích hoạt buff tốc đánh Kẻ Thách Thức + Chém Lan (Sweeping Edge) diện rộng 4.5 block!
-                applyUnderdogAttackSpeed(player, ctx.underdogGap, now);
+                // Dạng Song Nguyệt: giữ chuẩn tốc đánh 1.5 + Chém Lan (Sweeping Edge) diện rộng 4.5 block!
                 if (ctx.critTriggered) {
                     level.playSound(null, vfxPos.x, vfxPos.y, vfxPos.z,
                             ModSounds.DUAL_BLADE_CRIT, SoundSource.PLAYERS, 1.0F, 0.88F);
@@ -1058,9 +1044,6 @@ public final class TogetsuCombatHandler {
     private static void triggerGreatswordCleave(ServerLevel level, Player player, LivingEntity primary,
                                                 float cleaveDmg, float armorPierce) {
         Vec3 fwd = Vec3.directionFromRotation(0.0F, player.getYRot()).normalize();
-        // Hiệu ứng hạt chém lan vòng cung vanilla SWEEP_ATTACK!
-        Vec3 sweepPt = player.position().add(fwd.scale(2.1)).add(0.0, player.getBbHeight() * 0.55, 0.0);
-        level.sendParticles(ParticleTypes.SWEEP_ATTACK, sweepPt.x, sweepPt.y, sweepPt.z, 1, 0.0, 0.0, 0.0, 0.0);
 
         AABB box = player.getBoundingBox().inflate(4.6, 1.6, 4.6);
         List<Entity> cands = level.getEntities(player, box, e -> e.isAlive() && e.isPickable() && e != player);
@@ -1102,7 +1085,7 @@ public final class TogetsuCombatHandler {
 
         long now = level.getGameTime();
         PlayerTogetsuState st = PLAYER_STATES.computeIfAbsent(player.getUUID(), id -> new PlayerTogetsuState());
-        long minInterval = fused ? 7L : 4L;
+        long minInterval = fused ? 12L : 4L;
         if (now - st.lastSwingGameTime < minInterval) {
             return;
         }
