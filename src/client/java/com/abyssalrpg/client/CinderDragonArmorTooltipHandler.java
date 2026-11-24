@@ -15,8 +15,8 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Hiển thị Tooltip trực quan (EN/VI) cho Bộ Giáp Cinder Dragon (`X/4` sống động theo số mảnh đang mặc)
- * và nguồn rơi từ Boss Cinder Dragon Phase 2 cho `cinder_dragon_heart` & `cinder_dragon_scale`.
+ * Hiển thị Tooltip trực quan (EN/VI) cho Bộ Giáp Cinder Dragon (`X/4` sống động theo số mảnh đang mặc):
+ * Kháng Lửa, Sức Mạnh II, Tốc Độ I, Nhảy Cao I, +8 Tim (+16 Máu Tối Đa).
  */
 public final class CinderDragonArmorTooltipHandler {
     private CinderDragonArmorTooltipHandler() {}
@@ -62,6 +62,32 @@ public final class CinderDragonArmorTooltipHandler {
             lines.add(Component.translatable("tooltip.abyssalrpg.cinder_set.fire_resistance")
                     .withStyle(detailColor));
         }
+        if (cfg.cinderSetBonusResistance) {
+            lines.add(Component.translatable("tooltip.abyssalrpg.cinder_set.resistance",
+                            toRoman(cfg.cinderSetBonusResistanceAmplifier + 1))
+                    .withStyle(detailColor));
+        }
+        if (cfg.cinderSetBonusStrength) {
+            lines.add(Component.translatable("tooltip.abyssalrpg.cinder_set.strength",
+                            toRoman(cfg.cinderSetBonusStrengthAmplifier + 1))
+                    .withStyle(detailColor));
+        }
+        if (cfg.cinderSetBonusSpeed) {
+            lines.add(Component.translatable("tooltip.abyssalrpg.cinder_set.speed",
+                            toRoman(cfg.cinderSetBonusSpeedAmplifier + 1))
+                    .withStyle(detailColor));
+        }
+        if (cfg.cinderSetBonusJump) {
+            lines.add(Component.translatable("tooltip.abyssalrpg.cinder_set.jump",
+                            toRoman(cfg.cinderSetBonusJumpAmplifier + 1))
+                    .withStyle(detailColor));
+        }
+        if (cfg.cinderSetBonusMaxHealth > 0.0) {
+            lines.add(Component.translatable("tooltip.abyssalrpg.cinder_set.max_health",
+                            formatNumber(cfg.cinderSetBonusMaxHealth / 2.0),
+                            formatNumber(cfg.cinderSetBonusMaxHealth))
+                    .withStyle(detailColor));
+        }
         if (cfg.cinderSetBonusAttackDamageBonus > 0.0) {
             lines.add(Component.translatable("tooltip.abyssalrpg.cinder_set.attack_damage",
                             formatNumber(cfg.cinderSetBonusAttackDamageBonus))
@@ -74,6 +100,17 @@ public final class CinderDragonArmorTooltipHandler {
         }
     }
 
+    private static String toRoman(int level) {
+        return switch (level) {
+            case 1 -> "I";
+            case 2 -> "II";
+            case 3 -> "III";
+            case 4 -> "IV";
+            case 5 -> "V";
+            default -> String.valueOf(level);
+        };
+    }
+
     private static String formatNumber(double value) {
         if (Math.abs(value - Math.rint(value)) < 1e-6) {
             return String.valueOf((int) Math.rint(value));
@@ -81,4 +118,3 @@ public final class CinderDragonArmorTooltipHandler {
         return String.format(Locale.ROOT, "%.1f", value);
     }
 }
-

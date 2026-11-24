@@ -1219,10 +1219,11 @@ public class CerberusBossEntity extends AbstractGeoMythicBoss {
             }
         }
 
-        // Giảm cooldown toàn bộ skill
+        // Giảm cooldown toàn bộ skill (tăng tốc hồi chiêu 1.5x để tăng tần suất tấn công)
+        int cdStep = (this.tickCount % 2 == 0) ? 2 : 1;
         for (SkillState s : SkillState.values()) {
             int cd = skillCooldowns.getOrDefault(s, 0);
-            if (cd > 0) skillCooldowns.put(s, cd - 1);
+            if (cd > 0) skillCooldowns.put(s, Math.max(0, cd - cdStep));
         }
         if (this.globalSkillRestTicks > 0 && getSkillState() == SkillState.IDLE) {
             this.globalSkillRestTicks--;
@@ -1415,9 +1416,9 @@ public class CerberusBossEntity extends AbstractGeoMythicBoss {
             if (releaseHeavyToken) group.releaseHeavyToken(this.getUUID());
             if (releaseUltLock) group.releaseUltimateLock(this.getUUID());
         }
-        // Nghỉ 1-2 giây giữa các skill (20-40 ticks), giảm nhẹ ở Phase 2
-        int baseRest = Math.max(20, restMinTicks);
-        this.globalSkillRestTicks = baseRest + this.getRandom().nextInt(21);
+        // Nghỉ giữa các skill rút ngắn (0.6-1.1s) để tăng tần suất tấn công
+        int baseRest = Math.max(12, Math.round(restMinTicks * 0.65f));
+        this.globalSkillRestTicks = baseRest + this.getRandom().nextInt(11);
     }
 
     public void logCerberusDebug(String tag, int ticksLeft) {

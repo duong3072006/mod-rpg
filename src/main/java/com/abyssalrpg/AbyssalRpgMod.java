@@ -1,5 +1,6 @@
 package com.abyssalrpg;
 
+import com.abyssalrpg.combat.BossCombatEnhancer;
 import com.abyssalrpg.combat.CinderDragonArmorHandler;
 import com.abyssalrpg.combat.DualBladeCombatHandler;
 import com.abyssalrpg.combat.NightmareArmorHandler;
@@ -70,6 +71,7 @@ public class AbyssalRpgMod implements ModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(TogetsuCombatHandler::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(NightmareArmorHandler::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(CinderDragonArmorHandler::tickServer);
+        ServerTickEvents.END_SERVER_TICK.register(BossCombatEnhancer::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(AbyssCommands::tickActiveAudits);
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {

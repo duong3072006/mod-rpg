@@ -2,6 +2,7 @@ package com.abyssalrpg.mixin;
 
 import com.abyssalrpg.api.BossDefenseHolder;
 import com.abyssalrpg.api.BossHealthHolder;
+import com.abyssalrpg.combat.BossCombatEnhancer;
 import com.abyssalrpg.combat.CinderDragonArmorHandler;
 import com.abyssalrpg.combat.DualBladeCombatHandler;
 import com.abyssalrpg.combat.TogetsuCombatHandler;
@@ -73,19 +74,24 @@ public abstract class LivingEntityMixin {
             return;
         }
         float pierce = Math.max(
-                DualBladeCombatHandler.getActiveArmorPierceFraction(self, source),
-                TogetsuCombatHandler.getActiveArmorPierceFraction(self, source));
-        if (pierce <= 0.0f) {
-            return;
+                Math.max(
+                        DualBladeCombatHandler.getActiveArmorPierceFraction(self, source),
+                        TogetsuCombatHandler.getActiveArmorPierceFraction(self, source)),
+                BossCombatEnhancer.getBossArmorPierceFraction(self, source));
+        float current = cir.getReturnValueF();
+        if (pierce > 0.0f) {
+            float armor = self.getArmorValue();
+            if (armor > 0.0f) {
+                float effArmor = armor * (1.0f - pierce);
+                float effTough = (float) self.getAttributeValue(Attributes.ARMOR_TOUGHNESS) * (1.0f - pierce);
+                float piercedDamage = CombatRules.getDamageAfterAbsorb(self, damageAmount, source, effArmor, effTough);
+                current = Math.max(current, piercedDamage);
+            }
         }
-        float armor = self.getArmorValue();
-        if (armor <= 0.0f) {
-            return;
+        float adjusted = CinderDragonArmorHandler.applyUncappedCinderArmorMitigation(self, damageAmount, current, pierce);
+        if (Math.abs(adjusted - cir.getReturnValueF()) > 1e-4f) {
+            cir.setReturnValue(adjusted);
         }
-        float effArmor = armor * (1.0f - pierce);
-        float effTough = (float) self.getAttributeValue(Attributes.ARMOR_TOUGHNESS) * (1.0f - pierce);
-        float piercedDamage = CombatRules.getDamageAfterAbsorb(self, damageAmount, source, effArmor, effTough);
-        cir.setReturnValue(Math.max(cir.getReturnValueF(), piercedDamage));
     }
 
     @Inject(method = "getDamageAfterMagicAbsorb", at = @At("RETURN"))
@@ -102,6 +108,7 @@ public abstract class LivingEntityMixin {
             DualBladeCombatHandler.onLivingHurtReturn(self, source, true);
             TogetsuCombatHandler.onLivingHurtReturn(self, source, true);
             CinderDragonArmorHandler.onTargetHurtByAttacker(self, source);
+            BossCombatEnhancer.onLivingHurtByBoss(self, source, amount);
         }
     }
 }

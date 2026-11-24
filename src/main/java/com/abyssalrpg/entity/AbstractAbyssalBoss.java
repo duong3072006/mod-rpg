@@ -1,6 +1,7 @@
 package com.abyssalrpg.entity;
 
 import com.abyssalrpg.AbyssalRpgMod;
+import com.abyssalrpg.combat.BossCombatEnhancer;
 import com.abyssalrpg.entity.vfx.ShockwaveRingEntity;
 import com.abyssalrpg.network.ModNetworking;
 import net.minecraft.ChatFormatting;
@@ -71,7 +72,7 @@ public abstract class AbstractAbyssalBoss extends Monster {
 
     protected int floor = 1;
     protected int phase = 1;
-    protected int skillCooldown = 45;
+    protected int skillCooldown = 24;
     protected int idleRestTicks = 0;
     protected boolean summonVfxStarted = false;
     protected BlockPos arenaCenter = null;
@@ -226,7 +227,7 @@ public abstract class AbstractAbyssalBoss extends Monster {
     @Override
     protected void registerGoals() {
         this.goalSelector.addGoal(0, new FloatGoal(this));
-        this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.2, true));
+        this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.38, true));
         this.goalSelector.addGoal(6, new net.minecraft.world.entity.ai.goal.RandomStrollGoal(this, 0.9, 25));
         this.goalSelector.addGoal(7, new LookAtPlayerGoal(this, Player.class, 28.0f));
         this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
@@ -446,9 +447,12 @@ public abstract class AbstractAbyssalBoss extends Monster {
             if (skillCooldown > 0) {
                 skillCooldown--;
             } else {
-                skillCooldown = executeBossSkill(serverLevel, target);
+                int rawCd = executeBossSkill(serverLevel, target);
+                float tempoMult = this.phase >= 2 ? 0.62f : 0.70f;
+                skillCooldown = rawCd >= 1000 ? rawCd : Math.max(16, Math.round(rawCd * tempoMult));
             }
         }
+        BossCombatEnhancer.tickBoss(this);
     }
 
     protected int computePhase(float hpRatio) {
@@ -608,6 +612,7 @@ public abstract class AbstractAbyssalBoss extends Monster {
     @Override
     public void die(DamageSource damageSource) {
         this.scheduledActions.clear();
+        BossCombatEnhancer.onBossDied(this);
         super.die(damageSource);
     }
 

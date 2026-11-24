@@ -488,11 +488,11 @@ public class CinderDragonBossEntity extends AbstractGeoMythicBoss {
         this.skillCooldowns.put(state, scaleCooldown(baseCooldownTicks));
         this.lastSkill2 = this.lastSkill1;
         this.lastSkill1 = state;
-        // Nghỉ giữa skill: Phase 1 = 1.2–2.0s (24–40t), Phase 2 = 0.7–1.2s (14–24t)
+        // Nghỉ giữa skill rút ngắn để tăng nhịp tấn công: Phase 1 = 0.7–1.2s (14–24t), Phase 2 = 0.4–0.75s (8–15t)
         if (this.hasEnteredPhase2()) {
-            this.globalSkillRestTicks = 14 + this.random.nextInt(11);
+            this.globalSkillRestTicks = 8 + this.random.nextInt(8);
         } else {
-            this.globalSkillRestTicks = 24 + this.random.nextInt(17);
+            this.globalSkillRestTicks = 14 + this.random.nextInt(11);
         }
     }
 
@@ -500,7 +500,7 @@ public class CinderDragonBossEntity extends AbstractGeoMythicBoss {
         this.skillCooldowns.put(SkillState.ASHEN_SUPERNOVA, CinderDragonConfig.get().ultimateCooldownTicks);
         this.lastSkill2 = this.lastSkill1;
         this.lastSkill1 = SkillState.ASHEN_SUPERNOVA;
-        this.globalSkillRestTicks = 22;
+        this.globalSkillRestTicks = 14;
     }
 
     public void addFirePatch(Vec3 pos, float radius, int durationTicks, float tickDamage) {
@@ -518,13 +518,14 @@ public class CinderDragonBossEntity extends AbstractGeoMythicBoss {
         super.tick();
         if (!(this.level() instanceof ServerLevel sl)) return;
 
-        // 1. Giảm cooldown skill & rest
+        // 1. Giảm cooldown skill & rest (tăng tốc hồi chiêu 1.5x để tăng tần suất tấn công)
         if (this.globalSkillRestTicks > 0 && getSkillState() == SkillState.IDLE) {
             this.globalSkillRestTicks--;
         }
+        int cdStep = (this.tickCount % 2 == 0) ? 2 : 1;
         for (Map.Entry<SkillState, Integer> e : this.skillCooldowns.entrySet()) {
             if (e.getValue() > 0) {
-                e.setValue(e.getValue() - 1);
+                e.setValue(Math.max(0, e.getValue() - cdStep));
             }
         }
 

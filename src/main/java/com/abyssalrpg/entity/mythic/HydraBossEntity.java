@@ -1279,13 +1279,14 @@ public class HydraBossEntity extends AbstractGeoMythicBoss {
             }
         }
 
-        // Giảm cooldown toàn bộ skill & slot đầu
+        // Giảm cooldown toàn bộ skill & slot đầu (tăng tốc hồi chiêu 1.5x để tăng tần suất tấn công)
+        int cdStep = (this.tickCount % 2 == 0) ? 2 : 1;
         for (SkillState s : SkillState.values()) {
             int cd = skillCooldowns.getOrDefault(s, 0);
-            if (cd > 0) skillCooldowns.put(s, cd - 1);
+            if (cd > 0) skillCooldowns.put(s, Math.max(0, cd - cdStep));
         }
         for (int i = 0; i < HEAD_COUNT; i++) {
-            if (headSlotCooldowns[i] > 0) headSlotCooldowns[i]--;
+            if (headSlotCooldowns[i] > 0) headSlotCooldowns[i] = Math.max(0, headSlotCooldowns[i] - cdStep);
         }
 
         // Dọn danh sách oan hồn Vex đã chết mỗi giây
@@ -1504,8 +1505,8 @@ public class HydraBossEntity extends AbstractGeoMythicBoss {
         setAllHeadsAnimationLocked(false);
         setSkillState(SkillState.IDLE);
         float cdDiv = (this.phase >= 2) ? (float) SpiritHydraConfig.get().phase2StatMultiplier : 1.0f;
-        int scaledRest = Math.max(12, Math.round(restMinTicks / cdDiv));
-        int extra = this.getRandom().nextInt(this.phase >= 2 ? 10 : 18);
+        int scaledRest = Math.max(8, Math.round((restMinTicks * 0.68f) / cdDiv));
+        int extra = this.getRandom().nextInt(this.phase >= 2 ? 6 : 11);
         this.globalSkillRestTicks = scaledRest + extra;
     }
 

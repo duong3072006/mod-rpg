@@ -440,7 +440,7 @@ public class JormungandrBossEntity extends AbstractGeoMythicBoss {
     }
 
     public void setGlobalSkillRestTicks(int ticks) {
-        this.globalSkillRestTicks = Math.max(0, ticks);
+        this.globalSkillRestTicks = ticks <= 0 ? 0 : Math.max(8, Math.round(ticks * 0.65f));
     }
 
     public int getSkillCooldown(SkillState state) {
@@ -854,9 +854,10 @@ public class JormungandrBossEntity extends AbstractGeoMythicBoss {
         if (this.stuckRecoveryCooldown > 0)
             this.stuckRecoveryCooldown--;
         if (!this.skillCooldowns.isEmpty()) {
+            int cdStep = (this.tickCount % 2 == 0) ? 2 : 1;
             for (Map.Entry<SkillState, Integer> e : this.skillCooldowns.entrySet()) {
                 if (e.getValue() > 0)
-                    e.setValue(e.getValue() - 1);
+                    e.setValue(Math.max(0, e.getValue() - cdStep));
             }
         }
 

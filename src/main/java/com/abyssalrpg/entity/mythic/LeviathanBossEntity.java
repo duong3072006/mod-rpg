@@ -642,9 +642,10 @@ public class LeviathanBossEntity extends AbstractGeoMythicBoss {
             }
         }
 
+        int cdStep = (this.tickCount % 2 == 0) ? 2 : 1;
         for (SkillState s : SkillState.values()) {
             int cd = skillCooldowns.getOrDefault(s, 0);
-            if (cd > 0) skillCooldowns.put(s, cd - 1);
+            if (cd > 0) skillCooldowns.put(s, Math.max(0, cd - cdStep));
         }
         if (meleeCooldownTicks > 0) meleeCooldownTicks--;
 
@@ -707,7 +708,7 @@ public class LeviathanBossEntity extends AbstractGeoMythicBoss {
                 serverLevel.playSound(null, this.blockPosition(), ModSounds.LEVIATHAN_ATTACK, SoundSource.HOSTILE, 2.0f, 0.78f);
                 ModNetworking.sendLeviathanVfxNearby(serverLevel, LeviathanVfxPayload.KIND_MELEE_SWEEP,
                         target.position().add(0, 1.0, 0), this.getLookAngle(), 2.6f * getEffectiveScale(), isEnragedVisual());
-                meleeCooldownTicks = this.phase >= 2 ? 20 : 30;
+                meleeCooldownTicks = this.phase >= 2 ? 14 : 20;
             }
         }
     }
@@ -733,8 +734,8 @@ public class LeviathanBossEntity extends AbstractGeoMythicBoss {
     public void finishSkill(int restMinTicks) {
         setSkillState(SkillState.IDLE);
         float cdDiv = (this.phase >= 2) ? (float) LeviathanConfig.get().phase2StatMultiplier : 1.0f;
-        int scaledRest = Math.max(10, Math.round(restMinTicks / cdDiv));
-        int extra = this.getRandom().nextInt(this.phase >= 2 ? 10 : 18);
+        int scaledRest = Math.max(7, Math.round((restMinTicks * 0.68f) / cdDiv));
+        int extra = this.getRandom().nextInt(this.phase >= 2 ? 6 : 11);
         this.globalSkillRestTicks = scaledRest + extra;
     }
 

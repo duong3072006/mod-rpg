@@ -168,55 +168,60 @@ def build_single_togetsu_geo(variant: str):
     Tâm nắm tay cố định tại `(0, 0, 0)`, trục lưỡi `+Y`, lưỡi cắt cong hướng `-Z`!
     """
     hilt_cubes = []
-    # 1. Cán cầm cong nhẹ công thái học bọc dây da nâu đỏ quanh tâm `(0, 0, 0)` (giống Ảnh 5–6!)
+    # 1. Cán cầm cong nhẹ công thái học bọc dây da nâu đỏ dày chắc quanh tâm `(0, 0, 0)`!
     grip_pts = [(-2.35, +0.42), (-1.20, +0.10), (0.00, 0.00), (1.15, +0.08), (2.25, +0.32)]
-    hilt_cubes.extend(make_tube_segments(grip_pts, [0.88, 0.94, 0.98, 0.96, 0.90], [1.04, 1.10, 1.14, 1.10, 1.02], "GRIP_BROWN"))
+    hilt_cubes.extend(make_tube_segments(grip_pts, [1.14, 1.22, 1.26, 1.22, 1.16], [1.10, 1.16, 1.20, 1.16, 1.08], "GRIP_BROWN"))
     # Đai quấn da nổi nhẹ
     for gy, gz in ((-1.45, 0.18), (-0.55, 0.03), (0.45, 0.02), (1.40, 0.15)):
-        hilt_cubes.append(make_centered_cube([0.0, gy, gz], [1.04, 0.20, 1.18], "POMMEL_BLK", rot=[12.0, 0.0, 0.0]))
+        hilt_cubes.append(make_centered_cube([0.0, gy, gz], [1.32, 0.22, 1.24], "POMMEL_BLK", rot=[12.0, 0.0, 0.0]))
 
     # 2. Khối chuôi đen có lỗ + Hạt ngọc Đỏ + Dải lụa đối lập (Trắng cho Đen, Đen cho Trắng!)
-    hilt_cubes.append(make_centered_cube([0.0, -2.75, +0.58], [0.96, 0.95, 1.24], "POMMEL_BLK", rot=[-14.0, 0.0, 0.0]))
-    hilt_cubes.append(make_centered_cube([0.0, -3.48, +0.76], [0.76, 0.72, 0.76], "BEAD_RED"))
+    hilt_cubes.append(make_centered_cube([0.0, -2.75, +0.58], [1.22, 0.98, 1.28], "POMMEL_BLK", rot=[-14.0, 0.0, 0.0]))
+    hilt_cubes.append(make_centered_cube([0.0, -3.48, +0.76], [0.92, 0.78, 0.84], "BEAD_RED"))
     # Dải lụa hình chiếc lá/lông vũ uốn lượn bay về phía sau chuôi (`y = -3.85 .. -6.85`)
     ribbon_pts = [(-3.82, +0.84), (-4.60, +0.98), (-5.45, +0.86), (-6.25, +0.62), (-6.95, +0.74)]
-    hilt_cubes.extend(make_tube_segments(ribbon_pts, [0.20, 0.22, 0.24, 0.18, 0.10], [0.32, 0.82, 0.92, 0.62, 0.24], "RIBBON_TAIL"))
+    hilt_cubes.extend(make_tube_segments(ribbon_pts, [0.28, 0.30, 0.32, 0.24, 0.14], [0.34, 0.84, 0.94, 0.64, 0.26], "RIBBON_TAIL"))
 
-    # 3. Ngạnh chắn tay màu Bạc Sáng vươn cong phía dưới sống lưng (`+Z` ôm lấy cổ lưỡi!)
-    hilt_cubes.append(make_centered_cube([0.0, 2.55, +0.46], [1.06, 0.76, 1.12], "GUARD_SILV", rot=[-12.0, 0.0, 0.0]))
+    # 3. Ngạnh chắn tay màu Bạc Sáng dày chắc vươn cong phía dưới sống lưng (`+Z` ôm lấy cổ lưỡi!)
+    hilt_cubes.append(make_centered_cube([0.0, 2.55, +0.46], [1.36, 0.82, 1.18], "GUARD_SILV", rot=[-12.0, 0.0, 0.0]))
     guard_pts = [(2.65, +0.78), (3.55, +1.30), (4.85, +1.46), (6.15, +1.22)]
-    hilt_cubes.extend(make_tube_segments(guard_pts, [0.78, 0.58, 0.40, 0.18], [0.72, 0.62, 0.46, 0.22], "GUARD_SILV"))
+    hilt_cubes.extend(make_tube_segments(guard_pts, [1.06, 0.84, 0.62, 0.34], [0.76, 0.66, 0.50, 0.26], "GUARD_SILV"))
 
-    # 4. Lõi 3D thân lưỡi đao dày có vát cạnh trường sắc (14 lát)
+    # 4. Lõi 3D thân lưỡi đao DÀY KHỐI RÈN VÁT CẠNH (16 lát — vát kim cương 2 tầng từ sống dày 1.56 px -> thân dày 1.06 px -> mép cắt sắc 0.36 px, 0 tách đôi mũi!)
     blade_cubes = []
-    n_slices = 14
+    n_slices = 16
     span = SINGLE_Y_MAX - SINGLE_Y_MIN
     for i in range(n_slices):
-        ua = 0.14 + (i / n_slices) * 0.80
-        ub = 0.14 + ((i + 1) / n_slices) * 0.80
+        ua = 0.08 + (i / n_slices) * 0.86
+        ub = 0.08 + ((i + 1) / n_slices) * 0.86
         um = 0.5 * (ua + ub)
         ya, yb = SINGLE_Y_MIN + ua * span, SINGLE_Y_MIN + ub * span
         ym = 0.5 * (ya + yb)
         za_sp, zb_sp = single_inner_spine_z(ua), single_inner_spine_z(ub)
         za_ed, zb_ed = single_outer_edge_z(ua), single_outer_edge_z(ub)
-        zm_sp = 0.5 * (za_sp + zb_sp) - 0.10
-        zm_ed = 0.5 * (za_ed + zb_ed) + 0.55  # chừa viền mỏng sắc cho profile fin 64x104
+        zm_sp = 0.5 * (za_sp + zb_sp) - 0.05
+        zm_ed = 0.5 * (za_ed + zb_ed) + 0.42
         depth = zm_sp - zm_ed
-        if depth < 0.25:
+        if depth < 0.20:
             continue
-        zm_ctr = 0.5 * (zm_sp + zm_ed)
         rx_deg = -math.degrees(math.atan2(zb_sp - za_sp, yb - ya))
-        seg_len = math.hypot(yb - ya, zb_sp - za_sp) * 1.08
-        tx = 0.62 * (1.0 - (um ** 1.15) * 0.68)
-        eps = 0.012 if (i % 2 == 1) else 0.0
-        # Khối sống lưng gọn sát mép trong để lộ trọn bản vẽ 64x104 & đường rãnh ghép chữ S mượt tuyệt đối!
-        core_d = min(0.65, depth * 0.24)
-        blade_cubes.append(make_centered_cube([0.0, ym, zm_sp - core_d * 0.52], [tx + eps, seg_len, core_d],
+        seg_len = math.hypot(yb - ya, zb_sp - za_sp) * 1.10
+        eps = 0.014 if (i % 2 == 1) else 0.0
+        # 4a. Thân lưỡi vát dày 3D (`1.08 px` thuôn mượt về `0.28 px` ở mũi -> dày dặn cực đã mắt, mũi vẫn sắc nhọn 1 điểm!)
+        tx_body = 1.08 * (1.0 - (um ** 1.15) * 0.74)
+        body_d = depth * 0.72
+        blade_cubes.append(make_centered_cube([0.0, ym, zm_sp - body_d * 0.52], [tx_body + eps, seg_len, body_d],
                                               "BLADE_MAIN", rot=[rx_deg, 0.0, 0.0]))
+        # 4b. Gờ sống lưng rèn 3D nổi khối (`1.56 px` thuôn về `0.38 px`) tạo sống đao dày chắc ở cả F5 lẫn First Person!
+        tx_spine = 1.56 * (1.0 - (um ** 1.10) * 0.75)
+        core_d = min(1.05, depth * 0.34)
+        if core_d >= 0.18:
+            blade_cubes.append(make_centered_cube([0.0, ym, zm_sp - core_d * 0.50], [tx_spine + eps, seg_len, core_d],
+                                                  "BLADE_MAIN", rot=[rx_deg, 0.0, 0.0]))
 
-    # 5. Lá cắt profile độ phân giải cao 64x104 (tạo biên trăng khuyết siêu mượt, gót liềm nhọn & đường rãnh ghép chữ S!)
+    # 5. Lá cắt profile độ phân giải cao 64x104 giữ mép cắt & mũi sắc lẹm (`thickness_x=0.38`, không hở chữ V ở mũi!)
     edge_cubes = [
-        make_profile_fin_cube(SINGLE_Y_MIN, SINGLE_Y_MAX, SINGLE_Z_MIN, SINGLE_Z_MAX, thickness_x=0.34),
+        make_profile_fin_cube(SINGLE_Y_MIN, SINGLE_Y_MAX, SINGLE_Z_MIN, SINGLE_Z_MAX, thickness_x=0.38),
     ]
 
     bones = [
