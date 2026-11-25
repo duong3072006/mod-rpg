@@ -39,6 +39,9 @@ public record TogetsuSyncPayload(
     public static final byte VFX_PIN_STAB_WAXING = 7;
     public static final byte VFX_PIN_STAB_WANING = 8;
     public static final byte VFX_VORPAL_CHARGE_PULSE = 9;
+    public static final byte VFX_MOON_MARK = 10;
+    public static final byte VFX_MORPH_FINISHER_IMPACT = 11;
+    public static final byte VFX_CRESCENT_WAVE_PROJ = 12;
 
     public static final CustomPacketPayload.Type<TogetsuSyncPayload> TYPE =
             new CustomPacketPayload.Type<>(AbyssalRpgMod.id("togetsu_sync_s2c"));

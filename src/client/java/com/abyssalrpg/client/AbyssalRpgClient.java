@@ -1,6 +1,7 @@
 package com.abyssalrpg.client;
 
 import com.abyssalrpg.client.hud.BossBarHudRenderer;
+import com.abyssalrpg.client.hud.ExcaliburHudRenderer;
 import com.abyssalrpg.client.hud.TogetsuHudRenderer;
 import com.abyssalrpg.client.renderer.AltarEyeRenderer;
 import com.abyssalrpg.client.renderer.CerberusGeoRenderer;
@@ -8,6 +9,7 @@ import com.abyssalrpg.client.renderer.CinderDragonArmorRenderer;
 import com.abyssalrpg.client.renderer.CinderDragonGeoRenderer;
 import com.abyssalrpg.client.renderer.CinderDragonHitboxPartRenderer;
 import com.abyssalrpg.client.renderer.DualBladeGeoRenderer;
+import com.abyssalrpg.client.renderer.ExcaliburGeoRenderer;
 import com.abyssalrpg.client.renderer.HydraHitboxPartRenderer;
 import com.abyssalrpg.client.renderer.JormungandrGeoRenderer;
 import com.abyssalrpg.client.renderer.JormungandrHitboxPartRenderer;
@@ -18,10 +20,12 @@ import com.abyssalrpg.client.renderer.NightmareKnightGeoRenderer;
 import com.abyssalrpg.client.renderer.SpiritHydraGeoRenderer;
 import com.abyssalrpg.client.renderer.TogetsuGeoRenderer;
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
+import com.abyssalrpg.client.anim.ExcaliburAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
 import com.abyssalrpg.client.renderer.vfx.AbyssalOrbRenderer;
 import com.abyssalrpg.client.renderer.vfx.DualBladeTrailRenderer;
 import com.abyssalrpg.client.renderer.vfx.EnergySlashRenderer;
+import com.abyssalrpg.client.renderer.vfx.ExcaliburVfxRenderer;
 import com.abyssalrpg.client.renderer.vfx.LaserBeamRenderer;
 import com.abyssalrpg.client.renderer.vfx.MagicCircleRenderer;
 import com.abyssalrpg.client.renderer.vfx.NightmareBoneSpikeRenderer;
@@ -42,11 +46,13 @@ import com.abyssalrpg.entity.mythic.cerberus.CerberusForm;
 import com.abyssalrpg.item.CinderDragonArmorItem;
 import com.abyssalrpg.item.DualBladeItem;
 import com.abyssalrpg.item.NightmareArmorItem;
+import com.abyssalrpg.item.TogetsuItem;
 import com.abyssalrpg.network.CerberusVfxPayload;
 import com.abyssalrpg.network.CinderDragonVfxPayload;
 import com.abyssalrpg.network.DualBladeComboPayload;
 import com.abyssalrpg.network.DualBladeDashVfxPayload;
 import com.abyssalrpg.network.DualBladeVfxPayload;
+import com.abyssalrpg.network.ExcaliburSyncPayload;
 import com.abyssalrpg.network.HydraVfxPayload;
 import com.abyssalrpg.network.JormungandrPathSyncPayload;
 import com.abyssalrpg.network.LeviathanVfxPayload;
@@ -136,6 +142,7 @@ public class AbyssalRpgClient implements ClientModInitializer {
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.MYTHIC_SUMMON_ALTAR, RenderType.cutout());
         HudRenderCallback.EVENT.register(BossBarHudRenderer::render);
         HudRenderCallback.EVENT.register(TogetsuHudRenderer::render);
+        HudRenderCallback.EVENT.register(ExcaliburHudRenderer::render);
         TogetsuClientState.initKeybinds();
 
         // Đăng ký GeoItemRenderer 3D fullbright qua Fabric BuiltinItemRendererRegistry
@@ -157,10 +164,22 @@ public class AbyssalRpgClient implements ClientModInitializer {
                     }
                     togetsuRendererHolder[0].renderByItem(stack, mode, matrices, vertexConsumers, light, overlay);
                 });
+
+        final ExcaliburGeoRenderer[] excaliburRendererHolder = new ExcaliburGeoRenderer[1];
+        BuiltinItemRendererRegistry.INSTANCE.register(ModItems.EXCALIBUR,
+                (stack, mode, matrices, vertexConsumers, light, overlay) -> {
+                    if (excaliburRendererHolder[0] == null) {
+                        excaliburRendererHolder[0] = new ExcaliburGeoRenderer();
+                    }
+                    excaliburRendererHolder[0].renderByItem(stack, mode, matrices, vertexConsumers, light, overlay);
+                });
         DualBladeItem.clientIsOffhandOccupied = () -> {
             LocalPlayer p = Minecraft.getInstance().player;
             return p != null && !p.getOffhandItem().isEmpty();
         };
+        TogetsuItem.clientSkillKeyName = TogetsuClientState::getSkillKeyDisplayName;
+        TogetsuItem.clientFuseKeyName = TogetsuClientState::getFuseKeyDisplayName;
+        TogetsuItem.clientColorKeyName = TogetsuClientState::getColorKeyDisplayName;
 
         // Bơm GeoArmorRenderer 3D + selective glowmask cho bộ 4 món Giáp Nightmare Knight (split-sourceSet an toàn 100%)
         NightmareArmorItem.clientRenderProviderFactory = () -> new GeoRenderProvider() {
@@ -197,16 +216,24 @@ public class AbyssalRpgClient implements ClientModInitializer {
         ItemTooltipCallback.EVENT.register(NightmareArmorTooltipHandler::onItemTooltip);
         ItemTooltipCallback.EVENT.register(CinderDragonArmorTooltipHandler::onItemTooltip);
 
-        // Render vệt kiếm thư pháp đôi Catmull-Rom (`DualBladeTrailRenderer`) & Song Nguyệt (`TogetsuVfxRenderer`)
+        // Render vệt kiếm thư pháp đôi Catmull-Rom (`DualBladeTrailRenderer`), Song Nguyệt (`TogetsuVfxRenderer`) & Excalibur (`ExcaliburVfxRenderer`)
         WorldRenderEvents.AFTER_TRANSLUCENT.register(context -> {
             DualBladeTrailRenderer.renderWorld(context, DualBladeAnimManager.getClientTick());
             TogetsuVfxRenderer.renderWorld(context, TogetsuAnimManager.getClientTick());
+            ExcaliburVfxRenderer.renderWorld(context, ExcaliburAnimManager.getClientTick());
         });
 
         ClientPlayNetworking.registerGlobalReceiver(TogetsuSyncPayload.TYPE,
                 (payload, context) -> context.client().execute(() -> {
                     if (context.client().level != null) {
                         TogetsuClientState.handleSyncPayload(context.client().level, payload);
+                    }
+                }));
+
+        ClientPlayNetworking.registerGlobalReceiver(ExcaliburSyncPayload.TYPE,
+                (payload, context) -> context.client().execute(() -> {
+                    if (context.client().level != null) {
+                        ExcaliburClientState.handleSyncPayload(context.client().level, payload);
                     }
                 }));
 
@@ -283,6 +310,7 @@ public class AbyssalRpgClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             DualBladeClientState.tickClient(client);
             TogetsuClientState.tickClient(client);
+            ExcaliburClientState.tickClient(client);
 
             LocalPlayer player = client.player;
             if (player == null || client.isPaused() || client.level == null)

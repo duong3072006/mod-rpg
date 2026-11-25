@@ -42,6 +42,7 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Supplier;
 
 /**
  * **Togetsu (兎月 — Trăng Non & Trăng Khuyết / Dạng Hợp Nhất: Song Nguyệt · Sōgengetsu)** — Vũ khí biến hình 2 dạng:
@@ -62,9 +63,14 @@ public final class TogetsuItem extends Item implements GeoItem {
     public static final double DUAL_DAMAGE = 32.0;
     public static final double FUSED_DAMAGE = 48.0; // 32.0 * 1.5
     public static final double DUAL_ATTACK_SPEED = 2.4;
-    public static final double FUSED_ATTACK_SPEED = 1.5;
+    public static final double FUSED_ATTACK_SPEED = 3.3333; // 20 / 3.3333 = đúng 6 ticks (0.30 giây / nhát chém cắm xuống!)
     public static final double FUSED_BONUS_REACH = 1.5; // 3.0 -> 4.5 blocks
     public static final int NETHERITE_DURABILITY = 2031;
+
+    /** Hook thuần client (cài đặt trong AbyssalRpgClient) để Tooltip luôn hiển thị đúng phím người chơi đã cài trong Controls! */
+    public static Supplier<String> clientSkillKeyName = () -> "Button 4";
+    public static Supplier<String> clientFuseKeyName = () -> "R";
+    public static Supplier<String> clientColorKeyName = () -> "C";
 
     private static final ResourceLocation REACH_MODIFIER_ID = AbyssalRpgMod.id("togetsu_fused_reach");
 
@@ -78,6 +84,10 @@ public final class TogetsuItem extends Item implements GeoItem {
     private static final String TAG_TRANSFORM_CD_UNTIL = "TogetsuTransformCdUntil";
     private static final String TAG_PIN_CD_UNTIL = "TogetsuPinCdUntil";
     private static final String TAG_VORPAL_CD_UNTIL = "TogetsuVorpalCdUntil";
+    private static final String TAG_WAVE_CD_UNTIL = "TogetsuWaveCdUntil";
+    private static final String TAG_GLOW_STYLE = "TogetsuGlowStyle";
+    private static final String TAG_GLOW_PRIMARY = "TogetsuGlowPrimary";
+    private static final String TAG_GLOW_SECONDARY = "TogetsuGlowSecondary";
 
     private static final RawAnimation ANIM_IDLE = RawAnimation.begin().thenLoop("togetsu.idle");
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
@@ -274,6 +284,63 @@ public final class TogetsuItem extends Item implements GeoItem {
         return (int) diff;
     }
 
+    public static void setWaveCooldownUntil(ItemStack stack, long untilGameTime) {
+        if (stack == null || stack.isEmpty()) return;
+        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putLong(TAG_WAVE_CD_UNTIL, untilGameTime));
+    }
+
+    public static int getWaveCooldownRemainingTicks(ItemStack stack, long nowGameTime) {
+        if (stack == null || stack.isEmpty()) return 0;
+        CustomData cd = stack.get(DataComponents.CUSTOM_DATA);
+        if (cd == null) return 0;
+        long diff = cd.copyTag().getLong(TAG_WAVE_CD_UNTIL) - nowGameTime;
+        if (diff <= 0L || diff > TogetsuCombatHandler.WAVE_SLASH_COOLDOWN_TICKS + 40L) {
+            return 0;
+        }
+        return (int) diff;
+    }
+
+    // --- Màu Điểm Sáng Nổi 3D (đồng bộ tự động Client/Server & Multiplayer qua CUSTOM_DATA!) ---
+
+    public static TogetsuGlowStyle getGlowStyle(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return TogetsuGlowStyle.YIN_YANG;
+        CustomData cd = stack.get(DataComponents.CUSTOM_DATA);
+        if (cd == null) return TogetsuGlowStyle.YIN_YANG;
+        CompoundTag tag = cd.copyTag();
+        if (!tag.contains(TAG_GLOW_STYLE)) {
+            return TogetsuGlowStyle.YIN_YANG;
+        }
+        return TogetsuGlowStyle.byId(tag.getByte(TAG_GLOW_STYLE));
+    }
+
+    public static int getCustomPrimaryRgb(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return TogetsuGlowStyle.YIN_YANG.defaultPrimaryRgb;
+        CustomData cd = stack.get(DataComponents.CUSTOM_DATA);
+        if (cd == null) return TogetsuGlowStyle.YIN_YANG.defaultPrimaryRgb;
+        CompoundTag tag = cd.copyTag();
+        return tag.contains(TAG_GLOW_PRIMARY) ? (tag.getInt(TAG_GLOW_PRIMARY) & 0xFFFFFF) : getGlowStyle(stack).defaultPrimaryRgb;
+    }
+
+    public static int getCustomSecondaryRgb(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return TogetsuGlowStyle.YIN_YANG.defaultSecondaryRgb;
+        CustomData cd = stack.get(DataComponents.CUSTOM_DATA);
+        if (cd == null) return TogetsuGlowStyle.YIN_YANG.defaultSecondaryRgb;
+        CompoundTag tag = cd.copyTag();
+        return tag.contains(TAG_GLOW_SECONDARY) ? (tag.getInt(TAG_GLOW_SECONDARY) & 0xFFFFFF) : getGlowStyle(stack).defaultSecondaryRgb;
+    }
+
+    public static void setGlowColor(ItemStack stack, TogetsuGlowStyle style, int primaryRgb, int secondaryRgb) {
+        if (stack == null || stack.isEmpty()) return;
+        TogetsuGlowStyle safe = style != null ? style : TogetsuGlowStyle.YIN_YANG;
+        int pri = (safe == TogetsuGlowStyle.CUSTOM ? primaryRgb : safe.defaultPrimaryRgb) & 0xFFFFFF;
+        int sec = (safe == TogetsuGlowStyle.CUSTOM ? secondaryRgb : safe.defaultSecondaryRgb) & 0xFFFFFF;
+        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
+            tag.putByte(TAG_GLOW_STYLE, safe.id);
+            tag.putInt(TAG_GLOW_PRIMARY, pri);
+            tag.putInt(TAG_GLOW_SECONDARY, sec);
+        });
+    }
+
     /**
      * Ngăn vanilla tụt tay (re-equip dip) khi thanh nộ `fusion_charge` tăng/giảm hoặc cập nhật cooldown/buff trên `CUSTOM_DATA`.
      * Chỉ cho phép hiệu ứng nâng tay khi đổi vật phẩm khác hoặc biến hình giữa Song Đao <-> Song Nguyệt!
@@ -305,37 +372,9 @@ public final class TogetsuItem extends Item implements GeoItem {
         if (hand != InteractionHand.MAIN_HAND) {
             return InteractionResultHolder.pass(stack);
         }
-
-        // 1. Dạng Hợp Nhất (Song Nguyệt): chỉ cần Chuột Phải (RMB) -> Tuyệt kỹ Crescent Vorpal (gồng 2s, hồi 7s độc lập với dạng tách!)
-        if (isFused(stack)) {
-            int vorpalRem = getVorpalCooldownRemainingTicks(stack, level.getGameTime());
-            if (vorpalRem > 0) {
-                if (!level.isClientSide) {
-                    String remStr = String.format(Locale.ROOT, "%.1f", Math.max(0.1F, vorpalRem / 20.0F));
-                    player.displayClientMessage(
-                            Component.translatable("message.abyssalrpg.togetsu.skill_cooldown", remStr)
-                                    .withStyle(ChatFormatting.YELLOW),
-                            true);
-                }
-                return InteractionResultHolder.pass(stack);
-            }
-            if (!level.isClientSide && player instanceof ServerPlayer sp) {
-                if (!TogetsuCombatHandler.tryCastCrescentVorpal(sp, stack)) {
-                    return InteractionResultHolder.fail(stack);
-                }
-            }
-            return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
-        }
-
-        // 2. Dạng Song Đao tách rời:
-        //    - Nếu có kẻ địch phía trước -> Lao Đè 12 Liên Đâm Vô Địch (trừ khi người chơi đang Shift + đầy 100 điểm muốn Hợp Nhất!).
-        //    - Nếu KHÔNG có kẻ địch phía trước (hoặc đang Shift) và đã đủ 100 điểm Hợp Nhất -> Kích hoạt Hợp Nhất Song Nguyệt ngay!
-        if (!level.isClientSide && player instanceof ServerPlayer sp) {
-            if (!TogetsuCombatHandler.handleDualRightClick(sp, stack)) {
-                return InteractionResultHolder.fail(stack);
-            }
-        }
-        return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+        // Dạng Song Đao: Chuột Phải = Chém Kiếm Phải (Trăng Khuyết — xử lý mượt qua gói ACTION_RIGHT_SLASH ở Client/Server, 0 dip tay!).
+        // Toàn bộ Kỹ Năng Đặc Biệt (Lao Tới 15 block / Crescent Wave / Crescent Vorpal) đều tách riêng lên phím [V]!
+        return InteractionResultHolder.pass(stack);
     }
 
     @Override
@@ -367,6 +406,9 @@ public final class TogetsuItem extends Item implements GeoItem {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         boolean fused = isFused(stack);
         int gaugePct = Math.round(getFusionGauge(stack));
+        String skillKey = clientSkillKeyName.get();
+        String fuseKey = clientFuseKeyName.get();
+        String colorKey = clientColorKeyName.get();
         if (fused) {
             tooltip.add(Component.translatable("tooltip.abyssalrpg.togetsu.mode_fused", "15.0")
                     .withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD));
@@ -374,20 +416,26 @@ public final class TogetsuItem extends Item implements GeoItem {
                     .withStyle(ChatFormatting.GOLD));
             tooltip.add(Component.translatable("tooltip.abyssalrpg.togetsu.reach_sweep")
                     .withStyle(ChatFormatting.WHITE));
-            tooltip.add(Component.translatable("tooltip.abyssalrpg.togetsu.vorpal")
+            tooltip.add(Component.translatable("tooltip.abyssalrpg.togetsu.vorpal", skillKey)
                     .withStyle(ChatFormatting.LIGHT_PURPLE));
+            tooltip.add(Component.translatable("tooltip.abyssalrpg.togetsu.wave_skill", skillKey)
+                    .withStyle(ChatFormatting.AQUA));
         } else {
             tooltip.add(Component.translatable("tooltip.abyssalrpg.togetsu.mode_dual", gaugePct)
                     .withStyle(ChatFormatting.WHITE));
+            tooltip.add(Component.translatable("tooltip.abyssalrpg.togetsu.dual_controls")
+                    .withStyle(ChatFormatting.YELLOW));
             tooltip.add(Component.translatable("tooltip.abyssalrpg.togetsu.waxing")
                     .withStyle(ChatFormatting.GRAY));
             tooltip.add(Component.translatable("tooltip.abyssalrpg.togetsu.waning")
                     .withStyle(ChatFormatting.DARK_AQUA));
             tooltip.add(Component.translatable("tooltip.abyssalrpg.togetsu.charge_rule")
                     .withStyle(ChatFormatting.AQUA));
-            tooltip.add(Component.translatable("tooltip.abyssalrpg.togetsu.pin_flurry")
+            tooltip.add(Component.translatable("tooltip.abyssalrpg.togetsu.pin_flurry", skillKey)
                     .withStyle(ChatFormatting.LIGHT_PURPLE));
-            tooltip.add(Component.translatable("tooltip.abyssalrpg.togetsu.fuse_hint")
+            tooltip.add(Component.translatable("tooltip.abyssalrpg.togetsu.wave_skill", skillKey)
+                    .withStyle(ChatFormatting.AQUA));
+            tooltip.add(Component.translatable("tooltip.abyssalrpg.togetsu.fuse_hint", fuseKey)
                     .withStyle(ChatFormatting.GOLD));
         }
         if (isWaxingEmpowered(stack)) {
@@ -395,6 +443,15 @@ public final class TogetsuItem extends Item implements GeoItem {
             tooltip.add(Component.translatable("tooltip.abyssalrpg.togetsu.empowered", bonusPct)
                     .withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
         }
+        TogetsuGlowStyle glowStyle = getGlowStyle(stack);
+        int priRgb = glowStyle.resolvePrimaryRgb(getCustomPrimaryRgb(stack), 0.0F);
+        int secRgb = glowStyle.resolveSecondaryRgb(getCustomSecondaryRgb(stack), 0.0F);
+        tooltip.add(Component.translatable("tooltip.abyssalrpg.togetsu.glow_style",
+                        Component.literal("◆").withStyle(s -> s.withColor(priRgb)),
+                        Component.literal("◆").withStyle(s -> s.withColor(secRgb)),
+                        Component.translatable(glowStyle.translationKey()).withStyle(s -> s.withColor(priRgb)),
+                        colorKey)
+                .withStyle(ChatFormatting.GRAY));
         super.appendHoverText(stack, context, tooltip, flag);
     }
 

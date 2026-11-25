@@ -2,6 +2,7 @@ package com.abyssalrpg.client.mixin;
 
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
 import com.abyssalrpg.client.anim.DualBladeAnimState.FullBodyPose;
+import com.abyssalrpg.client.anim.ExcaliburAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
@@ -76,11 +77,19 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
             this.body.xRot = 0.0F;
             this.body.yRot = 0.0F;
             this.body.zRot = 0.0F;
+            this.head.zRot = 0.0F;
+            this.rightArm.x = -5.0F;
+            this.rightArm.z = 0.0F;
+            this.leftArm.x = 5.0F;
+            this.leftArm.z = 0.0F;
             this.rightLeg.zRot = 0.0F;
             this.leftLeg.zRot = 0.0F;
 
-            // Tắt hoàn toàn độ vẩy tay mặc định của vanilla khi đang đánh bằng Dual Blade hoặc Togetsu!
-            if (DualBladeAnimManager.isDualBladeAttacking(player) || TogetsuAnimManager.isTogetsuAttacking(player)) {
+            // Tắt hoàn toàn độ vẩy tay mặc định của vanilla (attackTime / setupAttackAnimation) mọi lúc khi cầm Togetsu hoặc Dual Blade
+            // để animation vanilla không bao giờ ghi đè rightArm/leftArm ở khung đầu hoặc khung chuyển tiếp!
+            if (DualBladeAnimManager.isDualBladeAttacking(player)
+                    || TogetsuAnimManager.isHoldingTogetsuReady(player)
+                    || ExcaliburAnimManager.isHoldingExcalibur(player)) {
                 HumanoidModel<?> self = (HumanoidModel<?>) (Object) this;
                 this.abyssalrpg$savedAttackTime = self.attackTime;
                 self.attackTime = 0.0F;
@@ -107,6 +116,9 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
             pose = TogetsuAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
         }
         if (pose == null) {
+            pose = ExcaliburAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
+        }
+        if (pose == null) {
             return;
         }
 
@@ -121,9 +133,15 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
             this.body.zRot += pose.bodyZ;
         }
 
-        // 2. Đầu (giữ hướng nhìn mục tiêu rõ nét, không gãy cổ)
-        this.head.xRot = Mth.clamp(this.head.xRot + pose.headAddX, -1.25F, 1.25F);
-        this.head.yRot = Mth.clamp(this.head.yRot + pose.headAddY, -1.35F, 1.35F);
+        // 2. Đầu: khóa thẳng đứng nhìn thẳng mục tiêu khi tấn công (Head Pitch ~ 0°, không bao giờ cúi cắm xuống cỏ!)
+        if (pose.isAttacking) {
+            this.head.xRot = Mth.clamp(headPitch * Mth.DEG_TO_RAD * 0.45F + pose.headAddX, -0.65F, 0.22F);
+            this.head.yRot = Mth.clamp(netHeadYaw * Mth.DEG_TO_RAD + pose.headAddY, -1.25F, 1.25F);
+        } else {
+            this.head.xRot = Mth.clamp(this.head.xRot + pose.headAddX, -1.25F, 1.25F);
+            this.head.yRot = Mth.clamp(this.head.yRot + pose.headAddY, -1.35F, 1.35F);
+        }
+        this.head.zRot = pose.headAddZ;
         this.hat.copyFrom(this.head);
 
         // 3. Cả 2 tay: GÁN TUYỆT ĐỐI khi đang chém để từng đường kiếm rộng & sắc nét 100%
@@ -147,6 +165,10 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
                 this.leftArm.zRot = Mth.lerp(aw, this.leftArm.zRot, pose.leftArmZ);
             }
         }
+        this.rightArm.x += pose.rightArmPosX;
+        this.rightArm.z += pose.rightArmPosZ;
+        this.leftArm.x += pose.leftArmPosX;
+        this.leftArm.z += pose.leftArmPosZ;
 
         // 4. Cả 2 chân: thế tấn rộng / đá chân sau cực rõ trong lúc chém, hòa bước chạy khi di chuyển
         float lw = pose.legWeight;

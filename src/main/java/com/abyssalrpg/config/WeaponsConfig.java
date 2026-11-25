@@ -16,13 +16,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Cấu hình JSON cho hệ thống vũ khí & hiệu ứng Dual Knife (`config/abyssalrpg_weapons.json`).
- * - Version 6: giữ nguyên `30.0` sát thương, `2.5` tốc đánh (`8` tick/đòn), `7` tick i-frame,
- *   bộ 4 Enchant mới, `dashDamageMultiplier = 1.5`, tầm lướt `dashDistance = 15.0` block,
- *   và nâng nhẹ tỷ lệ hiển thị `knifeRenderScale = 0.92` (~1.28× so với 0.72) để nhìn rõ họa tiết song sắc.
+ * Cấu hình JSON cho hệ thống vũ khí & hiệu ứng Dual Knife / Togetsu (`config/abyssalrpg_weapons.json`).
+ * - Version 8: cân chỉnh chiều lưỡi chuẩn (không ngược) & tỷ lệ độ dài tự nhiên cho Đại Đao Song Nguyệt 3D ở Góc nhìn Thứ 1
+ *   (`togetsuFpFusedScale = 1.32`, `togetsuFpFusedBladeLength = 1.38`).
  */
 public final class WeaponsConfig {
-    public static final int CURRENT_CONFIG_VERSION = 6;
+    public static final int CURRENT_CONFIG_VERSION = 8;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path CONFIG_PATH = FabricLoader.getInstance()
@@ -61,6 +60,10 @@ public final class WeaponsConfig {
     public boolean dashFovEffect = true;
     /** Tỷ lệ hiển thị 3D của Dual Knife trên tay (mặc định `0.92` = gọn sắc đầm tay ~1.28× bản cũ, thấy rõ họa tiết; chỉnh từ 0.55..1.40). */
     public float knifeRenderScale = 0.92f;
+    /** Tỷ lệ tổng thể của Đại Đao Song Nguyệt (Togetsu Fused) ở Góc nhìn Thứ 1 (mặc định `1.32`, dải `0.70..2.00`). */
+    public float togetsuFpFusedScale = 1.32f;
+    /** Hệ số kéo dài riêng phần lưỡi (`blade_body`) của Song Nguyệt ở Góc nhìn Thứ 1 mà không làm méo cán chữ D (mặc định `1.38`, dải `0.80..2.00`). */
+    public float togetsuFpFusedBladeLength = 1.38f;
     /** Bật/tắt hạt giọt máu nhẹ (1-2 hạt mỗi 9 ticks) trên mục tiêu đang dính Chảy Máu. */
     public boolean enableBleedParticles = true;
 
@@ -182,6 +185,12 @@ public final class WeaponsConfig {
                         if (loaded.configVersion < 6) {
                             // Nâng cấp tự động sang chuẩn v6: tăng nhẹ kích thước Dual Knife lên 0.92 (~1.28× so với 0.72) để nhìn rõ họa tiết song sắc
                             loaded.knifeRenderScale = 0.92f;
+                            migrated = true;
+                        }
+                        if (loaded.configVersion < 8) {
+                            // Nâng cấp tự động sang chuẩn v8: chuẩn chiều lưỡi Đại Đao Song Nguyệt 3D ở Góc nhìn Thứ 1
+                            loaded.togetsuFpFusedScale = 1.32f;
+                            loaded.togetsuFpFusedBladeLength = 1.38f;
                             loaded.configVersion = CURRENT_CONFIG_VERSION;
                             migrated = true;
                         }
@@ -224,6 +233,8 @@ public final class WeaponsConfig {
         this.offhandOccupiedAttackSpeed = Math.max(0.5, Math.min(this.dualBladeAttackSpeed, this.offhandOccupiedAttackSpeed));
         this.dualBladeHurtResistanceTicks = Math.max(3, Math.min(10, this.dualBladeHurtResistanceTicks));
         this.knifeRenderScale = Math.max(0.55f, Math.min(1.40f, this.knifeRenderScale));
+        this.togetsuFpFusedScale = Math.max(0.70f, Math.min(2.00f, this.togetsuFpFusedScale));
+        this.togetsuFpFusedBladeLength = Math.max(0.80f, Math.min(2.00f, this.togetsuFpFusedBladeLength));
         this.bleedDurationTicks = Math.max(20, Math.min(600, this.bleedDurationTicks));
         this.bleedTickInterval = Math.max(5, Math.min(60, this.bleedTickInterval));
         this.bleedDamagePerStack = Math.max(0.5f, Math.min(50.0f, this.bleedDamagePerStack));

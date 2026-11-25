@@ -1,6 +1,7 @@
 package com.abyssalrpg.mixin;
 
 import com.abyssalrpg.combat.DualBladeCombatHandler;
+import com.abyssalrpg.combat.ExcaliburCombatHandler;
 import com.abyssalrpg.combat.TogetsuCombatHandler;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -12,10 +13,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Móc nối an toàn vào `Player.attack(Entity)` cho Dual Blade:
- * - Khởi tạo ngữ cảnh đòn đánh trực tiếp (phân giải cả 4 hệ thống proxy hitbox Boss về thực thể Boss chính).
- * - Nhân sát thương `Executioner's Edge` (+10%/20%/30% dưới 40% HP) ngay trước khi gọi `Entity.hurt`.
- * - Kích hoạt Bleeding, Hemorrhage Blood Burst, Tempest Flurry, Crimson Siphon, Phantom Cross và đồng bộ combo 3 nhịp.
+ * Móc nối an toàn vào `Player.attack(Entity)` cho Dual Blade, Togetsu & Excalibur / Excalibur Morgan.
  */
 @Mixin(Player.class)
 public abstract class PlayerMixin {
@@ -25,11 +23,15 @@ public abstract class PlayerMixin {
     @Unique
     private TogetsuCombatHandler.ActiveHitContext abyssalrpg$activeTogetsuHit;
 
+    @Unique
+    private ExcaliburCombatHandler.ActiveHitContext abyssalrpg$activeExcaliburHit;
+
     @Inject(method = "attack", at = @At("HEAD"))
     private void abyssalrpg$beginDualBladeAttack(Entity target, CallbackInfo ci) {
         Player self = (Player) (Object) this;
         this.abyssalrpg$activeDualBladeHit = DualBladeCombatHandler.beginPlayerAttack(self, target);
         this.abyssalrpg$activeTogetsuHit = TogetsuCombatHandler.beginPlayerAttack(self, target);
+        this.abyssalrpg$activeExcaliburHit = ExcaliburCombatHandler.beginPlayerAttack(self, target);
     }
 
     @ModifyArg(
@@ -47,6 +49,9 @@ public abstract class PlayerMixin {
         if (this.abyssalrpg$activeTogetsuHit != null) {
             return TogetsuCombatHandler.modifyAttackDamage(amount);
         }
+        if (this.abyssalrpg$activeExcaliburHit != null) {
+            return ExcaliburCombatHandler.modifyAttackDamage(amount);
+        }
         return amount;
     }
 
@@ -61,6 +66,11 @@ public abstract class PlayerMixin {
             TogetsuCombatHandler.ActiveHitContext ctx = this.abyssalrpg$activeTogetsuHit;
             this.abyssalrpg$activeTogetsuHit = null;
             TogetsuCombatHandler.finishPlayerAttack(ctx);
+        }
+        if (this.abyssalrpg$activeExcaliburHit != null) {
+            ExcaliburCombatHandler.ActiveHitContext ctx = this.abyssalrpg$activeExcaliburHit;
+            this.abyssalrpg$activeExcaliburHit = null;
+            ExcaliburCombatHandler.finishPlayerAttack(ctx);
         }
     }
 }

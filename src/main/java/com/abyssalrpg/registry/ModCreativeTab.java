@@ -28,6 +28,9 @@ public final class ModCreativeTab {
                         if (ModItems.TOGETSU != null) {
                             output.accept(ModItems.TOGETSU);
                         }
+                        if (ModItems.EXCALIBUR != null) {
+                            output.accept(ModItems.EXCALIBUR);
+                        }
                         if (ModItems.NIGHTMARE_HELMET != null) {
                             output.accept(ModItems.NIGHTMARE_HELMET);
                             output.accept(ModItems.NIGHTMARE_CHESTPLATE);

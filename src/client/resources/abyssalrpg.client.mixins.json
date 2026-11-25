@@ -6,6 +6,8 @@
     "ItemInHandRendererMixin",
     "ItemInHandLayerMixin",
     "HumanoidModelMixin",
+    "PlayerModelMixin",
+    "HumanoidArmorLayerMixin",
     "PlayerRendererMixin",
     "GameRendererMixin",
     "CapeLayerMixin",

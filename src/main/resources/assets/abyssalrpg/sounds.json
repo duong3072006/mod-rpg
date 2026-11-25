@@ -2106,5 +2106,80 @@
         "volume": 0.88
       }
     ]
+  },
+  "item.excalibur.slash": {
+    "subtitle": "subtitles.abyssalrpg.excalibur.slash",
+    "sounds": [
+      {
+        "name": "entity/player/attack/sweep1",
+        "pitch": 1.08,
+        "volume": 0.92
+      },
+      {
+        "name": "entity/player/attack/sweep2",
+        "pitch": 1.02,
+        "volume": 0.92
+      },
+      {
+        "name": "entity/player/attack/sweep3",
+        "pitch": 1.14,
+        "volume": 0.92
+      }
+    ]
+  },
+  "item.excalibur.charge": {
+    "subtitle": "subtitles.abyssalrpg.excalibur.charge",
+    "sounds": [
+      {
+        "name": "block/beacon/activate",
+        "pitch": 1.12,
+        "volume": 0.95
+      },
+      {
+        "name": "block/beacon/power1",
+        "pitch": 1.25,
+        "volume": 0.85
+      }
+    ]
+  },
+  "item.excalibur.beam": {
+    "subtitle": "subtitles.abyssalrpg.excalibur.beam",
+    "sounds": [
+      {
+        "name": "mob/warden/sonic_boom1",
+        "pitch": 1.12,
+        "volume": 1.35
+      },
+      {
+        "name": "random/explode1",
+        "pitch": 0.88,
+        "volume": 1.15
+      },
+      {
+        "name": "block/beacon/activate",
+        "pitch": 1.45,
+        "volume": 1.00
+      }
+    ]
+  },
+  "item.excalibur.morgan_transform": {
+    "subtitle": "subtitles.abyssalrpg.excalibur.morgan_transform",
+    "sounds": [
+      {
+        "name": "mob/enderdragon/growl1",
+        "pitch": 0.62,
+        "volume": 1.45
+      },
+      {
+        "name": "random/explode1",
+        "pitch": 0.58,
+        "volume": 1.35
+      },
+      {
+        "name": "mob/wither/spawn",
+        "pitch": 0.72,
+        "volume": 1.20
+      }
+    ]
   }
 }

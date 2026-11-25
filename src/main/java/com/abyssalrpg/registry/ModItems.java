@@ -4,6 +4,7 @@ import com.abyssalrpg.AbyssalRpgMod;
 import com.abyssalrpg.item.CinderDragonArmorItem;
 import com.abyssalrpg.item.CinderDragonHeartItem;
 import com.abyssalrpg.item.DualBladeItem;
+import com.abyssalrpg.item.ExcaliburItem;
 import com.abyssalrpg.item.NightmareArmorItem;
 import com.abyssalrpg.item.NightmareCoreItem;
 import com.abyssalrpg.item.TogetsuItem;
@@ -59,9 +60,10 @@ public final class ModItems {
     public static Item CINDER_DRAGON_LEGGINGS;
     public static Item CINDER_DRAGON_BOOTS;
 
-    // Signature Two-Handed Weapons (`abyssalrpg:dual_knife` & transforming `abyssalrpg:togetsu`)
+    // Signature Two-Handed Weapons (`abyssalrpg:dual_knife`, `abyssalrpg:togetsu`, & `abyssalrpg:excalibur`)
     public static Item DUAL_KNIFE;
     public static Item TOGETSU;
+    public static Item EXCALIBUR;
 
     // Boss Spawn Eggs (13 Colossal Bosses: 6 GeckoLib + 3 Core Sculpted + 4 Mythic Sculpted)
     public static Item ABYSSAL_KNIGHT_SPAWN_EGG;
@@ -96,6 +98,7 @@ public final class ModItems {
 
         DUAL_KNIFE = register("dual_knife", new DualBladeItem());
         TOGETSU = register("togetsu", new TogetsuItem());
+        EXCALIBUR = register("excalibur", new ExcaliburItem());
 
         ABYSSAL_KNIGHT_SPAWN_EGG = register("abyssal_knight_spawn_egg",
                 new SpawnEggItem(ModEntities.ABYSSAL_KNIGHT_BOSS, 0x1D1A2B, 0x9B2CFF, new Item.Properties()));
