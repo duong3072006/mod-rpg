@@ -110,6 +110,7 @@ public class HydraBossEntity extends AbstractGeoMythicBoss {
 
     public static final String BODY_BONE = "body";
     public static final String CHEST_BONE = "chest";
+    public static final String CHEST_REAR_BONE = "chest_rear";
     public static final String TORSO_BONE = "torso";
     public static final String PELVIS_BONE = "pelvis";
 
@@ -124,26 +125,26 @@ public class HydraBossEntity extends AbstractGeoMythicBoss {
      * trích xuất chính xác từ `tools/generate_spirit_hydra_model.py` (`HEAD_MOUTH_PIVOTS`).
      */
     public static final float[][] HEAD_MODEL_MOUTH_PIVOTS = {
-            {  51.19f, 21.95f, -46.27f }, // head_1 (outer_l)
-            {  21.72f, 39.98f, -61.06f }, // head_2 (inner_l)
-            { -21.72f, 39.98f, -61.06f }, // head_3 (inner_r)
-            { -51.19f, 21.95f, -46.27f }  // head_4 (outer_r)
+            {  55.39f, 27.65f, -54.07f }, // head_1 (outer_l)
+            {  23.42f, 46.58f, -68.27f }, // head_2 (inner_l)
+            { -23.42f, 46.58f, -68.27f }, // head_3 (inner_r)
+            { -55.39f, 27.65f, -54.07f }  // head_4 (outer_r)
     };
 
     /** Tọa độ giữa 4 cổ trong không gian model cho 4 proxy cổ (giúp cận chiến chặt từng đầu cực mượt). */
     public static final float[][] NECK_MODEL_MID_PIVOTS = {
-            {  30.5f, 20.5f, -26.5f }, // neck_1 (outer_l)
-            {  13.5f, 28.5f, -31.5f }, // neck_2 (inner_l)
-            { -13.5f, 28.5f, -31.5f }, // neck_3 (inner_r)
-            { -30.5f, 20.5f, -26.5f }  // neck_4 (outer_r)
+            {  30.45f, 33.80f, -29.29f }, // neck_1 (outer_l)
+            {  12.08f, 48.80f, -33.51f }, // neck_2 (inner_l)
+            { -12.08f, 48.80f, -33.51f }, // neck_3 (inner_r)
+            { -30.45f, 33.80f, -29.29f }  // neck_4 (outer_r)
     };
 
     /** Tọa độ gốc cổ tại mặt ngực trước (vị trí `stump_1..4`, nơi sinh vết chặt & đầu mọc lại). */
     public static final float[][] NECK_MODEL_ROOT_PIVOTS = {
-            {  9.4f, 14.5f, -10.5f },
-            {  4.8f, 17.0f, -13.0f },
-            { -4.8f, 17.0f, -13.0f },
-            { -9.4f, 14.5f, -10.5f }
+            {  12.80f, 20.20f, -15.50f },
+            {   6.20f, 23.80f, -18.20f },
+            {  -6.20f, 23.80f, -18.20f },
+            { -12.80f, 20.20f, -15.50f }
     };
 
     /** Góc quạt nghỉ tự nhiên (độ) của 4 đầu (trái -> phải) phục vụ debug log & đầu rơi cosmetic. */
@@ -155,19 +156,19 @@ public class HydraBossEntity extends AbstractGeoMythicBoss {
 
     public static final PartSpec[] MULTIPART_SPECS = {
             // 4 proxy Đầu (tâm ở miệng/hộp sọ)
-            new PartSpec("head_1", 0,  51.19f, 21.95f, -46.27f, 3.6f, 3.6f, 1.8f),
-            new PartSpec("head_2", 1,  21.72f, 39.98f, -61.06f, 3.6f, 3.6f, 1.8f),
-            new PartSpec("head_3", 2, -21.72f, 39.98f, -61.06f, 3.6f, 3.6f, 1.8f),
-            new PartSpec("head_4", 3, -51.19f, 21.95f, -46.27f, 3.6f, 3.6f, 1.8f),
+            new PartSpec("head_1", 0,  55.39f, 27.65f, -54.07f, 3.8f, 3.8f, 1.9f),
+            new PartSpec("head_2", 1,  23.42f, 46.58f, -68.27f, 3.8f, 3.8f, 1.9f),
+            new PartSpec("head_3", 2, -23.42f, 46.58f, -68.27f, 3.8f, 3.8f, 1.9f),
+            new PartSpec("head_4", 3, -55.39f, 27.65f, -54.07f, 3.8f, 3.8f, 1.9f),
             // 4 proxy Cổ (vươn thấp tới tầm đánh cận chiến để đánh chính xác từng cổ/đầu từ mặt đất)
-            new PartSpec("neck_1", 0,  30.50f, 18.00f, -26.50f, 2.7f, 3.8f, 2.1f),
-            new PartSpec("neck_2", 1,  13.50f, 24.00f, -31.50f, 2.6f, 4.4f, 2.8f),
-            new PartSpec("neck_3", 2, -13.50f, 24.00f, -31.50f, 2.6f, 4.4f, 2.8f),
-            new PartSpec("neck_4", 3, -30.50f, 18.00f, -26.50f, 2.7f, 3.8f, 2.1f),
-            // 3 proxy Thân, 4 Chân & Đuôi (đánh vào chuyển sát thương vào đầu còn sống thấp máu nhất)
-            new PartSpec("chest_legs",  -1,  0.0f, 10.0f,  -4.0f, 5.4f, 4.0f, 2.0f),
-            new PartSpec("pelvis_legs", -1,  0.0f, 10.5f,  28.5f, 5.0f, 3.8f, 1.9f),
-            new PartSpec("tail",        -1,  0.0f, 24.0f,  66.0f, 3.6f, 6.2f, 2.4f)
+            new PartSpec("neck_1", 0,  30.45f, 22.00f, -29.29f, 3.0f, 4.4f, 2.5f),
+            new PartSpec("neck_2", 1,  12.08f, 28.50f, -33.51f, 2.9f, 5.0f, 3.2f),
+            new PartSpec("neck_3", 2, -12.08f, 28.50f, -33.51f, 2.9f, 5.0f, 3.2f),
+            new PartSpec("neck_4", 3, -30.45f, 22.00f, -29.29f, 3.0f, 4.4f, 2.5f),
+            // 3 proxy Thân, 4 Chân & Đuôi (đồng bộ dáng ngực vai đô rộng, hông khỏe & đuôi 9 đốt V3)
+            new PartSpec("chest_legs",  -1,  0.0f, 14.0f,  -9.0f, 6.8f, 5.2f, 2.6f),
+            new PartSpec("pelvis_legs", -1,  0.0f, 13.5f,  31.0f, 6.2f, 4.8f, 2.4f),
+            new PartSpec("tail",        -1,  0.0f, 25.0f,  74.0f, 4.0f, 7.0f, 2.8f)
     };
 
     // --- Màu hiệu ứng Spirit Hydra (P1: Xanh Băng Linh Hồn / P2: Trắng-Xanh Điện & Tím Lạnh) ---

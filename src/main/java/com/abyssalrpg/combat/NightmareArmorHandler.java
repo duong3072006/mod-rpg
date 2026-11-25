@@ -4,9 +4,11 @@ import com.abyssalrpg.AbyssalRpgMod;
 import com.abyssalrpg.api.BossHealthHolder;
 import com.abyssalrpg.config.ArmorConfig;
 import com.abyssalrpg.item.NightmareArmorItem;
+import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -17,13 +19,16 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 
 /**
  * Xử lý Full Set Bonus 4/4 của Bộ Giáp Nightmare Knight phía server:
- * 1. Kháng Lửa (`MobEffects.FIRE_RESISTANCE`, cấp I / amp 0): làm mới mượt mỗi `20 tick`, duration `60 tick`,
- *    `ambient = true`, `visible = false`, `showIcon = true`.
- * 2. Kháng Cự II (`MobEffects.DAMAGE_RESISTANCE`, cấp II / amp 1): làm mới mượt cùng chu kỳ,
- *    tuyệt đối không ghi đè nếu người chơi đang có Kháng Cự cấp cao hơn (III+).
- * 3. +4.0 Máu Tối Đa (+2 tim) qua `AttributeModifier` cố định `abyssalrpg:nightmare_armor_set_health`
+ * 1. **Kháng Lửa I** (`MobEffects.FIRE_RESISTANCE`, amp 0)
+ * 2. **Tốc Độ II** (`MobEffects.MOVEMENT_SPEED`, amp 1)
+ * 3. **Sức Mạnh II** (`MobEffects.DAMAGE_BOOST`, amp 1)
+ * 4. **Đề Kháng II** (`MobEffects.DAMAGE_RESISTANCE`, amp 1)
+ * 5. **Hấp Thụ I** (`MobEffects.ABSORPTION`, amp 0 = +2 tim vàng; giữ ổn định khi còn giáp vàng & tự hồi sau ~8s nếu vỡ!)
+ * 6. **Hồi Máu I** (`MobEffects.REGENERATION`, amp 0; làm mới chuẩn chu kỳ `120t -> <=25t` để nhịp hồi chuẩn xác 50 tick/nửa tim!)
+ * 7. **+20.0 Máu Tối Đa (+10 tim)** qua `AttributeModifier` cố định `abyssalrpg:nightmare_armor_set_health`
  *    (`ADD_VALUE`), không cộng dồn khi relog/đổi world, gỡ ngay khi tháo 1 món + clamp máu an toàn,
  *    và không bao giờ tác động lên `BossHealthHolder`.
+ * (Tuyệt đối không ghi đè các hiệu ứng potion cấp cao hơn đang có trên người chơi.)
  */
 public final class NightmareArmorHandler {
     public static final ResourceLocation SET_HEALTH_MODIFIER_ID = AbyssalRpgMod.id("nightmare_armor_set_health");
@@ -121,9 +126,11 @@ public final class NightmareArmorHandler {
     }
 
     /**
-     * Cấp 2 hiệu ứng potion khi mặc đủ 4/4 món:
-     * - `FIRE_RESISTANCE` cấp I (`amplifier = 0`), `duration = 60t`, `ambient = true`, `visible = false`, `showIcon = true`.
-     * - `DAMAGE_RESISTANCE` cấp II (`amplifier = 1`), cùng thông số; KHÔNG ghi đè nếu người chơi đang có Kháng Cự cấp cao hơn (III+).
+     * Cấp toàn bộ hiệu ứng potion khi mặc đủ 4/4 Bộ Giáp Nightmare Knight:
+     * - Speed II, Strength II, Resistance II (+ Fire Resistance nếu bật trong config): làm mới mượt `60t`.
+     * - Regeneration I: cấp `120t` & chỉ làm mới khi `<= 25t` để giữ đúng nhịp hồi vanilla 50 tick/nửa tim!
+     * - Absorption I: cấp `160t` (+2 tim vàng); khi còn tim vàng giữ ổn định không nhấp nháy, khi vỡ tim vàng
+     *   để bộ đếm chạy hết (~6–8s) rồi tự động hồi lại 2 tim vàng mới (tránh spam bất tử mỗi giây & không đè Táo Vàng!).
      */
     public static void applyPeriodicSetEffects(LivingEntity entity) {
         if (entity == null || entity.level().isClientSide || !entity.isAlive()) {
@@ -137,20 +144,45 @@ public final class NightmareArmorHandler {
         int duration = Math.max(40, cfg.setBonusEffectDurationTicks);
 
         if (cfg.setBonusFireResistance) {
-            MobEffectInstance existingFire = entity.getEffect(MobEffects.FIRE_RESISTANCE);
-            if (existingFire == null || (existingFire.getAmplifier() == 0 && existingFire.getDuration() < duration)) {
-                entity.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, duration, 0, true, false, true));
+            refreshAmbientEffect(entity, MobEffects.FIRE_RESISTANCE, duration, 0);
+        }
+        if (cfg.setBonusSpeed) {
+            refreshAmbientEffect(entity, MobEffects.MOVEMENT_SPEED, duration, Math.max(0, cfg.setBonusSpeedAmplifier));
+        }
+        if (cfg.setBonusStrength) {
+            refreshAmbientEffect(entity, MobEffects.DAMAGE_BOOST, duration, Math.max(0, cfg.setBonusStrengthAmplifier));
+        }
+        if (cfg.setBonusResistance) {
+            refreshAmbientEffect(entity, MobEffects.DAMAGE_RESISTANCE, duration, Math.max(0, cfg.setBonusResistanceAmplifier));
+        }
+        if (cfg.setBonusRegeneration) {
+            int regenAmp = Math.max(0, cfg.setBonusRegenerationAmplifier);
+            MobEffectInstance existingRegen = entity.getEffect(MobEffects.REGENERATION);
+            if (existingRegen == null
+                    || existingRegen.getAmplifier() < regenAmp
+                    || (existingRegen.getAmplifier() == regenAmp && existingRegen.getDuration() <= 25)) {
+                entity.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 120, regenAmp, true, false, true));
             }
         }
-
-        if (cfg.setBonusResistance) {
-            int targetAmp = Math.max(0, cfg.setBonusResistanceAmplifier);
-            MobEffectInstance existingRes = entity.getEffect(MobEffects.DAMAGE_RESISTANCE);
-            if (existingRes == null
-                    || existingRes.getAmplifier() < targetAmp
-                    || (existingRes.getAmplifier() == targetAmp && existingRes.getDuration() < duration)) {
-                entity.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, duration, targetAmp, true, false, true));
+        if (cfg.setBonusAbsorption) {
+            int absAmp = Math.max(0, cfg.setBonusAbsorptionAmplifier);
+            MobEffectInstance existingAbs = entity.getEffect(MobEffects.ABSORPTION);
+            if (existingAbs == null || existingAbs.getAmplifier() < absAmp) {
+                entity.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 160, absAmp, true, false, true));
+            } else if (existingAbs.getAmplifier() == absAmp
+                    && entity.getAbsorptionAmount() > 0.0F
+                    && existingAbs.getDuration() < 120) {
+                entity.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 160, absAmp, true, false, true));
             }
+        }
+    }
+
+    private static void refreshAmbientEffect(LivingEntity entity, Holder<MobEffect> effect, int duration, int targetAmp) {
+        MobEffectInstance existing = entity.getEffect(effect);
+        if (existing == null
+                || existing.getAmplifier() < targetAmp
+                || (existing.getAmplifier() == targetAmp && existing.getDuration() < duration)) {
+            entity.addEffect(new MobEffectInstance(effect, duration, targetAmp, true, false, true));
         }
     }
 }

@@ -9,7 +9,7 @@ import software.bernie.geckolib.animatable.GeoItem;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.animation.AnimationController;
-import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.animation.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.function.Supplier;
@@ -22,8 +22,6 @@ import java.util.function.Supplier;
  * - Kháng lửa/dung nham (`fireResistant()`), tương thích toàn bộ enchant giáp vanilla & sửa bằng `nightmare_armor_shard`.
  */
 public final class NightmareArmorItem extends ArmorItem implements GeoItem {
-    private static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("animation.nightmare_armor.idle");
-
     /** Bơm từ `AbyssalRpgClient` khi chạy Client (trả về instance `GeoRenderProvider`); luôn null trên Dedicated Server. */
     public static volatile Supplier<Object> clientRenderProviderFactory;
 
@@ -60,8 +58,8 @@ public final class NightmareArmorItem extends ArmorItem implements GeoItem {
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this, "nightmare_armor_idle", 0, state ->
-                state.setAndContinue(IDLE_ANIM)));
+        // Giữ controller trả PlayState.STOP để toàn bộ góc xoay cánh/áo choàng/khố do `NightmareArmorModel` điều khiển 1 nguồn duy nhất!
+        controllers.add(new AnimationController<>(this, "nightmare_armor_idle", 0, state -> PlayState.STOP));
     }
 
     @Override

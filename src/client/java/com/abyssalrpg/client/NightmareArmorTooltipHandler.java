@@ -57,8 +57,14 @@ public final class NightmareArmorTooltipHandler {
         lines.add(Component.empty());
         lines.add(Component.translatable("tooltip.abyssalrpg.nightmare_set.header", equipped)
                 .withStyle(headerColor, ChatFormatting.BOLD));
-        if (cfg.setBonusFireResistance) {
-            lines.add(Component.translatable("tooltip.abyssalrpg.nightmare_set.fire_resistance")
+        if (cfg.setBonusSpeed) {
+            lines.add(Component.translatable("tooltip.abyssalrpg.nightmare_set.speed",
+                            romanLevel(cfg.setBonusSpeedAmplifier + 1))
+                    .withStyle(detailColor));
+        }
+        if (cfg.setBonusStrength) {
+            lines.add(Component.translatable("tooltip.abyssalrpg.nightmare_set.strength",
+                            romanLevel(cfg.setBonusStrengthAmplifier + 1))
                     .withStyle(detailColor));
         }
         if (cfg.setBonusResistance) {
@@ -66,8 +72,23 @@ public final class NightmareArmorTooltipHandler {
                             romanLevel(cfg.setBonusResistanceAmplifier + 1))
                     .withStyle(detailColor));
         }
+        if (cfg.setBonusAbsorption) {
+            lines.add(Component.translatable("tooltip.abyssalrpg.nightmare_set.absorption",
+                            romanLevel(cfg.setBonusAbsorptionAmplifier + 1))
+                    .withStyle(detailColor));
+        }
+        if (cfg.setBonusRegeneration) {
+            lines.add(Component.translatable("tooltip.abyssalrpg.nightmare_set.regeneration",
+                            romanLevel(cfg.setBonusRegenerationAmplifier + 1))
+                    .withStyle(detailColor));
+        }
+        if (cfg.setBonusFireResistance) {
+            lines.add(Component.translatable("tooltip.abyssalrpg.nightmare_set.fire_resistance")
+                    .withStyle(detailColor));
+        }
         if (cfg.setBonusMaxHealth > 0.0) {
             lines.add(Component.translatable("tooltip.abyssalrpg.nightmare_set.max_health",
+                            formatHealthAmount(cfg.setBonusMaxHealth / 2.0),
                             formatHealthAmount(cfg.setBonusMaxHealth))
                     .withStyle(detailColor));
         }

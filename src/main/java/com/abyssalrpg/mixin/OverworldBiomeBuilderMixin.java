@@ -33,11 +33,11 @@ public final class OverworldBiomeBuilderMixin {
         this.MIDDLE_BIOMES_VARIANT[1][3] = ModBiomes.ABYSSAL_WASTELAND;
         this.PLATEAU_BIOMES_VARIANT[1][3] = ModBiomes.ABYSSAL_WASTELAND;
 
-        // Warm lush humid climate -> Jade Mythic Jungle (Quetzalcoatl / Hydra / Apep realm)
+        // Warm lush humid climate -> Jade Mythic Jungle (Spirit Hydra realm)
         this.MIDDLE_BIOMES_VARIANT[3][4] = ModBiomes.JADE_MYTHIC_JUNGLE;
         this.PLATEAU_BIOMES_VARIANT[3][4] = ModBiomes.JADE_MYTHIC_JUNGLE;
 
-        // Hot arid climate -> Ashen Volcanic Peaks (Volcanic Hydra / Tiamat / Obsidian Bastion realm)
+        // Hot arid climate -> Ashen Volcanic Peaks (Cinder Dragon / Cerberus / Obsidian Bastion realm)
         this.MIDDLE_BIOMES_VARIANT[4][0] = ModBiomes.ASHEN_VOLCANIC_PEAKS;
         this.PLATEAU_BIOMES_VARIANT[4][1] = ModBiomes.ASHEN_VOLCANIC_PEAKS;
     }

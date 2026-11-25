@@ -7,16 +7,18 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.renderer.GeoArmorRenderer;
+import software.bernie.geckolib.renderer.layer.AutoGlowingGeoLayer;
 
 /**
- * GeckoLib 4.8.3 `GeoArmorRenderer` cho Bộ Giáp Nightmare Knight (KHÔNG glowmask / KHÔNG AutoGlowingGeoLayer):
- * - Kế thừa đầy đủ biến đổi xương từ `HumanoidModel` sau `PlayerRendererMixin` & `HumanoidModelMixin`
- *   -> tương thích tự động 100% với tư thế 2 tầng, xoay 360° Cyclone và Flash Dash của Dual Knife.
- * - `entityCutoutNoCull` giúp vạt áo choàng đỏ rượu siêu mỏng cắt răng cưa 2 mép & gấu áo hiển thị 2 mặt sắc nét.
+ * GeckoLib 4.8.3 `GeoArmorRenderer` cho Bộ Giáp Nightmare Knight v4:
+ * - `entityCutoutNoCull`: hiển thị 2 mặt sắc nét cho đôi cánh dơi đỏ rách, áo choàng toàn lưng & khố trước.
+ * - `AutoGlowingGeoLayer`: chỉ phát sáng fullbright cho Trái Tim **Nightmare Core** trong lồng ngực mở
+ *   (`textures/armor/nightmare_armor_glowmask.png` — toàn bộ phần giáp còn lại giữ nguyên 0 phát sáng).
  */
 public final class NightmareArmorRenderer extends GeoArmorRenderer<NightmareArmorItem> {
     public NightmareArmorRenderer() {
         super(new NightmareArmorModel());
+        this.addRenderLayer(new AutoGlowingGeoLayer<>(this));
     }
 
     @Override

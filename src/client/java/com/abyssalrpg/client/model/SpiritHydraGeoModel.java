@@ -100,13 +100,24 @@ public class SpiritHydraGeoModel extends GeoModel<HydraBossEntity> {
                 continue;
             }
 
-            // 3. Tracking mượt + dao động tinh tế lệch pha (head_i có bind rotation = [0,0,0] nên đặt tuyệt đối an toàn 100%)
+            // 3. Tracking mượt trải đều qua 2 đốt cổ trên (`neck_i_seg_5/6`) + `head_i` để cổ uốn tự nhiên khi nhìn mục tiêu!
             float phase = i * 1.57f;
-            float swayYawDeg = Mth.sin(time * 0.085f + phase) * 5.5f;
-            float swayPitchDeg = Mth.cos(time * 0.105f + phase * 1.2f) * 3.5f;
+            float swayYawDeg = Mth.sin(time * 0.085f + phase) * 5.0f;
+            float swayPitchDeg = Mth.cos(time * 0.105f + phase * 1.2f) * 3.0f;
 
-            float headYawDeg = Mth.clamp(safeNetYawDeg * 0.65f + swayYawDeg, -38.0f, 38.0f);
-            float headPitchDeg = Mth.clamp(safePitchDeg * 0.55f + swayPitchDeg, -26.0f, 26.0f);
+            GeoBone seg5 = getAnimationProcessor().getBone("neck_" + (i + 1) + "_seg_5");
+            GeoBone seg6 = getAnimationProcessor().getBone("neck_" + (i + 1) + "_seg_6");
+            if (seg5 != null) {
+                seg5.setRotY(Mth.clamp(seg5.getRotY() + (safeNetYawDeg * 0.16f) * Mth.DEG_TO_RAD, -0.65f, 0.65f));
+                seg5.setRotX(Mth.clamp(seg5.getRotX() + (safePitchDeg * 0.14f) * Mth.DEG_TO_RAD, -0.55f, 0.55f));
+            }
+            if (seg6 != null) {
+                seg6.setRotY(Mth.clamp(seg6.getRotY() + (safeNetYawDeg * 0.22f) * Mth.DEG_TO_RAD, -0.65f, 0.65f));
+                seg6.setRotX(Mth.clamp(seg6.getRotX() + (safePitchDeg * 0.18f) * Mth.DEG_TO_RAD, -0.55f, 0.55f));
+            }
+
+            float headYawDeg = Mth.clamp(safeNetYawDeg * 0.52f + swayYawDeg, -36.0f, 36.0f);
+            float headPitchDeg = Mth.clamp(safePitchDeg * 0.45f + swayPitchDeg, -24.0f, 24.0f);
 
             if (head != null) {
                 head.setRotY(headYawDeg * Mth.DEG_TO_RAD);

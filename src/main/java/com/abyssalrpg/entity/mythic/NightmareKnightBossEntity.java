@@ -89,21 +89,26 @@ import java.util.UUID;
 public class NightmareKnightBossEntity extends AbstractGeoMythicBoss {
     /** Mốc SCALE cũ của Leviathan / Spirit Hydra (`2.5f`, chiều cao mục tiêu `6.5` block). */
     public static final float PREVIOUS_BOSS_BENCHMARK_SCALE = 2.5f;
-    /** SCALE tuyến tính gấp 3 lần boss cũ: `3 * 2.5 = 7.5f` (chiều cao thực tế ~19.5 block). */
+    /** SCALE tuyến tính gấp 3 lần boss cũ: `3 * 2.5 = 7.5f` (chiều cao thực tế ~24.8 block với model v5 cao 52.8 px, đỉnh cánh ~28.5 block). */
     public static final float SCALE = 3.0f * PREVIOUS_BOSS_BENCHMARK_SCALE;
-    public static final float NATIVE_HEIGHT_PX = 41.6f;
+    public static final float NATIVE_HEIGHT_PX = 52.8f;
 
     /** Collision box chính vừa phải giúp di chuyển nhẹ, không kẹt cây/tường 1-2 block (multipart phủ phần còn lại). */
     public static final float CORE_COLLISION_WIDTH = 3.8f;
     public static final float CORE_COLLISION_HEIGHT = 6.0f;
-    public static final float CORE_EYE_HEIGHT = 16.5f;
+    public static final float CORE_EYE_HEIGHT = 21.4f;
 
     // --- Toàn bộ hằng số tên bone theo mục 1 của spec ---
     public static final String ROOT_BONE = "root";
     public static final String BODY_BONE = "body";
     public static final String PELVIS_BONE = "pelvis";
     public static final String TORSO_BONE = "torso";
+    public static final String TORSO_UPPER_BONE = "torso_upper";
     public static final String CHEST_BONE = "chest";
+    public static final String HEART_BONE = "heart";
+    public static final String NECK_BONE = "neck";
+    public static final String SHOULDER_L_BONE = "shoulder_l";
+    public static final String SHOULDER_R_BONE = "shoulder_r";
     public static final String SPIKES_BACK_BONE = "spikes_back";
     public static final String HEAD_BONE = "head";
     public static final String JAW_BONE = "jaw";
@@ -134,7 +139,7 @@ public class NightmareKnightBossEntity extends AbstractGeoMythicBoss {
     public static final String ANKLE_HOCK_R_BONE = "ankle_hock_r";
     public static final String FOOT_R_BONE = "foot_r";
     public static final String TAIL_BONE = "tail";
-    // --- Bone mở rộng cho phiên bản Hiệp Sĩ Quỷ Có Cánh v3 (cánh 3 đốt + áo choàng 3 tầng & 2 vạt + khố rách) ---
+    // --- Bone mở rộng cho phiên bản Hiệp Sĩ Quỷ Có Cánh v4 (cánh 3 đốt + áo choàng 3 tầng & 2 vạt + khố 2 đốt) ---
     public static final String WING_L_BONE = "wing_l";
     public static final String WING_L_UPPER_BONE = "wing_l_upper";
     public static final String WING_L_MID_BONE = "wing_l_mid";
@@ -150,6 +155,7 @@ public class NightmareKnightBossEntity extends AbstractGeoMythicBoss {
     public static final String CAPE_L_BONE = "cape_l";
     public static final String CAPE_R_BONE = "cape_r";
     public static final String TABARD_BONE = "tabard";
+    public static final String TABARD_LOWER_BONE = "tabard_lower";
 
     // --- Màu VFX ---
     public static final int COLOR_NIGHTMARE_CRIMSON = 0xD91628;
@@ -161,17 +167,17 @@ public class NightmareKnightBossEntity extends AbstractGeoMythicBoss {
     private static final ResourceLocation PHASE2_DAMAGE_MOD_ID = AbyssalRpgMod.id("nightmare_phase2_damage");
     private static final ResourceLocation PHASE2_SPEED_MOD_ID = AbyssalRpgMod.id("nightmare_phase2_speed");
 
-    // --- Định nghĩa 7 phần tử Multipart Hitbox (khớp tọa độ pivot 1/16 block trong nightmare_knight.geo.json) ---
+    // --- Định nghĩa 7 phần tử Multipart Hitbox (khớp tọa độ pivot 1/16 block trong nightmare_knight.geo.json v5 cao ~52.8 px) ---
     public record PartSpec(String name, float modelX, float modelY, float modelZ, float baseWidth, float baseHeight) {}
 
     public static final PartSpec[] MULTIPART_SPECS = {
-            new PartSpec(HEAD_BONE,   0.0f, 34.0f, -1.5f, 3.8f, 4.2f),
-            new PartSpec(CHEST_BONE,  0.0f, 25.0f, -0.5f, 6.2f, 5.4f),
-            new PartSpec(PELVIS_BONE, 0.0f, 16.5f,  0.0f, 4.4f, 4.4f),
-            new PartSpec(ARM_L_BONE,  9.6f, 20.0f, -1.5f, 3.2f, 5.8f),
-            new PartSpec(ARM_R_BONE, -9.6f, 20.0f, -2.5f, 3.4f, 6.0f),
-            new PartSpec(LEG_L_BONE,  6.4f,  0.0f,  0.0f, 3.3f, 6.4f),
-            new PartSpec(LEG_R_BONE, -6.4f,  0.0f,  0.0f, 3.3f, 6.4f)
+            new PartSpec(HEAD_BONE,    0.0f, 46.0f, -1.0f, 4.4f, 5.0f),
+            new PartSpec(CHEST_BONE,   0.0f, 34.5f, -1.0f, 7.6f, 6.6f),
+            new PartSpec(PELVIS_BONE,  0.0f, 21.0f,  0.2f, 5.0f, 4.8f),
+            new PartSpec(ARM_L_BONE,  12.2f, 26.0f, -0.2f, 3.8f, 7.4f),
+            new PartSpec(ARM_R_BONE, -12.2f, 26.0f, -0.6f, 4.0f, 7.6f),
+            new PartSpec(LEG_L_BONE,   5.8f,  0.0f,  0.0f, 3.5f, 8.2f),
+            new PartSpec(LEG_R_BONE,  -5.8f,  0.0f,  0.0f, 3.5f, 8.2f)
     };
 
     // --- 17 Animation GeckoLib theo mục 1 ---
@@ -395,9 +401,9 @@ public class NightmareKnightBossEntity extends AbstractGeoMythicBoss {
     @Override
     public AABB getBoundingBoxForCulling() {
         float ratio = getScaleRatio();
-        // Bao trọn cả sải cánh quỷ khổng lồ (~31 block) và đại kiếm
-        double halfW = 19.0 * ratio;
-        double topH = 28.0 * ratio;
+        // Bao trọn cả sải cánh quỷ khổng lồ (~43 block) & chiều cao v4 (~30.6 block tới đỉnh cánh) và đại kiếm
+        double halfW = 24.0 * ratio;
+        double topH = 36.0 * ratio;
         return new AABB(
                 this.getX() - halfW, this.getY() - 2.0, this.getZ() - halfW,
                 this.getX() + halfW, this.getY() + topH, this.getZ() + halfW
@@ -558,7 +564,7 @@ public class NightmareKnightBossEntity extends AbstractGeoMythicBoss {
         if (this.level().isClientSide && this.clientSwordTipPos.lengthSqr() > 1.0) {
             return this.clientSwordTipPos;
         }
-        return modelPointToWorld(-17.22f, 1.58f, -32.59f, getConfiguredScale());
+        return modelPointToWorld(-18.67f, 3.82f, -37.51f, getConfiguredScale());
     }
 
     public void updateClientSwordTipPos(double x, double y, double z) {

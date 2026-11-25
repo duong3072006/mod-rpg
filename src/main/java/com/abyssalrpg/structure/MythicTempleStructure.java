@@ -55,27 +55,19 @@ public class MythicTempleStructure extends Structure {
     }
 
     private static int chooseGodForBiome(Holder<Biome> biome, ChunkPos chunkPos) {
-        if (biome.is(ModBiomes.JADE_MYTHIC_JUNGLE) || biome.is(Biomes.JUNGLE) || biome.is(Biomes.BAMBOO_JUNGLE)) {
-            return MythicSummonAltarBlock.GOD_QUETZALCOATL;
-        }
-        if (biome.is(Biomes.DESERT) || biome.is(Biomes.BADLANDS) || biome.is(Biomes.SAVANNA)) {
-            return MythicSummonAltarBlock.GOD_APEP;
+        if (biome.is(ModBiomes.JADE_MYTHIC_JUNGLE) || biome.is(Biomes.JUNGLE) || biome.is(Biomes.BAMBOO_JUNGLE)
+                || biome.is(Biomes.SWAMP) || biome.is(Biomes.MANGROVE_SWAMP) || biome.is(Biomes.DARK_FOREST)) {
+            return MythicSummonAltarBlock.GOD_HYDRA;
         }
         if (biome.is(ModBiomes.FROZEN_RAGNAROK_TUNDRA) || biome.is(Biomes.SNOWY_PLAINS) || biome.is(Biomes.ICE_SPIKES)) {
             return ((chunkPos.x + chunkPos.z) & 1) == 0
                     ? MythicSummonAltarBlock.GOD_FENRIR
                     : MythicSummonAltarBlock.GOD_JORMUNGANDR;
         }
-        if (biome.is(Biomes.SWAMP) || biome.is(Biomes.MANGROVE_SWAMP) || biome.is(Biomes.DARK_FOREST)) {
-            return MythicSummonAltarBlock.GOD_HYDRA;
-        }
-        if (biome.is(ModBiomes.ASHEN_VOLCANIC_PEAKS) || biome.is(ModBiomes.ABYSSAL_WASTELAND)) {
-            return MythicSummonAltarBlock.GOD_TIAMAT;
-        }
         if (biome.is(Biomes.BEACH) || biome.is(Biomes.STONY_SHORE)) {
             return MythicSummonAltarBlock.GOD_LEVIATHAN;
         }
-        // Generic biomes distribute evenly across all 7 Mythological Gods
+        // Generic biomes distribute evenly across all 4 Mythological Gods
         return Math.floorMod(chunkPos.x * 31 + chunkPos.z * 17, MythicSummonAltarBlock.GOD_COUNT);
     }
 

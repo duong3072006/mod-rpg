@@ -1,6 +1,0 @@
-{
-  "parent": "abyssalrpg:block/mythic_summon_altar_base",
-  "textures": {
-    "crystal": "abyssalrpg:block/mythic_crystal_tiamat"
-  }
-}

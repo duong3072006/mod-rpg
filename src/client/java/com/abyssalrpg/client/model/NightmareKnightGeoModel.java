@@ -65,6 +65,7 @@ public class NightmareKnightGeoModel extends GeoModel<NightmareKnightBossEntity>
             swordTip.setTrackingMatrices(true);
         }
 
+        GeoBone neck = getAnimationProcessor().getBone(NightmareKnightBossEntity.NECK_BONE);
         GeoBone head = getAnimationProcessor().getBone(NightmareKnightBossEntity.HEAD_BONE);
         if (head == null || animatable.isHeadLockedByAnimation()) {
             animatable.stepClientHeadTracking(0.0f, 0.0f);
@@ -79,10 +80,16 @@ public class NightmareKnightGeoModel extends GeoModel<NightmareKnightBossEntity>
         float safeYawDeg = Mth.clamp(Mth.wrapDegrees(modelData.netHeadYaw()), -42.0f, 42.0f);
         float safePitchDeg = Mth.clamp(Mth.wrapDegrees(modelData.headPitch()), -28.0f, 28.0f);
 
-        // Chống xoay đầu mượt bằng approachDegrees (stepAngleTowards) + đặt góc tuyệt đối kẹp cứng
+        // Chống xoay đầu mượt bằng approachDegrees + chia đều góc xoay qua cổ (`neck` 35%) và đầu (`head` 65%)
         animatable.stepClientHeadTracking(safeYawDeg, safePitchDeg);
-        head.setRotY(animatable.getClientTrackedHeadYawDeg() * Mth.DEG_TO_RAD);
-        head.setRotX(animatable.getClientTrackedHeadPitchDeg() * Mth.DEG_TO_RAD);
+        float yawRad = animatable.getClientTrackedHeadYawDeg() * Mth.DEG_TO_RAD;
+        float pitchRad = animatable.getClientTrackedHeadPitchDeg() * Mth.DEG_TO_RAD;
+        if (neck != null) {
+            neck.setRotY(yawRad * 0.35f);
+            neck.setRotX(pitchRad * 0.35f);
+        }
+        head.setRotY(yawRad * 0.65f);
+        head.setRotX(pitchRad * 0.65f);
     }
 }
 

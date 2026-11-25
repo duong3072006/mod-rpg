@@ -31,32 +31,23 @@ import net.minecraft.world.level.block.state.BlockState;
  */
 public class AltarEyeRenderer implements BlockEntityRenderer<AltarEyeBlockEntity> {
     private static final ResourceLocation[] GOD_EYE_TEXTURES = {
-            AbyssalRpgMod.id("textures/vfx/altar_eye_quetzalcoatl.png"),
-            AbyssalRpgMod.id("textures/vfx/altar_eye_apep.png"),
             AbyssalRpgMod.id("textures/vfx/altar_eye_fenrir.png"),
             AbyssalRpgMod.id("textures/vfx/altar_eye_hydra.png"),
             AbyssalRpgMod.id("textures/vfx/altar_eye_jormungandr.png"),
-            AbyssalRpgMod.id("textures/vfx/altar_eye_tiamat.png"),
             AbyssalRpgMod.id("textures/vfx/altar_eye_leviathan.png")
     };
 
     private static final int[] GOD_PRIMARY_COLORS = {
-            0x2BFFB2, // 0 Quetzalcoatl (Emerald-Turquoise)
-            0xFF8E1C, // 1 Apep (Solar Chaos Gold-Orange)
-            0x5AE6FF, // 2 Fenrir (Glacial Cyan)
-            0x52FF68, // 3 Hydra (Venom Emerald)
-            0x28D4FF, // 4 Jormungandr (Deep Frost Blue)
-            0xFF3424, // 5 Tiamat (Primordial Crimson)
-            0x1CF2E8  // 6 Leviathan (Abyssal Aquamarine)
+            0x5AE6FF, // 0 Fenrir (Glacial Cyan)
+            0x52FF68, // 1 Hydra (Venom Emerald)
+            0x28D4FF, // 2 Jormungandr (Deep Frost Blue)
+            0x1CF2E8  // 3 Leviathan (Abyssal Aquamarine)
     };
     private static final int[] GOD_ACCENT_COLORS = {
-            0xFFD84A, // 0 Quetzalcoatl (Aztec Gold)
-            0xFF3820, // 1 Apep (Eclipse Crimson)
-            0xFF3830, // 2 Fenrir (Ragnarok Blood-Red)
-            0xD4FF58, // 3 Hydra (Acid Lime)
-            0xC8F8FF, // 4 Jormungandr (Ice White)
-            0xFFD040, // 5 Tiamat (Dragon Gold)
-            0x70A8FF  // 6 Leviathan (Deep Ocean Blue)
+            0xE6F5FF, // 0 Fenrir (Ice White)
+            0xD4FF58, // 1 Hydra (Acid Lime)
+            0xC8F8FF, // 2 Jormungandr (Ice White)
+            0x70A8FF  // 3 Leviathan (Deep Ocean Blue)
     };
 
     public AltarEyeRenderer(BlockEntityRendererProvider.Context ctx) {
@@ -80,7 +71,7 @@ public class AltarEyeRenderer implements BlockEntityRenderer<AltarEyeBlockEntity
         float t = time + seedPhase;
 
         int god = state.getBlock() instanceof MythicSummonAltarBlock
-                ? Math.floorMod(state.getValue(MythicSummonAltarBlock.BOSS_TYPE), 7)
+                ? Math.floorMod(state.getValue(MythicSummonAltarBlock.BOSS_TYPE), MythicSummonAltarBlock.GOD_COUNT)
                 : 0;
         ResourceLocation eyeTex = GOD_EYE_TEXTURES[god];
         int primaryRgb = GOD_PRIMARY_COLORS[god];

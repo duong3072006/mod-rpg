@@ -17,13 +17,14 @@ import java.nio.file.Path;
 
 /**
  * Cấu hình JSON cho các bộ Giáp Boss Endgame (`config/abyssalrpg_armor.json`):
- * 1. **Nightmare Knight Armor**: Defense 3/8/6/3 (= 20), Toughness 3.0 (= 12.0), KB Res 0.10 (= 40%),
- *    Độ bền 37x (407/592/555/481); Full Set 4/4: Kháng Lửa I, Kháng Cự II, +4.0 Máu Tối Đa.
+ * 1. **Nightmare Knight Armor**: Defense 8/20/15/7 (= 50, ×2.5 Netherite!), Toughness 7.5 (= 30.0), KB Res 0.10 (= 40%),
+ *    Độ bền 111x (×3 Netherite: 1221/1776/1665/1443 — giống hệt Cinder Dragon Armor);
+ *    Full Set 4/4: Kháng Lửa, Tốc Độ II, Sức Mạnh II, Đề Kháng II, Hấp Thụ I, Hồi Máu I, +20.0 Máu Tối Đa (+10 tim).
  * 2. **Cinder Dragon Armor**: Defense 8/20/15/7 (= 50, ×2.5 Netherite!), Toughness 7.5 (= 30.0), KB Res 0.10 (= 40%),
  *    Độ bền 111x (×3 Netherite: 1221/1776/1665/1443); Full Set 4/4: Kháng Lửa, Đề Kháng I, Sức Mạnh II, Tốc Độ I, Nhảy Cao I, +16.0 Máu Tối Đa (+8 tim).
  */
 public final class ArmorConfig {
-    public static final int CURRENT_CONFIG_VERSION = 6;
+    public static final int CURRENT_CONFIG_VERSION = 8;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path CONFIG_PATH = FabricLoader.getInstance()
@@ -34,26 +35,38 @@ public final class ArmorConfig {
 
     public int configVersion = CURRENT_CONFIG_VERSION;
 
-    // --- Chỉ số Nightmare Knight Armor Material (chuẩn Netherite 37x) ---
-    public int helmetDefense = 3;
-    public int chestplateDefense = 8;
-    public int leggingsDefense = 6;
-    public int bootsDefense = 3;
-    public float toughness = 3.0f;
+    // --- Chỉ số Nightmare Knight Armor Material (đồng bộ ngang Cinder Dragon Armor: 50 Armor, 7.5 Toughness/món, 111x độ bền!) ---
+    public int helmetDefense = 8;
+    public int chestplateDefense = 20;
+    public int leggingsDefense = 15;
+    public int bootsDefense = 7;
+    public float toughness = 7.5f;
     public float knockbackResistance = 0.10f;
-    public int durabilityMultiplier = 37;
+    public int durabilityMultiplier = 111;
     public int enchantmentValue = 18;
 
     // --- Full Set Bonus 4/4: Nightmare Set ---
     public boolean enableSetBonus = true;
     /** Cấp Kháng Lửa I (MobEffects.FIRE_RESISTANCE, amplifier 0) khi mặc đủ 4/4 món. */
     public boolean setBonusFireResistance = true;
-    /** Cấp Kháng Cự II (MobEffects.DAMAGE_RESISTANCE, amplifier 1) khi mặc đủ 4/4 món. */
+    /** Cấp Tốc Độ II (MobEffects.MOVEMENT_SPEED, amplifier 1) khi mặc đủ 4/4 món. */
+    public boolean setBonusSpeed = true;
+    public int setBonusSpeedAmplifier = 1;
+    /** Cấp Sức Mạnh II (MobEffects.DAMAGE_BOOST, amplifier 1) khi mặc đủ 4/4 món. */
+    public boolean setBonusStrength = true;
+    public int setBonusStrengthAmplifier = 1;
+    /** Cấp Đề Kháng II (MobEffects.DAMAGE_RESISTANCE, amplifier 1) khi mặc đủ 4/4 món. */
     public boolean setBonusResistance = true;
-    /** Bậc hiệu ứng Kháng Cự (0 = I, 1 = II, mặc định 1 = Kháng Cự II; không ghi đè cấp cao hơn). */
+    /** Bậc hiệu ứng Đề Kháng (0 = I, 1 = II, mặc định 1 = Đề Kháng II; không ghi đè cấp cao hơn). */
     public int setBonusResistanceAmplifier = 1;
-    /** Máu tối đa cộng thêm khi mặc đủ 4/4 món (mặc định 4.0 HP = 2 tim). */
-    public double setBonusMaxHealth = 4.0;
+    /** Cấp Hấp Thụ I (MobEffects.ABSORPTION, amplifier 0 = +2 tim vàng) khi mặc đủ 4/4 món. */
+    public boolean setBonusAbsorption = true;
+    public int setBonusAbsorptionAmplifier = 0;
+    /** Cấp Hồi Máu I (MobEffects.REGENERATION, amplifier 0) khi mặc đủ 4/4 món. */
+    public boolean setBonusRegeneration = true;
+    public int setBonusRegenerationAmplifier = 0;
+    /** Máu tối đa cộng thêm khi mặc đủ 4/4 món (mặc định 20.0 HP = +10 tim!). */
+    public double setBonusMaxHealth = 20.0;
     /** Chu kỳ làm mới hiệu ứng potion trên server (mặc định 20 ticks = 1.0s). */
     public int setBonusTickInterval = 20;
     /** Thời lượng mỗi lần cấp hiệu ứng potion (mặc định 60 ticks = 3.0s, tránh nhấp nháy HUD). */
@@ -145,9 +158,33 @@ public final class ArmorConfig {
                         if (fileVersion < 6) {
                             loaded.cinderDurabilityMultiplier = 111;
                         }
+                        if (fileVersion < 7) {
+                            loaded.helmetDefense = 8;
+                            loaded.chestplateDefense = 20;
+                            loaded.leggingsDefense = 15;
+                            loaded.bootsDefense = 7;
+                            loaded.toughness = 7.5f;
+                            loaded.knockbackResistance = 0.10f;
+                            loaded.durabilityMultiplier = 111;
+                            loaded.setBonusFireResistance = true;
+                            loaded.setBonusSpeed = true;
+                            loaded.setBonusSpeedAmplifier = 1;
+                            loaded.setBonusStrength = true;
+                            loaded.setBonusStrengthAmplifier = 1;
+                            loaded.setBonusResistance = true;
+                            loaded.setBonusResistanceAmplifier = 1;
+                            loaded.setBonusAbsorption = true;
+                            loaded.setBonusAbsorptionAmplifier = 0;
+                            loaded.setBonusRegeneration = true;
+                            loaded.setBonusRegenerationAmplifier = 0;
+                            loaded.setBonusMaxHealth = 20.0;
+                        }
+                        if (fileVersion < 8) {
+                            loaded.setBonusFireResistance = true;
+                        }
                         loaded.configVersion = CURRENT_CONFIG_VERSION;
                         migrated = true;
-                        AbyssalRpgMod.LOGGER.info("Tự động cập nhật cấu hình Cinder Dragon Armor: ArmorConfig v{} -> v{}", fileVersion, CURRENT_CONFIG_VERSION);
+                        AbyssalRpgMod.LOGGER.info("Tự động cập nhật cấu hình giáp Boss: ArmorConfig v{} -> v{}", fileVersion, CURRENT_CONFIG_VERSION);
                     } else {
                         loaded = GSON.fromJson(obj, ArmorConfig.class);
                     }
@@ -183,19 +220,23 @@ public final class ArmorConfig {
     }
 
     private void sanitize() {
-        this.helmetDefense = Math.max(1, Math.min(20, this.helmetDefense));
-        this.chestplateDefense = Math.max(1, Math.min(24, this.chestplateDefense));
-        this.leggingsDefense = Math.max(1, Math.min(22, this.leggingsDefense));
-        this.bootsDefense = Math.max(1, Math.min(20, this.bootsDefense));
-        this.toughness = Math.max(0.0f, Math.min(12.0f, this.toughness));
+        this.helmetDefense = Math.max(1, Math.min(25, this.helmetDefense));
+        this.chestplateDefense = Math.max(1, Math.min(40, this.chestplateDefense));
+        this.leggingsDefense = Math.max(1, Math.min(35, this.leggingsDefense));
+        this.bootsDefense = Math.max(1, Math.min(25, this.bootsDefense));
+        this.toughness = Math.max(0.0f, Math.min(20.0f, this.toughness));
         this.knockbackResistance = Math.max(0.0f, Math.min(0.25f, this.knockbackResistance));
-        this.durabilityMultiplier = Math.max(15, Math.min(120, this.durabilityMultiplier));
+        this.durabilityMultiplier = Math.max(15, Math.min(200, this.durabilityMultiplier));
         this.enchantmentValue = Math.max(1, Math.min(30, this.enchantmentValue));
+        this.setBonusSpeedAmplifier = Math.max(0, Math.min(4, this.setBonusSpeedAmplifier));
+        this.setBonusStrengthAmplifier = Math.max(0, Math.min(4, this.setBonusStrengthAmplifier));
         this.setBonusResistanceAmplifier = Math.max(0, Math.min(4, this.setBonusResistanceAmplifier));
+        this.setBonusAbsorptionAmplifier = Math.max(0, Math.min(4, this.setBonusAbsorptionAmplifier));
+        this.setBonusRegenerationAmplifier = Math.max(0, Math.min(4, this.setBonusRegenerationAmplifier));
         if (!Double.isFinite(this.setBonusMaxHealth)) {
-            this.setBonusMaxHealth = 4.0;
+            this.setBonusMaxHealth = 20.0;
         }
-        this.setBonusMaxHealth = Math.max(0.0, Math.min(40.0, this.setBonusMaxHealth));
+        this.setBonusMaxHealth = Math.max(0.0, Math.min(60.0, this.setBonusMaxHealth));
         this.setBonusTickInterval = Math.max(1, Math.min(40, this.setBonusTickInterval));
         this.setBonusEffectDurationTicks = Math.max(40, Math.min(200, this.setBonusEffectDurationTicks));
 

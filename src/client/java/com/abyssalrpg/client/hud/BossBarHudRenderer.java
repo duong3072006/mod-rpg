@@ -4,19 +4,14 @@ import com.abyssalrpg.AbyssalRpgMod;
 import com.abyssalrpg.api.BossHealthHolder;
 import com.abyssalrpg.config.CerberusConfig;
 import com.abyssalrpg.entity.AbstractAbyssalBoss;
-import com.abyssalrpg.entity.AbyssalKnightBossEntity;
-import com.abyssalrpg.entity.CryptLichBossEntity;
-import com.abyssalrpg.entity.MoltenTitanBossEntity;
-import com.abyssalrpg.entity.mythic.ApepBossEntity;
 import com.abyssalrpg.entity.mythic.CerberusBossEntity;
 import com.abyssalrpg.entity.mythic.CinderDragonBossEntity;
+import com.abyssalrpg.entity.mythic.CyclopsWardenBossEntity;
 import com.abyssalrpg.entity.mythic.FenrirBossEntity;
 import com.abyssalrpg.entity.mythic.HydraBossEntity;
 import com.abyssalrpg.entity.mythic.JormungandrBossEntity;
 import com.abyssalrpg.entity.mythic.LeviathanBossEntity;
 import com.abyssalrpg.entity.mythic.NightmareKnightBossEntity;
-import com.abyssalrpg.entity.mythic.QuetzalcoatlBossEntity;
-import com.abyssalrpg.entity.mythic.TiamatBossEntity;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -437,12 +432,18 @@ public final class BossBarHudRenderer {
     }
 
     private static BossPalette paletteFor(AbstractAbyssalBoss boss) {
-        if (boss instanceof QuetzalcoatlBossEntity)
-            return new BossPalette(0x4CFF9E, 0x16B864, 0x0B5430, 0xFFD452, "Aztec Feathered Sky Sovereign");
-        if (boss instanceof ApepBossEntity)
-            return new BossPalette(0x38FFB0, 0x0FA86E, 0x084730, 0xD4B055, "Primordial Chaos Serpent");
-        if (boss instanceof FenrirBossEntity)
-            return new BossPalette(0xFF5A36, 0xC91C1C, 0x5E0B12, 0xB8C7D9, "Devourer of Ragnarok");
+        if (boss instanceof CyclopsWardenBossEntity cyc) {
+            if (cyc.isEnragedVisual() || cyc.hasEnteredPhase2() || boss.getSyncedPhase() >= 2) {
+                return new BossPalette(0xFF4238, 0xB84E24, 0x3A1610, 0xFFD24A, "Cyclops Warden — CUỒNG NỘ");
+            }
+            return new BossPalette(0xDF9452, 0x8F4E32, 0x2E1812, 0xC8D4DE, "Khổng Lồ Một Mắt Giam Tù");
+        }
+        if (boss instanceof FenrirBossEntity fenrir) {
+            if (fenrir.isEnragedVisual() || fenrir.hasEnteredPhase2() || boss.getSyncedPhase() >= 2) {
+                return new BossPalette(0x6CF2FF, 0x2C8CE8, 0x10284A, 0xFFFFFF, "FEL — Divine Gale Awakening");
+            }
+            return new BossPalette(0xE6F5FF, 0x4E9CE8, 0x162C4E, 0x7CF4FF, "FEL — Fenrir, Divine Gale Wolf");
+        }
         if (boss instanceof HydraBossEntity hydra) {
             int alive = hydra.getAliveHeadCount();
             if (hydra.isEnragedVisual() || boss.getSyncedPhase() >= 2) {
@@ -460,8 +461,6 @@ public final class BossBarHudRenderer {
             return new BossPalette(0xB7A6EE, 0x695CC8, 0x1D1A3B, 0x8A74D9,
                     "Mythic World Cobra Serpent (" + jorm.getActiveSegmentCount() + " Đốt)");
         }
-        if (boss instanceof TiamatBossEntity)
-            return new BossPalette(0xFF4736, 0xB81D1D, 0x520B0B, 0xE3A256, "Mother of Primordial Dragons");
         if (boss instanceof LeviathanBossEntity lev) {
             if (lev.isEnragedVisual() || boss.getSyncedPhase() >= 2) {
                 return new BossPalette(0xFF5238, 0xCC1818, 0x5E0A0A, 0xFFB84D, "Abyssal Titan — CUỒNG BẠO (PHASE 2)");
@@ -483,12 +482,6 @@ public final class BossBarHudRenderer {
             return new BossPalette(0xD92B4B, 0x7A1026, 0x260610, 0xB8949E,
                     "Colossal Spiked Bone-Demon Knight");
         }
-        if (boss instanceof AbyssalKnightBossEntity)
-            return new BossPalette(0xD585FF, 0x8932E0, 0x3D1273, 0xE6C163, "Dire Shadow Stalker");
-        if (boss instanceof CryptLichBossEntity)
-            return new BossPalette(0x52FFE8, 0x12A89C, 0x08484D, 0x6ECED4, "Colossal Abyssal Broodmother");
-        if (boss instanceof MoltenTitanBossEntity)
-            return new BossPalette(0xFFA938, 0xE64B0E, 0x6E1706, 0xFFBF47, "Volcanic Magma Hydra");
         if (boss instanceof CinderDragonBossEntity cd) {
             if (cd.isEnragedVisual() || cd.hasEnteredPhase2() || boss.getSyncedPhase() >= 2) {
                 return new BossPalette(0xFF4E1A, 0xCC1610, 0x450504, 0xFFE070,

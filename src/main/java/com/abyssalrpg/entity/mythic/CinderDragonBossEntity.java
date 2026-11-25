@@ -71,16 +71,17 @@ public class CinderDragonBossEntity extends AbstractGeoMythicBoss {
     /** Kích thước Rồng Cổ Đại mới: `5.35f` (cũ `4.5f`) — vai/đầu `8.0–8.8` block, dài `~25.5–26.0` block, sải cánh `~31.5` block. */
     public static final float SCALE = 5.35f;
 
-    /** Collision box chính gọn ở thân giữa để rồng ~26 block bước mượt qua cây/đồi (step_height 2.4); 9 proxy hitbox phủ trọn thân/chân/cổ/đầu/cánh/đuôi. */
+    /** Collision box chính gọn ở thân giữa để rồng bước mượt qua cây/đồi (step_height 2.4); 10 proxy hitbox phủ trọn thân/chân/cổ/đầu/cánh/đuôi. */
     public static final float CORE_COLLISION_WIDTH = 3.6f;
-    public static final float CORE_COLLISION_HEIGHT = 4.6f;
-    public static final float CORE_EYE_HEIGHT = 7.4f;
+    public static final float CORE_COLLISION_HEIGHT = 4.4f;
+    public static final float CORE_EYE_HEIGHT = 6.2f;
 
-    // --- Hằng số tên bone khớp `cinder_dragon.geo.json` ---
+    // --- Hằng số tên bone khớp `cinder_dragon.geo.json` (57 bones đa khớp nối!) ---
     public static final String BODY_CHEST_BONE = "body_chest";
     public static final String NECK_1_BONE = "neck_1";
     public static final String NECK_2_BONE = "neck_2";
     public static final String NECK_3_BONE = "neck_3";
+    public static final String NECK_4_BONE = "neck_4";
     public static final String HEAD_BONE = "head";
     public static final String JAW_BONE = "jaw";
     public static final String MOUTH_FLAME_BONE = "mouth_flame";
@@ -88,6 +89,7 @@ public class CinderDragonBossEntity extends AbstractGeoMythicBoss {
     public static final String WING_R_BONE = "wing_r";
     public static final String TAIL_4_BONE = "tail_4";
     public static final String TAIL_7_BONE = "tail_7";
+    public static final String TAIL_9_BONE = "tail_9";
 
     // --- Màu VFX hỏa long ---
     public static final int COLOR_CINDER_ORANGE = 0xFF6A14;
@@ -100,20 +102,20 @@ public class CinderDragonBossEntity extends AbstractGeoMythicBoss {
                            float baseWidth, float baseHeight, float damageMultiplier) {}
 
     /**
-     * 9 proxy hitbox đồng bộ 100% theo `cinder_dragon.geo.json` (tọa độ 1/16 block * SCALE = 5.35f):
-     * - Bổ sung 2 chân trước (`leg_fl`, `leg_fr`) + cổ thấp (`neck_low`) + thân ngực sát đất (`body_chest`)
-     *   để người chơi cao 1.8 block đứng dưới đất cầm kiếm cận chiến LUÔN đánh trúng dễ dàng (không bao giờ treo cao hụt kiếm!).
+     * 10 proxy hitbox đồng bộ 100% theo `cinder_dragon.geo.json` V3 (57 khớp nối, dáng cúi săn mồi dài ~149 px):
+     * - Bao phủ trọn đầu/sừng, cổ 4 đốt, lồng ngực, thân sau/hông, 2 chân trước, 2 cánh và đuôi lưỡi liềm 9 đốt!
      */
     public static final PartSpec[] MULTIPART_SPECS = {
-            new PartSpec("head_neck",   0.0f, 12.0f, -26.5f, 4.4f, 5.0f, 1.25f),
-            new PartSpec("body_chest",  0.0f,  0.5f,  -5.0f, 5.6f, 7.2f, 1.00f),
-            new PartSpec("wing_l",     24.0f, 16.0f,  -1.0f, 6.2f, 4.8f, 0.85f),
-            new PartSpec("wing_r",    -24.0f, 16.0f,  -1.0f, 6.2f, 4.8f, 0.85f),
-            new PartSpec("tail_mid",    0.0f,  4.5f, +17.5f, 3.6f, 4.2f, 0.85f),
-            new PartSpec("tail_tip",    0.0f,  9.0f, +32.5f, 4.2f, 4.6f, 0.85f),
-            new PartSpec("leg_fl",     +8.6f,  0.0f,  -9.2f, 3.2f, 5.2f, 1.00f),
-            new PartSpec("leg_fr",     -8.6f,  0.0f,  -9.2f, 3.2f, 5.2f, 1.00f),
-            new PartSpec("neck_low",    0.0f,  0.0f, -18.0f, 4.8f, 5.4f, 1.00f)
+            new PartSpec("head_neck",   0.0f, 12.0f, -44.0f, 5.0f, 5.2f, 1.25f),
+            new PartSpec("body_chest",  0.0f,  0.5f, -11.5f, 7.6f, 7.2f, 1.00f),
+            new PartSpec("body_rear",   0.0f,  0.5f, +14.0f, 7.2f, 6.8f, 1.00f),
+            new PartSpec("wing_l",     38.0f, 21.0f,  -4.0f, 8.2f, 6.0f, 0.85f),
+            new PartSpec("wing_r",    -38.0f, 21.0f,  -4.0f, 8.2f, 6.0f, 0.85f),
+            new PartSpec("tail_mid",    0.0f,  2.0f, +42.0f, 4.4f, 4.4f, 0.85f),
+            new PartSpec("tail_tip",    0.0f,  7.5f, +72.0f, 5.0f, 5.2f, 0.85f),
+            new PartSpec("leg_fl",    +14.0f,  0.0f, -17.2f, 4.2f, 5.2f, 1.00f),
+            new PartSpec("leg_fr",    -14.0f,  0.0f, -17.2f, 4.2f, 5.2f, 1.00f),
+            new PartSpec("neck_low",    0.0f,  5.5f, -28.0f, 5.4f, 5.2f, 1.00f)
     };
 
     // --- 16 Animation GeckoLib ---
@@ -419,12 +421,12 @@ public class CinderDragonBossEntity extends AbstractGeoMythicBoss {
         this.breathSweepAngleDeg = sweepOffsetDeg;
     }
 
-    /** Tính tọa độ thế giới thật của locator `mouth_flame` theo góc thân/đầu hiện tại (khớp 100% với model!). */
+    /** Tính tọa độ thế giới thật của locator `mouth_flame` theo góc thân/đầu hiện tại (khớp 100% với model V3!). */
     public Vec3 getMouthFlameWorldPos() {
         double sc = getConfiguredScale();
-        Vec3 base = modelPointToWorld(0.0f, 21.8f, -32.2f, sc);
+        Vec3 base = modelPointToWorld(0.0f, 17.1f, -47.4f, sc);
         if (getSkillState() == SkillState.CINDER_BREATH && Math.abs(this.breathSweepAngleDeg) > 0.5f) {
-            Vec3 pivot = modelPointToWorld(0.0f, 19.6f, -12.2f, sc);
+            Vec3 pivot = modelPointToWorld(0.0f, 15.6f, -17.2f, sc);
             Vec3 rel = base.subtract(pivot);
             return pivot.add(rotateY(rel, -Math.toRadians(this.breathSweepAngleDeg * 0.65f)));
         }

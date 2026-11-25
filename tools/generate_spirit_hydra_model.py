@@ -278,76 +278,141 @@ def add_angled_box_along_pos_z(out_list: list, p_start, p_end, width_x: float, h
     ))
 
 
+def make_centered_cube(center, size, mat: str, rot=None, **kw) -> dict:
+    cx, cy, cz = float(center[0]), float(center[1]), float(center[2])
+    sx, sy, sz = float(size[0]), float(size[1]), float(size[2])
+    return make_cube([cx - sx * 0.5, cy - sy * 0.5, cz - sz * 0.5], size, mat, rot=rot, pivot=[cx, cy, cz], **kw)
+
+
+def add_hydra_armor_ring(out_list: list, center, rx: float, ry: float, depth: float,
+                         pitch_x: float = 0.0, rib_glow: bool = True) -> None:
+    """
+    Dựng 1 đốt giáp thân/hông/đuôi bát giác vát cạnh nhiều tầng cho Spirit Hydra (triệt tiêu 100% dáng hộp gạch vuông!):
+    - Lõi cơ bắp vát cạnh + vòm lưng giáp đá nhiều lớp + 2 sườn cơ bắp vát nghiêng + khe bụng phát sáng xanh linh hồn!
+    """
+    cx, cy, cz = float(center[0]), float(center[1]), float(center[2])
+    # Lõi thân chính
+    out_list.append(make_centered_cube([cx, cy, cz], [rx * 1.66, ry * 1.56, depth], "STONE_SCALE",
+                                       rot=[pitch_x, 0.0, 0.0],
+                                       face_overrides={"up": "STONE_DORSAL", "down": "BELLY_GLOW"}))
+    # Vòm lưng đá vát 2 tầng tạo sống lưng vạm vỡ
+    out_list.append(make_centered_cube([cx, cy + ry * 0.62, cz], [rx * 1.24, ry * 0.62, depth * 0.94], "STONE_DORSAL",
+                                       rot=[pitch_x, 0.0, 0.0]))
+    out_list.append(make_centered_cube([cx, cy + ry * 0.86, cz + depth * 0.05], [rx * 0.84, ry * 0.36, depth * 0.82],
+                                       "STONE_DORSAL", rot=[pitch_x - 5.0, 0.0, 0.0]))
+    # Dải bụng năng lượng xanh băng nổi khối (liền mạch từ cổ -> ngực -> bụng -> đuôi!)
+    out_list.append(make_centered_cube([cx, cy - ry * 0.68, cz], [rx * 1.22, ry * 0.54, depth * 0.94], "BELLY_GLOW",
+                                       rot=[pitch_x, 0.0, 0.0]))
+    out_list.append(make_centered_cube([cx, cy - ry * 0.86, cz - depth * 0.04], [rx * 0.88, ry * 0.32, depth * 0.78],
+                                       "BELLY_GLOW", rot=[pitch_x + 4.0, 0.0, 0.0]))
+    # 2 mảng sườn cơ bắp vát góc 2 tầng (tạo dáng đô con tròn khối săn chắc thay vì mặt phẳng 90°!)
+    for side in (-1, 1):
+        out_list.append(make_centered_cube([cx + side * (rx * 0.78), cy + ry * 0.14, cz],
+                                           [rx * 0.50, ry * 1.04, depth * 0.90], "STONE_SCALE",
+                                           rot=[pitch_x, 0.0, side * 16.0]))
+        out_list.append(make_centered_cube([cx + side * (rx * 0.94), cy + ry * 0.42, cz + depth * 0.04],
+                                           [rx * 0.34, ry * 0.56, depth * 0.76], "STONE_DORSAL",
+                                           rot=[pitch_x - 4.0, side * 6.0, side * 26.0]))
+        out_list.append(make_centered_cube([cx + side * (rx * 0.72), cy - ry * 0.36, cz],
+                                           [rx * 0.44, ry * 0.66, depth * 0.86], "STONE_SCALE",
+                                           rot=[pitch_x, 0.0, -side * 18.0]))
+        if rib_glow:
+            out_list.append(make_centered_cube([cx + side * (rx * 0.86), cy - ry * 0.48, cz],
+                                               [rx * 0.22, ry * 0.34, depth * 0.54], "BELLY_GLOW",
+                                               rot=[pitch_x, 0.0, -side * 14.0]))
+
+
+def add_hydra_dorsal_crest(out_list: list, center, width: float, height: float, depth: float,
+                           tilt_x: float = -18.0) -> None:
+    """Tấm vảy gai sống lưng 3 lớp sắc lạnh có khe sáng xanh ở gốc."""
+    cx, cy, cz = float(center[0]), float(center[1]), float(center[2])
+    out_list.append(make_centered_cube([cx, cy, cz], [width, height * 0.52, depth], "STONE_DORSAL",
+                                       rot=[tilt_x * 0.5, 0.0, 0.0]))
+    out_list.append(make_centered_cube([cx, cy + height * 0.36, cz + depth * 0.14],
+                                       [width * 0.64, height * 0.64, depth * 0.74], "DORSAL_SPINE",
+                                       rot=[tilt_x, 0.0, 0.0]))
+    out_list.append(make_centered_cube([cx, cy + height * 0.76, cz + depth * 0.30],
+                                       [max(0.45, width * 0.32), height * 0.58, depth * 0.48], "DORSAL_SPINE",
+                                       rot=[tilt_x - 10.0, 0.0, 0.0]))
+
+
+def add_curved_spur(out_list: list, pts: list, radii: list, mat: str, steps_per_seg: int = 2) -> None:
+    """Dựng gai/sừng cong sắc nét dọc chuỗi điểm `pts` dùng `add_chain_rod` chuẩn GeckoLib 4.8.3."""
+    for s in range(len(pts) - 1):
+        add_chain_rod(out_list, pts[s], pts[s + 1], radii[s] * 2.0, radii[s + 1] * 2.0,
+                      steps_per_seg, mat, overlap=0.32)
+
+
 # =============================================================================
-# 1. CẤU HÌNH HÌNH HỌC 4 CỔ & ĐẦU (FAN RỘNG, 0% CHỒNG LẤP, ĐẦU PHÓNG TO CỤC BỘ ~1.20x)
+# 1. CẤU HÌNH HÌNH HỌC 4 CỔ & ĐẦU (NEO TRÊN BỜ VAI NGỰC ĐÔ RỘNG ~32px — 0% CHỒNG LẤP!)
 # =============================================================================
 NECK_SPECS = [
     {
         "idx": 1,
         "role": "outer_l",
-        "root": [9.4, 14.5, -10.5],
-        "fan_yaw": -54.0,           # Mở quạt rộng mạnh sang TRÁI (+X) — 0% chồng lấp!
-        "head_counter_yaw": +20.0,  # Hơi xoay đầu hướng về trước (+34° trái)
+        "root": [12.8, 20.2, -15.5],
+        "fan_yaw": -52.0,           # Mở quạt rộng mạnh sang TRÁI (+X) — 0% chồng lấp!
+        "head_counter_yaw": +19.0,
         "head_pitch_rest": +6.0,
         "curve_yz": [
             (0.0,  0.0),
-            (2.2, -7.8),
-            (7.5, -14.8),
-            (13.2, -21.2),
-            (14.6, -28.6),
-            (11.6, -36.0),
-            (10.0, -42.8),
+            (2.2, -8.2),
+            (7.8, -15.6),
+            (13.6, -22.4),
+            (15.0, -30.2),
+            (11.8, -38.0),
+            (10.0, -45.2),
         ],
     },
     {
         "idx": 2,
         "role": "inner_l",
-        "root": [4.8, 17.0, -13.0],
-        "fan_yaw": -21.5,           # Tách rõ 2 đầu giữa để 2 mang quạt trong KHÔNG BAO GIỜ chạm nhau!
-        "head_counter_yaw": +8.5,   # Hướng gần thẳng trước (+13° trái)
+        "root": [6.2, 23.8, -18.2],
+        "fan_yaw": -21.0,
+        "head_counter_yaw": +8.5,
         "head_pitch_rest": +9.0,
         "curve_yz": [
             (0.0,  0.0),
-            (7.0, -6.2),
-            (16.0, -10.4),
-            (24.8, -15.2),
-            (30.2, -22.2),
-            (29.8, -30.4),
-            (26.2, -38.4),
+            (7.0, -6.6),
+            (16.2, -11.2),
+            (25.0, -16.4),
+            (30.4, -23.8),
+            (29.8, -32.2),
+            (26.0, -40.4),
         ],
     },
     {
         "idx": 3,
         "role": "inner_r",
-        "root": [-4.8, 17.0, -13.0],
-        "fan_yaw": +21.5,
+        "root": [-6.2, 23.8, -18.2],
+        "fan_yaw": +21.0,
         "head_counter_yaw": -8.5,
         "head_pitch_rest": +9.0,
         "curve_yz": [
             (0.0,  0.0),
-            (7.0, -6.2),
-            (16.0, -10.4),
-            (24.8, -15.2),
-            (30.2, -22.2),
-            (29.8, -30.4),
-            (26.2, -38.4),
+            (7.0, -6.6),
+            (16.2, -11.2),
+            (25.0, -16.4),
+            (30.4, -23.8),
+            (29.8, -32.2),
+            (26.0, -40.4),
         ],
     },
     {
         "idx": 4,
         "role": "outer_r",
-        "root": [-9.4, 14.5, -10.5],
-        "fan_yaw": +54.0,
-        "head_counter_yaw": -20.0,
+        "root": [-12.8, 20.2, -15.5],
+        "fan_yaw": +52.0,
+        "head_counter_yaw": -19.0,
         "head_pitch_rest": +6.0,
         "curve_yz": [
             (0.0,  0.0),
-            (2.2, -7.8),
-            (7.5, -14.8),
-            (13.2, -21.2),
-            (14.6, -28.6),
-            (11.6, -36.0),
-            (10.0, -42.8),
+            (2.2, -8.2),
+            (7.8, -15.6),
+            (13.6, -22.4),
+            (15.0, -30.2),
+            (11.8, -38.0),
+            (10.0, -45.2),
         ],
     },
 ]
@@ -632,29 +697,166 @@ def build_head_assembly(bones: list, idx: int, head_pivot: list, counter_yaw: fl
         })
 
 
-def build_leg_assembly(bones: list, name: str, parent: str, side: int, is_front: bool, hip_pivot: list):
+def build_front_leg_v3(bones: list, name: str, parent: str, side: int, shoulder_pivot: list):
     """
-    Dựng 1 chân bò sát khuỵu thấp mở ngang kiểu kỳ đà/rồng đất (khớp gối gập rõ từ góc ngang & trước):
-    `leg_xx` (thigh) -> `leg_xx_shin` -> `leg_xx_foot` (chạm đất chính xác Y=0.0, 4 ngón + móng vuốt phát sáng + vòng năng lượng cổ chân!)
+    Dựng chân trước 4 khớp cực đô con có lực kiểu quái thú săn mồi:
+    `leg_f*_shoulder` (giáp vai tầng dày + sừng vai cong vút) -> `leg_f*` (bắp tay cơ bắp + cụm gai khuỷu cong phát sáng)
+    -> `leg_f*_shin` (cẳng tay giáp nặng + đai năng lượng cổ chân) -> `leg_f*_foot` (bàn chân 4 ngón móng vuốt chạm đất Y = 0.0!)
+    """
+    sx, sy, sz = shoulder_pivot
+    upper_piv = [sx + side * 2.0, sy - 2.8, sz + 0.6]
+    elbow     = [sx + side * 6.8, 12.2,     sz + 8.0]
+    wrist     = [sx + side * 8.2,  3.2,     sz - 1.6]
+
+    # 1. Khớp vai & giáp bả vai tầng bề thế (`leg_fl_shoulder` / `leg_fr_shoulder`)
+    sh_c = []
+    sh_c.append(make_centered_cube([sx, sy, sz], [8.0, 9.6, 10.8], "STONE_SCALE",
+                                   rot=[0.0, 0.0, -side * 12.0],
+                                   face_overrides={"up": "STONE_DORSAL", "down": "BELLY_GLOW"}))
+    # 2 tầng giáp bả vai vạm vỡ trùm cao lên khớp vai
+    sh_c.append(make_centered_cube([sx + side * 1.8, sy + 3.4, sz + 0.3], [7.4, 4.6, 11.4], "STONE_DORSAL",
+                                   rot=[-6.0, side * 8.0, -side * 22.0]))
+    sh_c.append(make_centered_cube([sx + side * 3.0, sy + 0.8, sz + 0.8], [5.8, 6.2, 9.6], "STONE_DORSAL",
+                                   rot=[0.0, side * 6.0, -side * 18.0]))
+    # Khe năng lượng xanh linh hồn dọc mép giáp vai
+    sh_c.append(make_centered_cube([sx + side * 3.5, sy + 2.4, sz - 0.8], [1.8, 2.8, 6.8], "ANKLE_BAND",
+                                   rot=[-6.0, side * 8.0, -side * 20.0]))
+    # Sừng vai đá cong vút lên-ra ngoài-về sau cực hầm hố
+    add_curved_spur(sh_c, [
+        [sx + side * 2.2, sy + 4.2, sz + 1.4],
+        [sx + side * 5.2, sy + 7.8, sz + 4.6],
+        [sx + side * 7.2, sy + 11.8, sz + 8.2],
+    ], [1.85, 1.18, 0.34], "DORSAL_SPINE", steps_per_seg=2)
+
+    sh_name = f"{name}_shoulder"
+    bones.append({
+        "name": sh_name,
+        "parent": parent,
+        "pivot": [round(sx, 3), round(sy, 3), round(sz, 3)],
+        "rotation": [0.0, 0.0, 0.0],
+        "cubes": sh_c,
+    })
+
+    # 2. Bắp tay trên cơ bắp cuồn cuộn (`leg_fl` / `leg_fr`) hướng chếch ra sau-ngang tạo thế rình mồi cực có lực!
+    thigh_c = []
+    thigh_c.append(make_centered_cube(upper_piv, [7.8, 7.8, 8.2], "DARK_JOINT",
+                                      face_overrides={"down": "BELLY_GLOW"}))
+    add_chain_rod(thigh_c, upper_piv, elbow, 8.8, 7.4, 3, "STONE_SCALE", overlap=0.85)
+    mid_th = 0.5 * (np.array(upper_piv) + np.array(elbow))
+    thigh_c.append(make_centered_cube(mid_th + np.array([side * 1.8, 0.8, 0.6]), [5.2, 6.4, 8.0], "STONE_DORSAL",
+                                      rot=[14.0, side * 10.0, -side * 18.0]))
+    thigh_c.append(make_centered_cube(elbow, [7.6, 6.8, 7.6], "STONE_DORSAL"))
+    add_chain_rod(thigh_c,
+                  np.array(upper_piv) * 0.32 + np.array(elbow) * 0.68,
+                  np.array(upper_piv) * 0.12 + np.array(elbow) * 0.88,
+                  8.0, 7.8, 1, "ANKLE_BAND", overlap=0.25)
+    # Cụm gai khuỷu cong dài sắc lẹm (gai đá lớn + gai tinh thể xanh phát sáng)
+    add_curved_spur(thigh_c, [
+        [elbow[0] + side * 1.0, elbow[1] + 0.8, elbow[2] + 2.2],
+        [elbow[0] + side * 3.4, elbow[1] + 3.6, elbow[2] + 6.4],
+        [elbow[0] + side * 4.8, elbow[1] + 7.4, elbow[2] + 9.4],
+    ], [1.65, 1.08, 0.30], "DORSAL_SPINE", steps_per_seg=2)
+    add_curved_spur(thigh_c, [
+        [elbow[0] + side * 2.0, elbow[1] - 0.8, elbow[2] + 1.8],
+        [elbow[0] + side * 4.2, elbow[1] + 1.0, elbow[2] + 5.6],
+    ], [1.10, 0.28], "HORN_GLOW", steps_per_seg=2)
+
+    bones.append({
+        "name": name,
+        "parent": sh_name,
+        "pivot": [round(upper_piv[0], 3), round(upper_piv[1], 3), round(upper_piv[2], 3)],
+        "rotation": [0.0, 0.0, 0.0],
+        "cubes": thigh_c,
+    })
+
+    # 3. Cẳng tay giáp dày (`leg_fl_shin` / `leg_fr_shin`) lao chéo mạnh về trước trụ đất!
+    shin_c = []
+    shin_c.append(make_centered_cube(elbow, [6.8, 6.4, 6.8], "DARK_JOINT"))
+    add_chain_rod(shin_c, elbow, wrist, 7.2, 5.8, 3, "STONE_SCALE", overlap=0.75)
+    mid_sh = 0.5 * (np.array(elbow) + np.array(wrist))
+    shin_c.append(make_centered_cube(mid_sh + np.array([side * 1.4, 0.5, -0.4]), [4.6, 6.6, 6.4], "STONE_DORSAL",
+                                     rot=[-18.0, side * 8.0, -side * 12.0]))
+    band_a = np.array(elbow) * 0.42 + np.array(wrist) * 0.58
+    band_b = np.array(elbow) * 0.18 + np.array(wrist) * 0.82
+    add_chain_rod(shin_c, band_a, band_b, 6.75, 6.50, 1, "ANKLE_BAND", overlap=0.25)
+    for frac, hlen in ((0.28, 3.6), (0.60, 2.8)):
+        sp0 = np.array(elbow) * (1.0 - frac) + np.array(wrist) * frac + np.array([side * 2.6, 0.6, 1.0])
+        sp1 = sp0 + np.array([side * 2.4, hlen * 0.58, hlen * 0.95])
+        add_chain_rod(shin_c, sp0, sp1, 1.25, 0.28, 2, "DORSAL_SPINE")
+
+    shin_name = f"{name}_shin"
+    bones.append({
+        "name": shin_name,
+        "parent": name,
+        "pivot": [round(elbow[0], 3), round(elbow[1], 3), round(elbow[2], 3)],
+        "rotation": [0.0, 0.0, 0.0],
+        "cubes": shin_c,
+    })
+
+    # 4. Bàn chân trước 4 ngón cực khỏe chạm đất chính xác Y = 0.0 (không âm Y!) + móng vuốt phát sáng!
+    fx, fz = wrist[0] + side * 0.2, wrist[2] - 1.8
+    foot_c = []
+    foot_c.append(make_cube([fx - 4.2, 0.0, fz - 3.6], [8.4, 3.6, 8.0], "STONE_DORSAL",
+                            face_overrides={"down": "DARK_JOINT"}))
+    foot_c.append(make_cube([fx - 3.3, 2.8, fz - 2.8], [6.6, 1.6, 6.0], "STONE_SCALE"))
+    toe_offsets_x = [-2.95, -0.98, +0.98, +2.95]
+    toe_yaws      = [+22.0, +7.0,  -7.0,  -22.0]
+    for tx_off, tyaw in zip(toe_offsets_x, toe_yaws):
+        tpx = fx + tx_off
+        tpz = fz - 3.2
+        foot_c.append(make_cube([tpx - 0.90, 0.0, tpz - 3.5], [1.80, 2.30, 3.8], "STONE_SCALE",
+                                rot=[0.0, tyaw, 0.0], pivot=[tpx, 1.05, tpz]))
+        rad = math.radians(tyaw)
+        tip_x = tpx - math.sin(rad) * 3.45
+        tip_z = tpz - math.cos(rad) * 3.45
+        foot_c.append(make_cube([tip_x - 0.78, 0.28, tip_z - 2.65], [1.56, 1.95, 2.85], "CLAW_GLOW",
+                                rot=[6.0, tyaw, 0.0], pivot=[tip_x, 1.05, tip_z]))
+    foot_c.append(make_cube([fx - 0.82, 0.20, fz + 4.0], [1.64, 1.75, 2.5], "CLAW_GLOW"))
+
+    bones.append({
+        "name": f"{name}_foot",
+        "parent": shin_name,
+        "pivot": [round(wrist[0], 3), round(wrist[1], 3), round(wrist[2], 3)],
+        "rotation": [0.0, 0.0, 0.0],
+        "cubes": foot_c,
+    })
+
+
+def build_back_leg_v3(bones: list, name: str, parent: str, side: int, hip_pivot: list):
+    """
+    Dựng chân sau 4 khớp cực khỏe theo giải phẫu rồng/thú săn mồi:
+    `leg_b*` (đùi hông to đô + sừng gối cong) -> `leg_b*_shin` (cẳng chân kéo chéo ra gót + cựa gót)
+    -> `leg_b*_ankle` (khớp cổ chân gập nhún có lực!) -> `leg_b*_foot` (bàn chân 4 ngón móng vuốt chạm đất Y = 0.0!)
     """
     hx, hy, hz = hip_pivot
-    # Chân trước gối hơi chếch ra sau-ngang rồi cẳng chân lao về trước; chân sau gối chếch trước-ngang rồi cẳng chân đạp lùi-xuống!
-    knee = [hx + side * (7.2 if is_front else 7.0), 9.2, hz + (+4.2 if is_front else -4.6)]
-    ankle = [knee[0] + side * 1.4, 2.5, knee[2] + (-4.8 if is_front else +4.4)]
+    knee      = [hx + side * 6.0, 13.8, hz - 9.2]
+    hock      = [hx + side * 7.4,  7.6, hz + 1.6]
+    foot_base = [hx + side * 8.0,  3.0, hz - 1.8]
 
-    # 1. Đùi (`leg_fl/fr/bl/br`)
+    # 1. Đùi sau cực đô (`leg_bl` / `leg_br`)
     thigh_c = []
-    thigh_c.append(make_cube([hx - 2.7, hy - 2.7, hz - 2.9], [5.4, 5.4, 5.8], "STONE_SCALE",
-                             face_overrides={"down": "BELLY_GLOW"}))
-    add_chain_rod(thigh_c, [hx, hy, hz], knee, 5.2, 4.4, 3, "STONE_SCALE", overlap=0.65)
+    thigh_c.append(make_centered_cube([hx, hy, hz], [8.6, 9.8, 10.8], "STONE_SCALE",
+                                      rot=[0.0, 0.0, -side * 10.0],
+                                      face_overrides={"up": "STONE_DORSAL", "down": "BELLY_GLOW"}))
+    add_chain_rod(thigh_c, [hx, hy, hz], knee, 9.6, 7.8, 3, "STONE_SCALE", overlap=0.90)
     mid_th = 0.5 * (np.array([hx, hy, hz]) + np.array(knee))
-    thigh_c.append(make_cube([mid_th[0] - 2.4, mid_th[1] - 2.1, mid_th[2] - 2.5], [4.8, 4.2, 5.0], "STONE_DORSAL"))
-    thigh_c.append(make_cube([knee[0] - 2.5, knee[1] - 2.2, knee[2] - 2.5], [5.0, 4.4, 5.0], "STONE_SCALE"))
-    # Đai năng lượng xanh băng phát sáng quanh khớp gối/đùi
+    thigh_c.append(make_centered_cube(mid_th + np.array([side * 1.9, 1.2, 0.0]), [5.4, 7.4, 9.4], "STONE_DORSAL",
+                                      rot=[-14.0, -side * 10.0, -side * 18.0]))
+    thigh_c.append(make_centered_cube(knee, [7.8, 7.0, 7.8], "STONE_DORSAL"))
     add_chain_rod(thigh_c,
-                  np.array([hx, hy, hz]) * 0.32 + np.array(knee) * 0.68,
-                  np.array([hx, hy, hz]) * 0.10 + np.array(knee) * 0.90,
-                  5.05, 4.95, 1, "ANKLE_BAND", overlap=0.25)
+                  np.array([hx, hy, hz]) * 0.28 + np.array(knee) * 0.72,
+                  np.array([hx, hy, hz]) * 0.08 + np.array(knee) * 0.92,
+                  8.35, 8.10, 1, "ANKLE_BAND", overlap=0.25)
+    # Sừng gối cong hướng lên-ra trước cực ngầu
+    add_curved_spur(thigh_c, [
+        [knee[0] + side * 1.0, knee[1] + 1.2, knee[2] - 2.0],
+        [knee[0] + side * 3.2, knee[1] + 4.6, knee[2] - 5.4],
+        [knee[0] + side * 4.4, knee[1] + 8.6, knee[2] - 7.0],
+    ], [1.65, 1.08, 0.30], "DORSAL_SPINE", steps_per_seg=2)
+    add_curved_spur(thigh_c, [
+        [knee[0] + side * 1.9, knee[1] - 0.2, knee[2] - 1.8],
+        [knee[0] + side * 3.8, knee[1] + 1.8, knee[2] - 4.8],
+    ], [1.05, 0.26], "HORN_GLOW", steps_per_seg=2)
 
     bones.append({
         "name": name,
@@ -664,14 +866,17 @@ def build_leg_assembly(bones: list, name: str, parent: str, side: int, is_front:
         "cubes": thigh_c,
     })
 
-    # 2. Ống chân (`leg_xx_shin`) — vòng năng lượng xanh băng sáng rực quanh cổ chân!
+    # 2. Cẳng chân sau (`leg_bl_shin` / `leg_br_shin`) kéo chéo xuống gót chân (hock)
     shin_c = []
-    add_chain_rod(shin_c, knee, ankle, 4.2, 3.7, 3, "STONE_SCALE", overlap=0.55)
-    band_a = np.array(knee) * 0.45 + np.array(ankle) * 0.55
-    band_b = np.array(knee) * 0.20 + np.array(ankle) * 0.80
-    add_chain_rod(shin_c, band_a, band_b, 4.55, 4.45, 1, "ANKLE_BAND", overlap=0.25)
-    add_chain_rod(shin_c, [knee[0], knee[1] + 0.5, knee[2] + (1.4 if is_front else -1.4)],
-                  [knee[0] + side * 1.6, knee[1] + 2.4, knee[2] + (4.0 if is_front else -3.6)], 1.15, 0.3, 2, "DORSAL_SPINE")
+    shin_c.append(make_centered_cube(knee, [7.0, 6.6, 7.0], "DARK_JOINT"))
+    add_chain_rod(shin_c, knee, hock, 7.4, 5.8, 3, "STONE_SCALE", overlap=0.78)
+    mid_sh = 0.5 * (np.array(knee) + np.array(hock))
+    shin_c.append(make_centered_cube(mid_sh + np.array([side * 1.4, 0.5, 0.5]), [4.4, 6.2, 6.6], "STONE_DORSAL",
+                                     rot=[18.0, side * 6.0, -side * 12.0]))
+    add_curved_spur(shin_c, [
+        [hock[0] + side * 0.5, hock[1] + 0.5, hock[2] + 1.8],
+        [hock[0] + side * 2.0, hock[1] + 2.4, hock[2] + 5.6],
+    ], [1.35, 0.28], "DORSAL_SPINE", steps_per_seg=2)
 
     shin_name = f"{name}_shin"
     bones.append({
@@ -682,145 +887,226 @@ def build_leg_assembly(bones: list, name: str, parent: str, side: int, is_front:
         "cubes": shin_c,
     })
 
-    # 3. Bàn chân 4 ngón chạm đất chính xác Y = 0.0 + móng vuốt trắng-lam phát sáng!
-    fx, fy, fz = ankle[0], 0.0, ankle[2] - 1.2
+    # 3. Khớp cổ chân gập nhún (`leg_bl_ankle` / `leg_br_ankle`) + đai năng lượng sáng rực!
+    ank_c = []
+    ank_c.append(make_centered_cube(hock, [5.8, 5.4, 5.8], "DARK_JOINT"))
+    add_chain_rod(ank_c, hock, foot_base, 5.8, 5.2, 2, "STONE_SCALE", overlap=0.65)
+    band_a = np.array(hock) * 0.62 + np.array(foot_base) * 0.38
+    band_b = np.array(hock) * 0.24 + np.array(foot_base) * 0.76
+    add_chain_rod(ank_c, band_a, band_b, 6.30, 6.10, 1, "ANKLE_BAND", overlap=0.25)
+
+    ank_name = f"{name}_ankle"
+    bones.append({
+        "name": ank_name,
+        "parent": shin_name,
+        "pivot": [round(hock[0], 3), round(hock[1], 3), round(hock[2], 3)],
+        "rotation": [0.0, 0.0, 0.0],
+        "cubes": ank_c,
+    })
+
+    # 4. Bàn chân sau 4 ngón chạm đất chính xác Y = 0.0 + móng vuốt phát sáng!
+    fx, fz = foot_base[0] + side * 0.2, foot_base[2] - 1.8
     foot_c = []
-    foot_c.append(make_cube([fx - 2.7, 0.0, fz - 2.3], [5.4, 2.7, 5.6], "STONE_DORSAL",
+    foot_c.append(make_cube([fx - 4.1, 0.0, fz - 3.5], [8.2, 3.5, 7.8], "STONE_DORSAL",
                             face_overrides={"down": "DARK_JOINT"}))
-    toe_offsets_x = [-1.95, -0.65, +0.65, +1.95]
-    toe_yaws = [+18.0, +6.0, -6.0, -18.0]
+    foot_c.append(make_cube([fx - 3.2, 2.7, fz - 2.7], [6.4, 1.5, 5.8], "STONE_SCALE"))
+    toe_offsets_x = [-2.85, -0.95, +0.95, +2.85]
+    toe_yaws      = [+20.0, +6.5,  -6.5,  -20.0]
     for tx_off, tyaw in zip(toe_offsets_x, toe_yaws):
         tpx = fx + tx_off
-        tpz = fz - 2.1
-        foot_c.append(make_cube([tpx - 0.60, 0.0, tpz - 2.6], [1.20, 1.60, 2.8], "STONE_SCALE",
-                                rot=[0.0, tyaw, 0.0], pivot=[tpx, 0.75, tpz]))
+        tpz = fz - 3.1
+        foot_c.append(make_cube([tpx - 0.86, 0.0, tpz - 3.35], [1.72, 2.20, 3.6], "STONE_SCALE",
+                                rot=[0.0, tyaw, 0.0], pivot=[tpx, 1.00, tpz]))
         rad = math.radians(tyaw)
-        tip_x = tpx - math.sin(rad) * 2.55
-        tip_z = tpz - math.cos(rad) * 2.55
-        foot_c.append(make_cube([tip_x - 0.54, 0.0, tip_z - 1.75], [1.08, 1.40, 1.95], "CLAW_GLOW",
-                                rot=[6.0, tyaw, 0.0], pivot=[tip_x, 0.65, tip_z]))
-    foot_c.append(make_cube([fx - 0.55, 0.15, fz + 3.0], [1.1, 1.25, 1.7], "CLAW_GLOW"))
+        tip_x = tpx - math.sin(rad) * 3.30
+        tip_z = tpz - math.cos(rad) * 3.30
+        foot_c.append(make_cube([tip_x - 0.76, 0.28, tip_z - 2.55], [1.52, 1.90, 2.75], "CLAW_GLOW",
+                                rot=[6.0, tyaw, 0.0], pivot=[tip_x, 1.00, tip_z]))
+    foot_c.append(make_cube([fx - 0.78, 0.20, fz + 3.9], [1.56, 1.70, 2.4], "CLAW_GLOW"))
 
     bones.append({
         "name": f"{name}_foot",
-        "parent": shin_name,
-        "pivot": [round(ankle[0], 3), round(ankle[1], 3), round(ankle[2], 3)],
+        "parent": ank_name,
+        "pivot": [round(foot_base[0], 3), round(foot_base[1], 3), round(foot_base[2], 3)],
         "rotation": [0.0, 0.0, 0.0],
         "cubes": foot_c,
     })
 
 
 # =============================================================================
-# 2. XÂY DỰNG TOÀN BỘ MODEL SPIRIT HYDRA 4 ĐẦU (~1.200 CUBES)
+# 2. XÂY DỰNG TOÀN BỘ MODEL SPIRIT HYDRA V3 — CỘT SỐNG ĐA KHỚP VẠM VỠ & 4 CHÂN 4 KHỚP
 # =============================================================================
 def build_hydra_geo() -> tuple[dict, int, dict]:
     bones = []
     bones.append({"name": "root", "pivot": [0.0, 0.0, 0.0], "cubes": []})
-    bones.append({"name": "body", "parent": "root", "pivot": [0.0, 14.0, 8.0], "cubes": []})
+    bones.append({"name": "body", "parent": "root", "pivot": [0.0, 18.2, 17.5], "cubes": []})
 
     # -------------------------------------------------------------------------
-    # A. THÂN THẰN LẰN THUÔN DÀI (`chest`, `torso`, `pelvis`) — Dáng bò sát thấp, bụng phát sáng liên tục!
+    # A. CỘT SỐNG 4 ĐỐT VẠM VỠ UỐN VÒM SĂN MỒI (`torso -> chest_rear -> chest` & `pelvis`)
+    #    Ngực thùng cao đô bề thế (~32-36 px rộng, vòm lưng lên Y~31!), eo thắt cơ bắp gọn gàng,
+    #    hông nở vòm khỏe đỡ 4 chân cao rõ khớp & 4 cổ rắn khổng lồ — 0% thô cứng, 0% đụt!
     # -------------------------------------------------------------------------
-    # 1. `chest` (Y: 8.6 .. 20.8 — hở gầm tự nhiên cho 4 chân bò sát khuỵu rõ ràng!)
-    chest_c = [
-        make_cube([-9.6, 9.8, -13.5], [19.2, 9.6, 19.5], "STONE_SCALE",
-                  face_overrides={"up": "STONE_DORSAL", "down": "BELLY_GLOW"}),
-        make_cube([-8.4, 8.6, -13.2], [16.8, 2.2, 18.8], "BELLY_GLOW"),
-        make_cube([-7.8, 10.0, -14.2], [15.6, 5.4, 1.6], "BELLY_GLOW"),
-        make_cube([-8.6, 18.8, -12.4], [17.2, 2.0, 17.6], "STONE_DORSAL"),
-        make_cube([-6.4, 20.2, -10.8], [12.8, 1.4, 14.4], "STONE_DORSAL"),
-        make_cube([9.0, 11.6, -11.5], [1.8, 6.4, 15.2], "STONE_DORSAL"),
-        make_cube([-10.8, 11.6, -11.5], [1.8, 6.4, 15.2], "STONE_DORSAL"),
-        make_cube([-8.2, 9.8, 4.8], [16.4, 8.8, 3.6], "DARK_JOINT",
-                  face_overrides={"down": "BELLY_GLOW"}),
-    ]
-    for sz in (-9.6, -5.2, -0.8, 3.6):
-        add_chain_rod(chest_c, [0.0, 20.8, sz], [0.0, 24.0, sz + 2.2], 1.55, 0.35, 2, "DORSAL_SPINE")
-        for side in (-1, 1):
-            chest_c.append(make_cube([side * 3.8 - 0.55, 20.2, sz - 0.8], [1.1, 1.5, 2.4], "DORSAL_SPINE"))
+    # 1. `torso` (Eo cơ bắp chữ V thắt gọn hơi nâng bụng, Z: 6.5 .. 25.0)
+    torso_c = []
+    for cz, cy, rx, ry, dp, pt in (
+        (21.6, 18.4, 11.0, 7.2, 7.8, -3.0),
+        (15.4, 18.0, 10.2, 6.8, 7.8,  0.0),
+        ( 9.2, 18.6, 11.2, 7.4, 7.8, +4.0),
+    ):
+        add_hydra_armor_ring(torso_c, [0.0, cy, cz], rx, ry, dp, pitch_x=pt, rib_glow=True)
+    # Khớp lồng trước & sau eo (chống hở khe tuyệt đối khi vặn thân!)
+    torso_c.append(make_centered_cube([0.0, 18.6, 24.4], [18.4, 11.2, 5.4], "DARK_JOINT",
+                                      face_overrides={"down": "BELLY_GLOW"}))
+    torso_c.append(make_centered_cube([0.0, 19.0,  6.2], [19.4, 11.8, 5.4], "DARK_JOINT",
+                                      face_overrides={"down": "BELLY_GLOW"}))
+    # Xương sườn giáp chéo cơ bắp 2 bên eo
     for side in (-1, 1):
-        for sz in (-8.5, -3.5, 1.5):
-            chest_c.append(make_cube([side * 8.9 - 0.5, 9.2, sz - 1.4], [1.0, 2.4, 2.8], "BELLY_GLOW"))
-
-    bones.append({
-        "name": "chest",
-        "parent": "body",
-        "pivot": [0.0, 14.5, -4.0],
-        "rotation": [0.0, 0.0, 0.0],
-        "cubes": chest_c,
-    })
-
-    # 2. `torso` (Eo thằn lằn thuôn gọn, Y: 8.8 .. 19.8)
-    torso_c = [
-        make_cube([-7.4, 9.8, 5.5], [14.8, 8.4, 18.0], "STONE_SCALE",
-                  face_overrides={"up": "STONE_DORSAL", "down": "BELLY_GLOW"}),
-        make_cube([-6.4, 8.7, 5.8], [12.8, 2.0, 17.4], "BELLY_GLOW"),
-        make_cube([-6.2, 17.6, 6.4], [12.4, 1.8, 16.2], "STONE_DORSAL"),
-        make_cube([-4.8, 18.8, 7.5], [9.6, 1.2, 14.0], "STONE_DORSAL"),
-        make_cube([-7.0, 9.8, 22.0], [14.0, 8.2, 3.6], "DARK_JOINT",
-                  face_overrides={"down": "BELLY_GLOW"}),
-    ]
-    for sz in (8.2, 12.8, 17.4, 21.8):
-        add_chain_rod(torso_c, [0.0, 19.4, sz], [0.0, 22.4, sz + 2.0], 1.4, 0.32, 2, "DORSAL_SPINE")
-        for side in (-1, 1):
-            torso_c.append(make_cube([side * 7.2 - 0.45, 9.4, sz - 1.3], [0.9, 2.2, 2.6], "BELLY_GLOW"))
+        for rz in (10.4, 15.0, 19.4):
+            torso_c.append(make_centered_cube([side * 9.8, 17.6, rz], [3.0, 7.8, 3.2], "STONE_DORSAL",
+                                              rot=[16.0, side * 12.0, -side * 18.0]))
+    for sz, sy in ((9.6, 25.6), (15.0, 24.6), (20.4, 25.2)):
+        add_hydra_dorsal_crest(torso_c, [0.0, sy, sz], 2.5, 5.0, 4.0, tilt_x=-20.0)
 
     bones.append({
         "name": "torso",
         "parent": "body",
-        "pivot": [0.0, 14.0, 14.0],
+        "pivot": [0.0, 18.2, 22.0],
         "rotation": [0.0, 0.0, 0.0],
         "cubes": torso_c,
     })
 
-    # 3. `pelvis` (Hông khỏe đỡ 2 chân sau & gốc đuôi vút cao, Y: 9.2 .. 20.4)
-    pelvis_c = [
-        make_cube([-8.2, 10.2, 22.8], [16.4, 8.8, 16.0], "STONE_SCALE",
-                  face_overrides={"up": "STONE_DORSAL", "down": "BELLY_GLOW"}),
-        make_cube([-6.8, 9.1, 23.2], [13.6, 2.0, 15.2], "BELLY_GLOW"),
-        make_cube([-7.0, 18.4, 23.8], [14.0, 1.8, 14.2], "STONE_DORSAL"),
-        make_cube([-6.2, 11.0, 37.2], [12.4, 7.4, 3.6], "DARK_JOINT",
-                  face_overrides={"down": "BELLY_GLOW"}),
-    ]
-    for sz in (26.0, 30.8, 35.4):
-        add_chain_rod(pelvis_c, [0.0, 19.6, sz], [0.0, 22.6, sz + 2.0], 1.35, 0.3, 2, "DORSAL_SPINE")
-        for side in (-1, 1):
-            pelvis_c.append(make_cube([side * 8.0 - 0.45, 9.9, sz - 1.3], [0.9, 2.1, 2.6], "BELLY_GLOW"))
+    # 2. `chest_rear` (Đốt lồng ngực giữa vươn vòm lên vai ngực rộng, Z: -5.8 .. 8.8)
+    chest_rear_c = []
+    for cz, cy, rx, ry, dp, pt in (
+        ( 4.6, 19.4, 12.6, 8.4, 7.8, +6.0),
+        (-1.4, 20.4, 14.2, 9.4, 8.4, +7.0),
+    ):
+        add_hydra_armor_ring(chest_rear_c, [0.0, cy, cz], rx, ry, dp, pitch_x=pt, rib_glow=True)
+    # Khớp lồng trước lồng sâu vào `chest`
+    chest_rear_c.append(make_centered_cube([0.0, 20.8, -5.4], [24.0, 14.0, 6.2], "DARK_JOINT",
+                                           face_overrides={"down": "BELLY_GLOW"}))
+    # Tấm giáp cơ xô lưng rộng (latissimus) đổ xòe lên bờ vai
+    for side in (-1, 1):
+        chest_rear_c.append(make_centered_cube([side * 12.4, 22.6, 0.8], [5.0, 7.8, 12.2], "STONE_DORSAL",
+                                               rot=[8.0, -side * 14.0, side * 24.0]))
+        chest_rear_c.append(make_centered_cube([side * 11.8, 16.4, 1.4], [3.8, 5.8, 10.2], "STONE_SCALE",
+                                               rot=[8.0, -side * 10.0, -side * 20.0]))
+    for sz, sy in ((4.4, 27.6), (-1.4, 29.4)):
+        add_hydra_dorsal_crest(chest_rear_c, [0.0, sy, sz], 3.0, 6.0, 4.6, tilt_x=-22.0)
+
+    bones.append({
+        "name": "chest_rear",
+        "parent": "torso",
+        "pivot": [0.0, 19.0, 7.5],
+        "rotation": [0.0, 0.0, 0.0],
+        "cubes": chest_rear_c,
+    })
+
+    # 3. `chest` (Ngực thùng cực đô & bờ vai giáp đá bề thế rộng ~32-36 px, vòm lưng lên Y~31.5, Z: -21.0 .. -3.5!)
+    chest_c = []
+    for cz, cy, rx, ry, dp, pt in (
+        ( -7.2, 21.2, 15.4, 10.4, 9.0, +5.0),
+        (-14.2, 21.4, 14.6, 10.0, 8.8, +7.0),
+    ):
+        add_hydra_armor_ring(chest_c, [0.0, cy, cz], rx, ry, dp, pitch_x=pt, rib_glow=True)
+    # Lồng ngực trước vát mũi tàu nhô mạnh về trước + lò năng lượng linh hồn xanh băng ở ức!
+    chest_c.append(make_centered_cube([0.0, 20.2, -18.8], [19.8, 12.8, 5.4], "STONE_SCALE",
+                                      rot=[12.0, 0.0, 0.0],
+                                      face_overrides={"up": "STONE_DORSAL", "down": "BELLY_GLOW", "north": "BELLY_GLOW"}))
+    chest_c.append(make_centered_cube([0.0, 17.0, -20.4], [15.0, 8.6, 3.2], "BELLY_GLOW",
+                                      rot=[16.0, 0.0, 0.0]))
+    for side in (-1, 1):
+        # Xương ức vát góc trước ngực
+        chest_c.append(make_centered_cube([side * 7.8, 19.4, -18.2], [5.4, 9.2, 4.8], "STONE_DORSAL",
+                                          rot=[12.0, side * 26.0, -side * 12.0]))
+        # Bờ vai & cơ thang đá nhiều tầng dựng vòm cực đô
+        chest_c.append(make_centered_cube([side * 12.8, 26.6, -9.8], [6.4, 6.4, 13.6], "STONE_DORSAL",
+                                          rot=[6.0, side * 10.0, side * 24.0]))
+        chest_c.append(make_centered_cube([side * 9.6, 29.2, -12.2], [6.8, 4.6, 11.4], "STONE_DORSAL",
+                                          rot=[8.0, side * 12.0, side * 16.0]))
+        # Sừng giáp bả vai uốn cong vút cao đầy uy lực
+        add_curved_spur(chest_c, [
+            [side * 11.6, 28.6, -8.2],
+            [side * 14.4, 32.4, -4.4],
+            [side * 16.0, 36.4, -0.4],
+        ], [1.95, 1.25, 0.36], "DORSAL_SPINE", steps_per_seg=2)
+    # Ổ khớp cơ bắp dày ôm kín 4 gốc cổ (triệt tiêu cảm giác cổ cắm vào tường phẳng!)
+    for spec in NECK_SPECS:
+        nrx, nry, nrz = spec["root"]
+        fy = spec["fan_yaw"]
+        chest_c.append(make_centered_cube([nrx, nry, nrz + 1.5], [11.6, 10.8, 6.4], "STONE_DORSAL",
+                                          rot=[0.0, fy * 0.55, 0.0],
+                                          face_overrides={"down": "BELLY_GLOW"}))
+        chest_c.append(make_centered_cube([nrx, nry - 3.0, nrz - 0.8], [9.0, 3.8, 4.4], "BELLY_GLOW",
+                                          rot=[12.0, fy * 0.60, 0.0]))
+    for sz, sy in ((-6.8, 31.2), (-13.0, 31.4)):
+        add_hydra_dorsal_crest(chest_c, [0.0, sy, sz], 3.2, 6.8, 5.0, tilt_x=-24.0)
+
+    bones.append({
+        "name": "chest",
+        "parent": "chest_rear",
+        "pivot": [0.0, 20.6, -4.8],
+        "rotation": [0.0, 0.0, 0.0],
+        "cubes": chest_c,
+    })
+
+    # 4. `pelvis` (Hông cơ bắp nở rộng vòm cao đỡ 2 chân sau khỏe & gốc đuôi, Z: 22.4 .. 42.5)
+    pelvis_c = []
+    for cz, cy, rx, ry, dp, pt in (
+        (27.0, 18.8, 12.0, 8.0, 8.0, -4.0),
+        (33.4, 19.2, 12.6, 8.4, 8.4, -6.0),
+        (39.0, 18.6, 10.4, 7.0, 7.0, -8.0),
+    ):
+        add_hydra_armor_ring(pelvis_c, [0.0, cy, cz], rx, ry, dp, pitch_x=pt, rib_glow=True)
+    pelvis_c.append(make_centered_cube([0.0, 18.4, 41.2], [15.2, 10.2, 5.4], "DARK_JOINT",
+                                       face_overrides={"down": "BELLY_GLOW"}))
+    for side in (-1, 1):
+        pelvis_c.append(make_centered_cube([side * 11.8, 22.0, 32.6], [4.8, 6.8, 11.8], "STONE_DORSAL",
+                                           rot=[-8.0, -side * 12.0, side * 22.0]))
+        add_curved_spur(pelvis_c, [
+            [side * 10.0, 25.0, 34.2],
+            [side * 12.6, 28.2, 38.0],
+            [side * 14.0, 31.2, 42.0],
+        ], [1.65, 1.05, 0.30], "DORSAL_SPINE", steps_per_seg=2)
+    for sz, sy in ((27.8, 26.6), (33.6, 27.2), (38.8, 25.4)):
+        add_hydra_dorsal_crest(pelvis_c, [0.0, sy, sz], 2.8, 5.6, 4.4, tilt_x=-22.0)
 
     bones.append({
         "name": "pelvis",
         "parent": "body",
-        "pivot": [0.0, 14.5, 30.5],
+        "pivot": [0.0, 18.6, 23.0],
         "rotation": [0.0, 0.0, 0.0],
         "cubes": pelvis_c,
     })
 
     # -------------------------------------------------------------------------
-    # B. 4 CHÂN BÒ SÁT MỞ NGANG (`leg_fl`, `leg_fr`, `leg_bl`, `leg_br`)
+    # B. 4 CHÂN 4 KHỚP CƠ BẮP MỞ NGANG (`leg_fl`, `leg_fr`, `leg_bl`, `leg_br`)
     # -------------------------------------------------------------------------
-    build_leg_assembly(bones, "leg_fl", "chest",  +1, True,  [+9.2, 13.4, -5.2])
-    build_leg_assembly(bones, "leg_fr", "chest",  -1, True,  [-9.2, 13.4, -5.2])
-    build_leg_assembly(bones, "leg_bl", "pelvis", +1, False, [+8.2, 13.8, 31.0])
-    build_leg_assembly(bones, "leg_br", "pelvis", -1, False, [-8.2, 13.8, 31.0])
+    build_front_leg_v3(bones, "leg_fl", "chest",  +1, [+14.2, 21.8, -9.8])
+    build_front_leg_v3(bones, "leg_fr", "chest",  -1, [-14.2, 21.8, -9.8])
+    build_back_leg_v3(bones,  "leg_bl", "pelvis", +1, [+12.2, 19.2, 32.8])
+    build_back_leg_v3(bones,  "leg_br", "pelvis", -1, [-12.2, 19.2, 32.8])
 
     # -------------------------------------------------------------------------
-    # C. ĐUÔI DÀI 7 ĐỐT (`tail_1..7`) — DÙNG add_angled_box_along_pos_z ĐỂ LƯNG ĐÁ LUÔN Ở TRÊN & BỤNG SÁNG LUÔN Ở DƯỚI!
+    # C. ĐUÔI DÀI 9 ĐỐT VÁT CẠNH UỐN CHỮ S MƯỢT (`tail_1..9`) — VÕNG HÔNG RỒI VÚT CAO!
     # -------------------------------------------------------------------------
     tail_pts = [
-        (14.5, 38.5),
-        (15.2, 48.2),
-        (17.8, 57.6),
-        (22.5, 66.0),
-        (29.2, 72.8),
-        (37.2, 77.6),
-        (45.8, 80.0),
-        (54.2, 80.2),
+        (18.4, 40.5),
+        (15.6, 51.0),
+        (14.4, 61.4),
+        (15.6, 71.6),
+        (19.0, 81.0),
+        (24.4, 89.2),
+        (31.4, 95.8),
+        (39.4, 100.4),
+        (48.2, 102.6),
+        (57.2, 102.4),
     ]
-    tail_widths  = [11.0, 9.6, 8.2, 7.0, 5.8, 4.6, 3.6]
-    tail_heights = [ 7.6, 6.8, 6.0, 5.2, 4.5, 3.8, 3.1]
+    tail_widths  = [13.8, 12.2, 10.6, 9.2, 7.8, 6.6, 5.5, 4.5, 3.6]
+    tail_heights = [10.4,  9.2,  8.0, 7.0, 6.0, 5.1, 4.3, 3.6, 3.0]
 
     prev_tail = "pelvis"
-    for ti in range(7):
+    for ti in range(9):
         y0, z0 = tail_pts[ti]
         y1, z1 = tail_pts[ti + 1]
         p0 = [0.0, y0, z0]
@@ -829,42 +1115,54 @@ def build_hydra_geo() -> tuple[dict, int, dict]:
         h = tail_heights[ti]
         tc = []
 
-        # Thân đốt đuôi chính (+Z dọc đuôi -> mặt UP luôn là giáp lưng đá, mặt DOWN luôn là bụng sáng!)
-        add_angled_box_along_pos_z(tc, p0, p1, w, h, "STONE_SCALE", pad_start=1.0, pad_end=1.0,
+        add_angled_box_along_pos_z(tc, p0, p1, w, h, "STONE_SCALE", pad_start=1.25, pad_end=1.25,
                                    face_overrides={"up": "STONE_DORSAL", "down": "BELLY_GLOW"})
         vec = np.array(p1) - np.array(p0)
         u = vec / np.linalg.norm(vec)
-        # Với u = [0, uy, uz] hướng ra +Z & cong lên +Y:
-        # u_down (mặt dưới/ngoài cung đuôi) = [0, -uz, +uy]; u_up (sống lưng trên đuôi) = [0, +uz, -uy]!
         u_down = np.array([0.0, -u[2], u[1]])
         u_up = -u_down
-        # Dải bụng phát sáng dày nổi chạy dọc MẶT DƯỚI đốt đuôi (cực rõ từ góc ngang & góc dưới, lưng trên tối hoàn toàn!)
+
         add_angled_box_along_pos_z(tc,
-                                   (np.array(p0) + u_down * (h * 0.44)).tolist(),
-                                   (np.array(p1) + u_down * (h * 0.44)).tolist(),
-                                   w * 0.84, max(1.6, h * 0.34), "BELLY_GLOW",
-                                   pad_start=0.7, pad_end=0.7)
-        # Khớp lồng thu nhẹ đầu đốt (overlapping joint cap)
+                                   (np.array(p0) + u_up * (h * 0.42)).tolist(),
+                                   (np.array(p1) + u_up * (h * 0.42)).tolist(),
+                                   w * 0.74, max(1.4, h * 0.30), "STONE_DORSAL",
+                                   pad_start=0.55, pad_end=0.55)
+        for side in (-1, 1):
+            add_angled_box_along_pos_z(tc,
+                                       (np.array(p0) + np.array([side * (w * 0.46), 0.0, 0.0])).tolist(),
+                                       (np.array(p1) + np.array([side * (w * 0.46), 0.0, 0.0])).tolist(),
+                                       max(1.2, w * 0.24), h * 0.68, "STONE_DORSAL",
+                                       pad_start=0.45, pad_end=0.45)
         add_angled_box_along_pos_z(tc,
-                                   (np.array(p0) - u * 0.9).tolist(),
-                                   (np.array(p0) + u * 2.2).tolist(),
+                                   (np.array(p0) + u_down * (h * 0.45)).tolist(),
+                                   (np.array(p1) + u_down * (h * 0.45)).tolist(),
+                                   w * 0.80, max(1.6, h * 0.34), "BELLY_GLOW",
+                                   pad_start=0.85, pad_end=0.85)
+        add_angled_box_along_pos_z(tc,
+                                   (np.array(p0) - u * 1.2).tolist(),
+                                   (np.array(p0) + u * 2.6).tolist(),
                                    w * 0.90, h * 0.88, "DARK_JOINT",
                                    face_overrides={"down": "BELLY_GLOW"})
-        # Gai sống lưng đá nhỏ, sắc, thấp trên sống đuôi trên!
         mid_t = 0.5 * (np.array(p0) + np.array(p1))
-        spine_base = mid_t + u_up * (h * 0.45)
-        spine_tip = spine_base + u_up * (2.8 - ti * 0.18) + u * 1.6
-        add_chain_rod(tc, spine_base, spine_tip, max(0.70, 1.40 - ti * 0.1), 0.28, 2, "DORSAL_SPINE")
+        spine_base = mid_t + u_up * (h * 0.48)
+        spine_tip  = spine_base + u_up * (4.0 - ti * 0.20) + u * 2.4
+        add_chain_rod(tc, spine_base, spine_tip, max(0.85, 1.80 - ti * 0.11), 0.28, 2, "DORSAL_SPINE")
+        if ti < 6:
+            sp2_base = np.array(p0) + vec * 0.22 + u_up * (h * 0.46)
+            sp2_tip  = sp2_base + u_up * (2.8 - ti * 0.14) + u * 1.6
+            add_chain_rod(tc, sp2_base, sp2_tip, max(0.70, 1.35 - ti * 0.08), 0.24, 2, "DORSAL_SPINE")
 
-        if ti == 6:
+        if ti == 8:
             end_p = np.array(p1)
-            tc.append(make_cube([end_p[0] - 2.1, end_p[1] - 1.6, end_p[2] - 1.8], [4.2, 3.2, 3.6], "STONE_DORSAL"))
+            tc.append(make_centered_cube(end_p, [4.8, 3.8, 4.4], "STONE_DORSAL"))
             for side in (-1, 1):
-                prong_mid = end_p + u * 4.5 + np.array([side * 2.4, 0.0, 0.0]) + u_up * 0.4
-                prong_tip = end_p + u * 10.2 + np.array([side * 3.8, 0.0, 0.0]) + u_up * 1.2
-                add_chain_rod(tc, end_p, prong_mid, 1.75, 1.35, 2, "TAIL_CRYSTAL", overlap=0.35)
-                add_chain_rod(tc, prong_mid, prong_tip, 1.30, 0.30, 3, "TAIL_CRYSTAL", overlap=0.3)
-            add_chain_rod(tc, end_p, end_p + u * 5.2, 1.45, 0.35, 2, "EYE_GLOW", overlap=0.25)
+                prong_mid = end_p + u * 5.6 + np.array([side * 3.2, 0.0, 0.0]) + u_up * 0.6
+                prong_tip = end_p + u * 13.4 + np.array([side * 5.2, 0.0, 0.0]) + u_up * 2.0
+                add_chain_rod(tc, end_p, prong_mid, 2.1, 1.55, 2, "TAIL_CRYSTAL", overlap=0.35)
+                add_chain_rod(tc, prong_mid, prong_tip, 1.50, 0.32, 3, "TAIL_CRYSTAL", overlap=0.30)
+                barb_tip = prong_mid - u * 1.5 + np.array([side * 2.8, 0.0, 0.0]) + u_up * 1.0
+                add_chain_rod(tc, prong_mid, barb_tip, 1.15, 0.26, 2, "DORSAL_SPINE", overlap=0.25)
+            add_chain_rod(tc, end_p, end_p + u * 7.4, 1.75, 0.36, 2, "EYE_GLOW", overlap=0.25)
 
         tname = f"tail_{ti + 1}"
         bones.append({
@@ -877,9 +1175,10 @@ def build_hydra_geo() -> tuple[dict, int, dict]:
         prev_tail = tname
 
     # -------------------------------------------------------------------------
-    # D. 4 CỔ DÀI MẢNH UỐN CHỮ S (`neck_1..4`, mỗi cổ 6 đốt `neck_i_seg_1..6`) + 4 MỎM CỤT (`stump_1..4`) + 4 ĐẦU
+    # D. 4 CỔ RẮN CƠ BẮP VÁT CẠNH (`neck_1..4`, 6 đốt `neck_i_seg_1..6`) + 4 MỎM CỤT (`stump_1..4`) + 4 ĐẦU
     # -------------------------------------------------------------------------
     computed_head_world_pivots = []
+    computed_neck_mid_pivots = []
     computed_neck_root_pivots = []
 
     for spec in NECK_SPECS:
@@ -892,24 +1191,21 @@ def build_hydra_geo() -> tuple[dict, int, dict]:
 
         computed_neck_root_pivots.append([round(rx, 2), round(ry, 2), round(rz, 2)])
 
-        # 1. Mỏm cổ cụt `stump_i` (hiện lên khi đầu bị chặt, ẩn khi đầu còn sống!)
+        # 1. Mỏm cổ cụt `stump_i` (hiện lên khi đầu bị chặt, khớp cỡ gốc cổ cơ bắp mới!)
         sc = []
-        # Vòng cổ đá rách nham nhở tại gốc ngực
-        sc.append(make_cube([rx - 3.6, ry - 3.4, rz - 4.0], [7.2, 6.8, 5.2], "STONE_DORSAL",
+        sc.append(make_cube([rx - 4.7, ry - 4.3, rz - 4.6], [9.4, 8.6, 6.2], "STONE_DORSAL",
                             face_overrides={"north": "STUMP_CORE", "down": "BELLY_GLOW"}))
-        # Lõi năng lượng linh hồn rỉ ra ở vết chặt
-        sc.append(make_cube([rx - 2.4, ry - 2.2, rz - 5.2], [4.8, 4.4, 2.2], "STUMP_CORE"))
-        # 4 mảnh vảy đá rách & 3 tia hồn nhô ra quanh miệng vết chặt
+        sc.append(make_cube([rx - 3.2, ry - 2.9, rz - 5.8], [6.4, 5.8, 2.6], "STUMP_CORE"))
         for ang_deg in (35, 125, 215, 305):
             ar = math.radians(ang_deg)
-            p_b = [rx + math.cos(ar) * 2.8, ry + math.sin(ar) * 2.6, rz - 3.6]
-            p_t = [rx + math.cos(ar) * 3.8, ry + math.sin(ar) * 3.5, rz - 6.2]
-            add_chain_rod(sc, p_b, p_t, 1.1, 0.25, 2, "STONE_DORSAL")
+            p_b = [rx + math.cos(ar) * 3.7, ry + math.sin(ar) * 3.4, rz - 4.0]
+            p_t = [rx + math.cos(ar) * 4.9, ry + math.sin(ar) * 4.5, rz - 7.2]
+            add_chain_rod(sc, p_b, p_t, 1.35, 0.28, 2, "STONE_DORSAL")
         for ang_deg in (0, 120, 240):
             ar = math.radians(ang_deg)
-            p_b = [rx + math.cos(ar) * 1.1, ry + math.sin(ar) * 1.1, rz - 4.6]
-            p_t = [rx + math.cos(ar) * 1.8, ry + math.sin(ar) * 1.8, rz - 7.8]
-            add_chain_rod(sc, p_b, p_t, 0.9, 0.2, 2, "HORN_GLOW")
+            p_b = [rx + math.cos(ar) * 1.4, ry + math.sin(ar) * 1.4, rz - 5.2]
+            p_t = [rx + math.cos(ar) * 2.3, ry + math.sin(ar) * 2.3, rz - 8.8]
+            add_chain_rod(sc, p_b, p_t, 1.05, 0.22, 2, "HORN_GLOW")
 
         bones.append({
             "name": f"stump_{idx}",
@@ -919,7 +1215,7 @@ def build_hydra_geo() -> tuple[dict, int, dict]:
             "cubes": sc,
         })
 
-        # 2. Bone gốc cổ `neck_i` (giữ góc quạt `fan_yaw` -> ẩn `neck_i` sẽ ẩn trọn cả 6 đốt + đầu + mang quạt!)
+        # 2. Bone gốc cổ `neck_i`
         bones.append({
             "name": f"neck_{idx}",
             "parent": "chest",
@@ -928,9 +1224,9 @@ def build_hydra_geo() -> tuple[dict, int, dict]:
             "cubes": [],
         })
 
-        # 3. 6 đốt cổ `neck_i_seg_1..6` nối khớp lồng khít nhau trong mặt phẳng cục bộ YZ của `neck_i`!
-        seg_widths  = [7.0, 6.7, 6.4, 6.1, 5.8, 5.5]  # Tăng nhẹ độ dày đốt cổ cho sắc nét!
-        seg_heights = [6.6, 6.3, 6.0, 5.7, 5.5, 5.2]
+        # 3. 6 đốt cổ cơ bắp thuôn mượt (`neck_i_seg_1..6`) với vảy sườn vát cạnh
+        seg_widths  = [9.8, 8.6, 7.6, 6.8, 6.2, 5.6]
+        seg_heights = [9.2, 8.1, 7.2, 6.4, 5.9, 5.3]
         prev_parent = f"neck_{idx}"
 
         for k in range(6):
@@ -941,8 +1237,6 @@ def build_hydra_geo() -> tuple[dict, int, dict]:
             vec = p1 - p0
             L = float(np.linalg.norm(vec))
             u = vec / L
-            # Pháp tuyến mặt dưới cổ trong mặt phẳng YZ (vì u hướng -Z: u = [0, uy, uz] với uz < 0):
-            # Khi u = [0, 0, -1], u_down = [0, -1, 0] => u_down = [0, +uz, -uy]!
             u_down = np.array([0.0, u[2], -u[1]])
             u_up = -u_down
 
@@ -950,48 +1244,47 @@ def build_hydra_geo() -> tuple[dict, int, dict]:
             h = seg_heights[k]
             nc = []
 
-            # Lõi đốt cổ chính (lưng & sườn vảy đá xám than loang lổ, mặt dưới sáng xanh băng!)
             add_angled_box_along(nc, p0.tolist(), p1.tolist(), w, h, "STONE_SCALE",
-                                 pad_start=0.85, pad_end=0.85,
+                                 pad_start=0.95, pad_end=0.95,
                                  face_overrides={"up": "STONE_DORSAL", "down": "BELLY_GLOW"})
-            # Khớp lồng thu nhẹ đầu-cuối (overlapping joint cap) -> xoay cổ cực gắt cũng liền khối!
-            add_angled_box_along(nc, (p0 - u * 1.15).tolist(), (p0 + u * 1.85).tolist(),
+            for side in (-1, 1):
+                add_angled_box_along(nc,
+                                     (p0 + np.array([side * (w * 0.45), 0.0, 0.0])).tolist(),
+                                     (p1 + np.array([side * (w * 0.45), 0.0, 0.0])).tolist(),
+                                     max(1.2, w * 0.24), h * 0.64, "STONE_DORSAL",
+                                     pad_start=0.40, pad_end=0.40)
+            add_angled_box_along(nc, (p0 - u * 1.25).tolist(), (p0 + u * 2.05).tolist(),
                                  w * 0.90, h * 0.88, "DARK_JOINT",
                                  face_overrides={"down": "BELLY_GLOW"})
-            add_angled_box_along(nc, (p1 - u * 1.55).tolist(), (p1 + u * 1.15).tolist(),
+            add_angled_box_along(nc, (p1 - u * 1.65).tolist(), (p1 + u * 1.25).tolist(),
                                  w * 0.88, h * 0.86, "DARK_JOINT",
                                  face_overrides={"down": "BELLY_GLOW"})
-            # Tấm vảy lưng giáp nổi trên sống cổ
             add_angled_box_along(nc,
-                                 (p0 + u_up * (h * 0.42)).tolist(),
-                                 (p1 + u_up * (h * 0.42)).tolist(),
-                                 w * 0.78, 1.35, "STONE_DORSAL",
-                                 pad_start=0.25, pad_end=0.25)
-            # Dải bụng cổ phát sáng xanh hồn rực rỡ chạy liên tục suốt chiều dài đốt!
+                                 (p0 + u_up * (h * 0.43)).tolist(),
+                                 (p1 + u_up * (h * 0.43)).tolist(),
+                                 w * 0.74, max(1.35, h * 0.24), "STONE_DORSAL",
+                                 pad_start=0.30, pad_end=0.30)
             add_angled_box_along(nc,
                                  (p0 + u_down * (h * 0.44)).tolist(),
                                  (p1 + u_down * (h * 0.44)).tolist(),
-                                 w * 0.84, 1.65, "BELLY_GLOW",
-                                 pad_start=0.75, pad_end=0.75)
+                                 w * 0.80, max(1.65, h * 0.28), "BELLY_GLOW",
+                                 pad_start=0.80, pad_end=0.80)
 
-            # 2 dải tua năng lượng xanh băng rũ dọc hai viền sườn dưới cổ (đúng chất ảnh mẫu!)
             for side in (-1, 1):
-                fringe_p0 = p0 + u_down * (h * 0.56) + np.array([side * (w * 0.44), 0.0, 0.0])
-                fringe_p1 = p1 + u_down * (h * 0.56) + np.array([side * (w * 0.44), 0.0, 0.0])
+                fringe_p0 = p0 + u_down * (h * 0.56) + np.array([side * (w * 0.42), 0.0, 0.0])
+                fringe_p1 = p1 + u_down * (h * 0.56) + np.array([side * (w * 0.42), 0.0, 0.0])
                 add_angled_box_along(nc, fringe_p0.tolist(), fringe_p1.tolist(),
-                                     0.32, 3.2, "NECK_FRINGE",
+                                     0.32, 3.3, "NECK_FRINGE",
                                      pad_start=0.2, pad_end=0.2,
                                      transparent_edges=("north", "south", "up", "down"))
-            # 2 gai năng lượng băng nhỏ rũ ở chính giữa bụng đốt cổ tạo chiều sâu 3D
             for f_t in (0.32, 0.72):
                 gp = p0 + vec * f_t + u_down * (h * 0.50)
-                gtip = gp + u_down * 2.5 - u * 0.8
-                add_chain_rod(nc, gp, gtip, 0.82, 0.22, 2, "HORN_GLOW", overlap=0.18)
+                gtip = gp + u_down * 2.6 - u * 0.8
+                add_chain_rod(nc, gp, gtip, 0.86, 0.22, 2, "HORN_GLOW", overlap=0.18)
 
-            # Gai sống cổ đá nhỏ thấp trên đỉnh đốt
             sp_b = p0 + vec * 0.5 + u_up * (h * 0.50)
-            sp_t = sp_b + u_up * 1.9 - u * 1.2
-            add_chain_rod(nc, sp_b, sp_t, 0.95, 0.26, 2, "DORSAL_SPINE")
+            sp_t = sp_b + u_up * (2.6 - k * 0.12) - u * 1.4
+            add_chain_rod(nc, sp_b, sp_t, max(0.84, 1.25 - k * 0.06), 0.26, 2, "DORSAL_SPINE")
 
             seg_name = f"neck_{idx}_seg_{k + 1}"
             bones.append({
@@ -1008,17 +1301,22 @@ def build_hydra_geo() -> tuple[dict, int, dict]:
         head_local_piv = [rx, ry + end_dy, rz + end_dz]
         build_head_assembly(bones, idx, head_local_piv, cyaw, crest, prev_parent)
 
-        # Tính tọa độ thế giới (model space) chính xác của tâm miệng đầu `head_i` để đồng bộ với Java!
         R_fan = bedrock_rot_matrix([0.0, fan_yaw, 0.0])
         R_ori = bedrock_rot_matrix([crest, cyaw, 0.0])
         root_v = np.array([rx, ry, rz], dtype=np.float64)
         hp_v = np.array(head_local_piv, dtype=np.float64)
-        mouth_local_offset = np.array([0.0, -1.2, -13.0], dtype=np.float64)  # Tâm hàm trước
+        mouth_local_offset = np.array([0.0, -1.2, -13.0], dtype=np.float64)
         mouth_in_neck = hp_v + R_ori @ mouth_local_offset
         mouth_world = root_v + R_fan @ (mouth_in_neck - root_v)
         computed_head_world_pivots.append([round(float(mouth_world[0]), 2),
                                            round(float(mouth_world[1]), 2),
                                            round(float(mouth_world[2]), 2)])
+        mid_dy, mid_dz = curve[3]
+        mid_local = np.array([rx, ry + mid_dy, rz + mid_dz], dtype=np.float64)
+        mid_world = root_v + R_fan @ (mid_local - root_v)
+        computed_neck_mid_pivots.append([round(float(mid_world[0]), 2),
+                                         round(float(mid_world[1]), 2),
+                                         round(float(mid_world[2]), 2)])
 
     geo = {
         "format_version": "1.12.0",
@@ -1028,9 +1326,9 @@ def build_hydra_geo() -> tuple[dict, int, dict]:
                     "identifier": "geometry.spirit_hydra",
                     "texture_width": TEX_W,
                     "texture_height": TEX_H,
-                    "visible_bounds_width": 22,
-                    "visible_bounds_height": 14,
-                    "visible_bounds_offset": [0, 4.5, 0],
+                    "visible_bounds_width": 28,
+                    "visible_bounds_height": 18,
+                    "visible_bounds_offset": [0, 5.5, 1.5],
                 },
                 "bones": bones,
             }
@@ -1047,10 +1345,12 @@ def build_hydra_geo() -> tuple[dict, int, dict]:
         "bones": len(bones),
         "cubes": total_cubes,
         "head_mouth_pivots": computed_head_world_pivots,
+        "neck_mid_pivots": computed_neck_mid_pivots,
         "neck_root_pivots": computed_neck_root_pivots,
     }
     print(f"GEO_OK: {out_path} -> {len(bones)} bones, {total_cubes} cubes")
     print(f"HEAD_MOUTH_PIVOTS (model space): {computed_head_world_pivots}")
+    print(f"NECK_MID_PIVOTS   (model space): {computed_neck_mid_pivots}")
     print(f"NECK_ROOT_PIVOTS  (model space): {computed_neck_root_pivots}")
     return geo, total_cubes, meta
 
@@ -1448,21 +1748,24 @@ def build_animations() -> dict:
     anims = {}
 
     # -------------------------------------------------------------------------
-    # 1. IDLE (4.00s = 80 ticks, loop) — 4 cổ uốn sóng sin lệch pha độc lập + thở + mang quạt mở-khép + đuôi đung đưa
+    # 1. IDLE (4.00s = 80 ticks, loop) — Thở sâu qua chuỗi cột sống 4 đốt + 2 vai nhún + 4 cổ S + đuôi 9 đốt uốn sóng!
     # -------------------------------------------------------------------------
     b = {}
     steps = [0, 10, 20, 30, 40, 50, 60, 70, 80]
     for t in steps:
         ph = (t / 80.0) * math.tau
         breath = math.sin(ph)
-        add_pos(b, "body", t, [0.0, breath * 0.45, 0.0], "catmullrom")
-        add_rot(b, "chest", t, [breath * 2.2, 0.0, 0.0], "catmullrom")
-        add_rot(b, "torso", t, [-breath * 1.4, math.sin(ph) * 2.5, 0.0], "catmullrom")
-        add_rot(b, "pelvis", t, [-breath * 1.2, -math.sin(ph) * 2.5, 0.0], "catmullrom")
-        # Đuôi cong đung đưa mềm dạng sóng chạy
-        for ti in range(7):
-            wave_y = math.sin(ph - ti * 0.55) * (4.5 + ti * 1.4)
-            wave_x = math.cos(ph - ti * 0.45) * (2.2 + ti * 0.6)
+        add_pos(b, "body", t, [0.0, breath * 0.65, 0.0], "catmullrom")
+        add_rot(b, "torso", t, [-breath * 1.4, math.sin(ph) * 2.2, 0.0], "catmullrom")
+        add_rot(b, "chest_rear", t, [breath * 1.6, math.sin(ph - 0.4) * 1.8, 0.0], "catmullrom")
+        add_rot(b, "chest", t, [breath * 2.2, math.sin(ph - 0.8) * 1.5, 0.0], "catmullrom")
+        add_rot(b, "pelvis", t, [-breath * 1.2, -math.sin(ph) * 2.2, 0.0], "catmullrom")
+        add_rot(b, "leg_fl_shoulder", t, [-breath * 1.8, 0.0, 0.0], "catmullrom")
+        add_rot(b, "leg_fr_shoulder", t, [-breath * 1.8, 0.0, 0.0], "catmullrom")
+        # Đuôi 9 đốt uốn sóng lệch pha mượt như roi linh hồn
+        for ti in range(9):
+            wave_y = math.sin(ph - ti * 0.48) * (4.2 + ti * 1.2)
+            wave_x = math.cos(ph - ti * 0.40) * (2.0 + ti * 0.5)
             add_rot(b, f"tail_{ti + 1}", t, [wave_x, wave_y, 0.0], "catmullrom")
         # 4 cổ uốn lượn mềm mại theo sóng sin LỆCH PHA ĐỘC LẬP NHAU!
         for i in range(1, 5):
@@ -1475,36 +1778,39 @@ def build_animations() -> dict:
     anims["animation.spirit_hydra.idle"] = {"loop": True, "animation_length": 4.0, "bones": b}
 
     # -------------------------------------------------------------------------
-    # 2. WALK (1.40s = 28 ticks, loop) — Bò sát 4 chân bước chéo (FL+BR xen FR+BL), hông lắc ngang, 4 cổ giữ thăng bằng
+    # 2. WALK (1.40s = 28 ticks, loop) — Bước chéo 4 chân ĐẦY ĐỦ 4 KHỚP/CHÂN + vặn cột sống chữ S có lực!
     # -------------------------------------------------------------------------
     b = {}
     for t in (0, 7, 14, 21, 28):
         ph = (t / 28.0) * math.tau
         s = math.sin(ph)
-        c = math.cos(ph)
-        # Thân lắc ngang mềm kiểu kỳ đà & nhún nhẹ theo nhịp bước
-        add_pos(b, "body", t, [0.0, abs(s) * 0.7 - 0.3, 0.0], "catmullrom")
-        add_rot(b, "chest", t, [4.0, -s * 7.5, s * 2.5], "catmullrom")
-        add_rot(b, "torso", t, [0.0, s * 9.0, 0.0], "catmullrom")
-        add_rot(b, "pelvis", t, [0.0, s * 8.5, -s * 2.5], "catmullrom")
+        add_pos(b, "body", t, [0.0, abs(s) * 1.0 - 0.5, 0.0], "catmullrom")
+        add_rot(b, "torso", t, [1.0, s * 6.5, s * 2.0], "catmullrom")
+        add_rot(b, "chest_rear", t, [1.5, -s * 5.0, s * 1.8], "catmullrom")
+        add_rot(b, "chest", t, [2.0, -s * 6.5, s * 2.2], "catmullrom")
+        add_rot(b, "pelvis", t, [-1.0, s * 7.5, -s * 2.5], "catmullrom")
 
-        # Cặp chân chéo 1: FL + BR; Cặp chân chéo 2: FR + BL (lệch pha PI)
-        leg_defs = [
-            ("leg_fl", +1, ph),
-            ("leg_br", -1, ph),
-            ("leg_fr", -1, ph + math.pi),
-            ("leg_bl", +1, ph + math.pi),
-        ]
-        for lname, side, lph in leg_defs:
-            sw = math.sin(lph)       # Đưa chân trước/sau
-            lift = max(0.0, math.cos(lph))  # Nhấc chân khi đưa về trước
-            add_rot(b, lname, t, [sw * 18.0, side * sw * 14.0, -side * lift * 14.0], "catmullrom")
-            add_rot(b, f"{lname}_shin", t, [-sw * 14.0 - lift * 18.0, 0.0, 0.0], "catmullrom")
-            add_rot(b, f"{lname}_foot", t, [lift * 16.0, 0.0, 0.0], "catmullrom")
+        # Chân trước 4 khớp (shoulder -> thigh -> shin -> foot)
+        for lname, side, lph in (("leg_fl", +1, ph), ("leg_fr", -1, ph + math.pi)):
+            sw = math.sin(lph)
+            lift = max(0.0, math.cos(lph))
+            add_rot(b, f"{lname}_shoulder", t, [sw * 8.0, side * sw * 5.0, 0.0], "catmullrom")
+            add_rot(b, lname, t, [sw * 20.0, side * sw * 10.0, -side * lift * 12.0], "catmullrom")
+            add_rot(b, f"{lname}_shin", t, [-sw * 16.0 - lift * 22.0, 0.0, 0.0], "catmullrom")
+            add_rot(b, f"{lname}_foot", t, [lift * 18.0 - sw * 6.0, 0.0, 0.0], "catmullrom")
 
-        # Đuôi quét đối trọng ngược pha với hông
-        for ti in range(7):
-            add_rot(b, f"tail_{ti + 1}", t, [math.cos(ph) * 2.5, -math.sin(ph - ti * 0.45) * (7.0 + ti * 1.5), 0.0], "catmullrom")
+        # Chân sau 4 khớp (thigh -> shin -> ankle -> foot)
+        for lname, side, lph in (("leg_br", -1, ph), ("leg_bl", +1, ph + math.pi)):
+            sw = math.sin(lph)
+            lift = max(0.0, math.cos(lph))
+            add_rot(b, lname, t, [sw * 20.0, side * sw * 9.0, -side * lift * 12.0], "catmullrom")
+            add_rot(b, f"{lname}_shin", t, [-sw * 15.0 + lift * 24.0, 0.0, 0.0], "catmullrom")
+            add_rot(b, f"{lname}_ankle", t, [sw * 12.0 - lift * 20.0, 0.0, 0.0], "catmullrom")
+            add_rot(b, f"{lname}_foot", t, [lift * 14.0 - sw * 8.0, 0.0, 0.0], "catmullrom")
+
+        # Đuôi 9 đốt quét đối trọng ngược pha với hông
+        for ti in range(9):
+            add_rot(b, f"tail_{ti + 1}", t, [math.cos(ph) * 2.2, -math.sin(ph - ti * 0.42) * (6.2 + ti * 1.2), 0.0], "catmullrom")
 
         # 4 cổ hơi chúi về trước giữ thăng bằng săn mồi
         for i in range(1, 5):
@@ -1512,8 +1818,8 @@ def build_animations() -> dict:
             add_rot(b, f"neck_{i}_seg_1", t, [5.0 + math.sin(h_ph) * 3.0, math.sin(ph) * 4.0, 0.0], "catmullrom")
             add_rot(b, f"neck_{i}_seg_3", t, [-3.0 + math.cos(h_ph) * 3.0, -math.sin(ph) * 3.0, 0.0], "catmullrom")
             add_rot(b, f"neck_{i}_seg_5", t, [4.0 + math.sin(h_ph) * 2.5, 0.0, 0.0], "catmullrom")
-            add_rot(b, f"frill_{i}_l", t, [0.0, 6.0 + lift * 4.0, 0.0], "catmullrom")
-            add_rot(b, f"frill_{i}_r", t, [0.0, -(6.0 + lift * 4.0), 0.0], "catmullrom")
+            add_rot(b, f"frill_{i}_l", t, [0.0, 6.0 + max(0.0, math.cos(ph)) * 4.0, 0.0], "catmullrom")
+            add_rot(b, f"frill_{i}_r", t, [0.0, -(6.0 + max(0.0, math.cos(ph)) * 4.0), 0.0], "catmullrom")
     anims["animation.spirit_hydra.walk"] = {"loop": True, "animation_length": 1.4, "bones": b}
 
     # -------------------------------------------------------------------------
@@ -1523,10 +1829,14 @@ def build_animations() -> dict:
     for target_i in range(1, 5):
         b = {}
         side_sign = +1 if target_i <= 2 else -1
-        # Thân nhún lấy đà nhẹ
+        # Thân uốn mềm qua cả 2 đốt cột sống (`chest_rear` + `chest`) khi lấy đà phóng cắn
+        add_rot(b, "chest_rear", 0, [0, 0, 0])
+        add_rot(b, "chest_rear", 9, [-3.0, side_sign * 3.5, 0.0], "easeInCubic")
+        add_rot(b, "chest_rear", 12, [4.0, -side_sign * 2.5, 0.0], "easeOutExpo")
+        add_rot(b, "chest_rear", 22, [0, 0, 0], "easeInOutSine")
         add_rot(b, "chest", 0, [0, 0, 0])
-        add_rot(b, "chest", 9, [-7.0, side_sign * 8.0, 0.0], "easeInCubic")
-        add_rot(b, "chest", 12, [9.0, -side_sign * 6.0, 0.0], "easeOutExpo")
+        add_rot(b, "chest", 9, [-4.5, side_sign * 5.0, 0.0], "easeInCubic")
+        add_rot(b, "chest", 12, [5.5, -side_sign * 4.0, 0.0], "easeOutExpo")
         add_rot(b, "chest", 22, [0, 0, 0], "easeInOutSine")
 
         # Đầu ra đòn: rụt cổ cong chữ S + há to hàm + xòe căng mang quạt (t=9) -> phóng thẳng cắn ngập (t=12) -> thu về (t=22)
@@ -1628,9 +1938,14 @@ def build_animations() -> dict:
     add_pos(b, "body", 24, [0, -0.5, 0], "easeOutSine")
     add_pos(b, "body", 36, [0, 0, 0], "easeInOutSine")
 
+    add_rot(b, "chest_rear", 0, [0, 0, 0])
+    add_rot(b, "chest_rear", 14, [-10, -14, 0], "easeInCubic")
+    add_rot(b, "chest_rear", 17, [8, 12, 0], "easeOutExpo")
+    add_rot(b, "chest_rear", 36, [0, 0, 0], "easeInOutSine")
+
     add_rot(b, "chest", 0, [0, 0, 0])
-    add_rot(b, "chest", 14, [-16, -24, 0], "easeInCubic")
-    add_rot(b, "chest", 17, [12, 22, 0], "easeOutExpo")
+    add_rot(b, "chest", 14, [-12, -16, 0], "easeInCubic")
+    add_rot(b, "chest", 17, [10, 14, 0], "easeOutExpo")
     add_rot(b, "chest", 36, [0, 0, 0], "easeInOutSine")
 
     add_rot(b, "pelvis", 0, [0, 0, 0])
@@ -1639,11 +1954,11 @@ def build_animations() -> dict:
     add_rot(b, "pelvis", 25, [-2, -26, 0], "easeOutSine")
     add_rot(b, "pelvis", 36, [0, 0, 0], "easeInOutSine")
 
-    for ti in range(7):
+    for ti in range(9):
         add_rot(b, f"tail_{ti + 1}", 0,  [0, 0, 0])
-        add_rot(b, f"tail_{ti + 1}", 14, [-8 - ti * 1.5, 16 + ti * 3.0, 0], "easeInCubic")
-        add_rot(b, f"tail_{ti + 1}", 18, [-14 - ti * 2.0, -24 - ti * 4.5, 0], "easeOutExpo")
-        add_rot(b, f"tail_{ti + 1}", 26, [-6, -12 - ti * 2.0, 0], "easeOutSine")
+        add_rot(b, f"tail_{ti + 1}", 14, [-7 - ti * 1.2, 14 + ti * 2.6, 0], "easeInCubic")
+        add_rot(b, f"tail_{ti + 1}", 18, [-11 - ti * 1.6, -20 - ti * 3.8, 0], "easeOutExpo")
+        add_rot(b, f"tail_{ti + 1}", 26, [-5, -10 - ti * 1.8, 0], "easeOutSine")
         add_rot(b, f"tail_{ti + 1}", 36, [0, 0, 0], "easeInOutSine")
 
     for hi in range(1, 5):
@@ -1735,18 +2050,24 @@ def build_animations() -> dict:
     add_pos(b, "body", 74,  [0, 2.8, 0],  "easeInOutSine")
     add_pos(b, "body", 100, [0, 0, 0],    "easeInOutSine")
 
+    add_rot(b, "chest_rear", 0,   [0, 0, 0])
+    add_rot(b, "chest_rear", 20,  [6, 0, 0],  "easeInCubic")
+    add_rot(b, "chest_rear", 32,  [-8, 0, 0], "easeOutExpo")
+    add_rot(b, "chest_rear", 76,  [-9, 0, 0], "easeInOutSine")
+    add_rot(b, "chest_rear", 100, [0, 0, 0],  "easeInOutSine")
+
     add_rot(b, "chest", 0,   [0, 0, 0])
-    add_rot(b, "chest", 20,  [14, 0, 0],  "easeInCubic")
-    add_rot(b, "chest", 32,  [-18, 0, 0], "easeOutExpo")
-    add_rot(b, "chest", 76,  [-20, 0, 0], "easeInOutSine")
+    add_rot(b, "chest", 20,  [8, 0, 0],  "easeInCubic")
+    add_rot(b, "chest", 32,  [-11, 0, 0], "easeOutExpo")
+    add_rot(b, "chest", 76,  [-12, 0, 0], "easeInOutSine")
     add_rot(b, "chest", 100, [0, 0, 0],   "easeInOutSine")
 
-    # Đuôi vút dựng cao uy nghiêm
-    for ti in range(7):
+    # Đuôi 9 đốt vút dựng cao uy nghiêm
+    for ti in range(9):
         add_rot(b, f"tail_{ti + 1}", 0,   [0, 0, 0])
-        add_rot(b, f"tail_{ti + 1}", 22,  [-6, 0, 0])
-        add_rot(b, f"tail_{ti + 1}", 36,  [10 + ti * 1.2, 0, 0], "easeOutBack")
-        add_rot(b, f"tail_{ti + 1}", 80,  [8 + ti * 1.0, math.sin(ti) * 6.0, 0])
+        add_rot(b, f"tail_{ti + 1}", 22,  [-5, 0, 0])
+        add_rot(b, f"tail_{ti + 1}", 36,  [8 + ti * 1.0, 0, 0], "easeOutBack")
+        add_rot(b, f"tail_{ti + 1}", 80,  [7 + ti * 0.9, math.sin(ti) * 6.0, 0])
         add_rot(b, f"tail_{ti + 1}", 100, [0, 0, 0])
 
     # 4 đầu mọc bung lần lượt ở tick 38, 45, 52, 59 (cách nhau đúng 7 tick = 0.35s!), rồi gầm đồng thanh ở 74..90!
@@ -1856,10 +2177,10 @@ def build_animations() -> dict:
     add_rot(b, "chest", 40, [-14, 0, 0], "easeOutExpo")
     add_rot(b, "chest", 64, [0, 0, 0], "easeInOutSine")
 
-    for ti in range(7):
+    for ti in range(9):
         add_rot(b, f"tail_{ti + 1}", 0,  [0, 0, 0])
-        add_rot(b, f"tail_{ti + 1}", 36, [10, 18 + ti * 3.0, 0])
-        add_rot(b, f"tail_{ti + 1}", 42, [-8, -22 - ti * 3.5, 0], "easeOutExpo")
+        add_rot(b, f"tail_{ti + 1}", 36, [8, 15 + ti * 2.6, 0])
+        add_rot(b, f"tail_{ti + 1}", 42, [-7, -18 - ti * 3.0, 0], "easeOutExpo")
         add_rot(b, f"tail_{ti + 1}", 64, [0, 0, 0])
 
     for hi in range(1, 5):
@@ -1883,20 +2204,33 @@ def build_animations() -> dict:
     add_pos(b, "body", 34, [0, -7.2, 0], "easeOutBounce")
     add_pos(b, "body", 60, [0, -7.5, 0], "linear")
 
-    add_rot(b, "chest", 0,  [0, 0, 0])
-    add_rot(b, "chest", 14, [-12, 0, 0], "easeOutCubic")
-    add_rot(b, "chest", 36, [10, 0, 8],  "easeInCubic")
-    add_rot(b, "chest", 60, [12, 0, 10], "linear")
+    add_rot(b, "chest_rear", 0,  [0, 0, 0])
+    add_rot(b, "chest_rear", 14, [-5, 0, 0], "easeOutCubic")
+    add_rot(b, "chest_rear", 36, [5, 0, 4],  "easeInCubic")
+    add_rot(b, "chest_rear", 60, [6, 0, 5],  "linear")
 
+    add_rot(b, "chest", 0,  [0, 0, 0])
+    add_rot(b, "chest", 14, [-7, 0, 0], "easeOutCubic")
+    add_rot(b, "chest", 36, [6, 0, 5],  "easeInCubic")
+    add_rot(b, "chest", 60, [8, 0, 6],  "linear")
+
+    for lname, s in (("leg_fl", 1), ("leg_fr", -1)):
+        add_rot(b, f"{lname}_shoulder", 0,  [0, 0, 0])
+        add_rot(b, f"{lname}_shoulder", 34, [6, 0, s * 10], "easeOutCubic")
+        add_rot(b, f"{lname}_shoulder", 60, [8, 0, s * 12], "linear")
     for lname, s in (("leg_fl", 1), ("leg_fr", -1), ("leg_bl", 1), ("leg_br", -1)):
         add_rot(b, lname, 0,  [0, 0, 0])
         add_rot(b, lname, 34, [12, 0, s * 28], "easeOutCubic")
         add_rot(b, lname, 60, [14, 0, s * 32], "linear")
+    for lname in ("leg_bl", "leg_br"):
+        add_rot(b, f"{lname}_ankle", 0,  [0, 0, 0])
+        add_rot(b, f"{lname}_ankle", 34, [16, 0, 0], "easeOutCubic")
+        add_rot(b, f"{lname}_ankle", 60, [20, 0, 0], "linear")
 
-    for ti in range(7):
+    for ti in range(9):
         add_rot(b, f"tail_{ti + 1}", 0,  [0, 0, 0])
-        add_rot(b, f"tail_{ti + 1}", 42, [-14 - ti * 1.5, 8, 0], "easeOutCubic")
-        add_rot(b, f"tail_{ti + 1}", 60, [-16 - ti * 1.5, 10, 0], "linear")
+        add_rot(b, f"tail_{ti + 1}", 42, [-12 - ti * 1.2, 8, 0], "easeOutCubic")
+        add_rot(b, f"tail_{ti + 1}", 60, [-14 - ti * 1.2, 10, 0], "linear")
 
     for hi in range(1, 5):
         s = +1 if hi <= 2 else -1

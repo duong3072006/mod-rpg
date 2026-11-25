@@ -100,12 +100,9 @@ public final class AbyssCommands {
                         .requires(AbyssCommands::canRunDebug)
                         .then(Commands.argument("god", StringArgumentType.word())
                                 .suggests((ctx, builder) -> {
-                                    builder.suggest("quetzalcoatl");
-                                    builder.suggest("apep");
                                     builder.suggest("fenrir");
                                     builder.suggest("hydra");
                                     builder.suggest("jormungandr");
-                                    builder.suggest("tiamat");
                                     builder.suggest("leviathan");
                                     return builder.buildFuture();
                                 })
@@ -116,7 +113,7 @@ public final class AbyssCommands {
                                     int bossType = MythicSummonAltarBlock.parseGodType(godName);
                                     if (bossType < 0) {
                                         ctx.getSource().sendFailure(Component.literal(
-                                                "Use: quetzalcoatl | apep | fenrir | hydra | jormungandr | tiamat | leviathan"));
+                                                "Use: fenrir | hydra | jormungandr | leviathan"));
                                         return 0;
                                     }
                                     BlockPos origin = player.blockPosition().offset(0, 0, 44);
@@ -2081,13 +2078,13 @@ public final class AbyssCommands {
                     && legs.has(DataComponents.FIRE_RESISTANT) && boots.has(DataComponents.FIRE_RESISTANT);
             boolean coreGlintOk = core.hasFoil();
             boolean repairOk = mat.repairIngredient().get().test(shard);
-            boolean durOk = helm.getMaxDamage() == 407 && chest.getMaxDamage() == 592
-                    && legs.getMaxDamage() == 555 && boots.getMaxDamage() == 481;
+            boolean durOk = helm.getMaxDamage() == 1221 && chest.getMaxDamage() == 1776
+                    && legs.getMaxDamage() == 1665 && boots.getMaxDamage() == 1443;
             boolean cfgOk = cfg.configVersion == ArmorConfig.CURRENT_CONFIG_VERSION
-                    && cfg.durabilityMultiplier == 37
-                    && Math.abs(cfg.setBonusMaxHealth - 4.0) < 1e-6;
-            boolean statsOk = cfgOk && (defTotal == 20)
-                    && Math.abs(mat.toughness() - 3.0F) < 0.01F
+                    && cfg.durabilityMultiplier == 111
+                    && Math.abs(cfg.setBonusMaxHealth - 20.0) < 1e-6;
+            boolean statsOk = cfgOk && (defTotal == 50)
+                    && Math.abs(mat.toughness() - 7.5F) < 0.01F
                     && Math.abs(mat.knockbackResistance() - 0.10F) < 0.005F
                     && durOk && fireResOk && coreGlintOk && repairOk;
 
@@ -2101,7 +2098,7 @@ public final class AbyssCommands {
                     && unbreak.canEnchant(chest) && mending.canEnchant(chest)
                     && resp.canEnchant(helm) && ff.canEnchant(boots);
 
-            AbyssalRpgMod.LOGGER.info("[ARMOR_AUDIT] 1. STATS & MATERIAL (cfg v{}): def={} (3/8/6/3) tough={} kbRes={} dur={}/{}/{}/{} fireRes={} coreGlint={} repairShard={} vanillaEnch={} -> {}",
+            AbyssalRpgMod.LOGGER.info("[ARMOR_AUDIT] 1. STATS & MATERIAL (cfg v{}): def={} (8/20/15/7) tough={} kbRes={} dur={}/{}/{}/{} fireRes={} coreGlint={} repairShard={} vanillaEnch={} -> {}",
                     cfg.configVersion, defTotal, mat.toughness(), mat.knockbackResistance(),
                     helm.getMaxDamage(), chest.getMaxDamage(), legs.getMaxDamage(), boots.getMaxDamage(),
                     fireResOk, coreGlintOk, repairOk, vanillaEnchOk,
@@ -2189,14 +2186,14 @@ public final class AbyssCommands {
                     p1InterceptedAlive, coreDrops, rolls, String.format("%.2f", coreRatePct),
                     shardDropsRolls, rolls, minShards, maxShards, lootOk ? "PASS" : "FAIL");
 
-            // 4. Full Set Bonus 4/4 mới (Kháng Lửa I, Kháng Cự II, +4.0 MAX_HEALTH, không cộng dồn, không ghi đè Kháng Cự III+, không chạm BossHealthHolder)
+            // 4. Full Set Bonus 4/4 mới (Speed II, Strength II, Resistance II, Absorption I, Regeneration I, +20.0 MAX_HEALTH = +10 tim)
             tester.setItemSlot(EquipmentSlot.HEAD, helm.copy());
             tester.setItemSlot(EquipmentSlot.CHEST, chest.copy());
             tester.setItemSlot(EquipmentSlot.LEGS, legs.copy());
             tester.setItemSlot(EquipmentSlot.FEET, boots.copy());
             int equipped4 = NightmareArmorHandler.countEquippedPieces(tester);
 
-            // Sync 2 lần liên tiếp mô phỏng relog/đổi world -> MAX_HEALTH phải đúng 24.0 (0 cộng dồn)
+            // Sync 2 lần liên tiếp mô phỏng relog/đổi world -> MAX_HEALTH phải đúng 40.0 (0 cộng dồn)
             NightmareArmorHandler.syncPlayerImmediate(tester);
             NightmareArmorHandler.syncPlayerImmediate(tester);
 
@@ -2205,15 +2202,19 @@ public final class AbyssCommands {
             boolean hasMod4 = maxHpAttr != null && maxHpAttr.getModifier(NightmareArmorHandler.SET_HEALTH_MODIFIER_ID) != null;
 
             MobEffectInstance fireEff = tester.getEffect(MobEffects.FIRE_RESISTANCE);
+            MobEffectInstance spdEff = tester.getEffect(MobEffects.MOVEMENT_SPEED);
+            MobEffectInstance strEff = tester.getEffect(MobEffects.DAMAGE_BOOST);
             MobEffectInstance resEff = tester.getEffect(MobEffects.DAMAGE_RESISTANCE);
-            boolean fireOk = fireEff != null && fireEff.getAmplifier() == 0
-                    && fireEff.isAmbient() && !fireEff.isVisible() && fireEff.showIcon()
-                    && fireEff.getDuration() >= 50 && fireEff.getDuration() <= 60;
-            boolean resOk = resEff != null && resEff.getAmplifier() == 1
-                    && resEff.isAmbient() && !resEff.isVisible() && resEff.showIcon()
-                    && resEff.getDuration() >= 50 && resEff.getDuration() <= 60;
+            MobEffectInstance absEff = tester.getEffect(MobEffects.ABSORPTION);
+            MobEffectInstance regEff = tester.getEffect(MobEffects.REGENERATION);
+            boolean fireOk = fireEff != null && fireEff.getAmplifier() == 0 && fireEff.isAmbient() && !fireEff.isVisible() && fireEff.showIcon();
+            boolean spdOk = spdEff != null && spdEff.getAmplifier() == 1 && spdEff.isAmbient() && !spdEff.isVisible() && spdEff.showIcon();
+            boolean strOk = strEff != null && strEff.getAmplifier() == 1 && strEff.isAmbient() && !strEff.isVisible() && strEff.showIcon();
+            boolean resOk = resEff != null && resEff.getAmplifier() == 1 && resEff.isAmbient() && !resEff.isVisible() && resEff.showIcon();
+            boolean absOk = absEff != null && absEff.getAmplifier() == 0 && absEff.isAmbient() && !absEff.isVisible() && absEff.showIcon();
+            boolean regOk = regEff != null && regEff.getAmplifier() == 0 && regEff.isAmbient() && !regEff.isVisible() && regEff.showIcon();
 
-            // Test không ghi đè Kháng Cự cấp cao hơn (Resistance III amp=2)
+            // Test không ghi đè Đề Kháng cấp cao hơn (Resistance III amp=2)
             tester.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 200, 2, false, true, true));
             NightmareArmorHandler.applyPeriodicSetEffects(tester);
             MobEffectInstance res3After = tester.getEffect(MobEffects.DAMAGE_RESISTANCE);
@@ -2224,8 +2225,8 @@ public final class AbyssCommands {
             AttributeInstance bossHpAttr = boss.getAttribute(Attributes.MAX_HEALTH);
             boolean bossSafeOk = bossHpAttr == null || bossHpAttr.getModifier(NightmareArmorHandler.SET_HEALTH_MODIFIER_ID) == null;
 
-            // Test tháo 1 món -> MAX_HEALTH lập tức về 20.0, health clamp từ 24.0 về 20.0, 0 modifier thừa
-            tester.setHealth(24.0F);
+            // Test tháo 1 món -> MAX_HEALTH lập tức về 20.0, health clamp từ 40.0 về 20.0, 0 modifier thừa
+            tester.setHealth(40.0F);
             tester.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
             NightmareArmorHandler.syncMaxHealthModifier(tester);
             float maxHp3 = tester.getMaxHealth();
@@ -2233,20 +2234,18 @@ public final class AbyssCommands {
             boolean modRemoved3 = maxHpAttr != null && maxHpAttr.getModifier(NightmareArmorHandler.SET_HEALTH_MODIFIER_ID) == null;
 
             boolean setBonusSyncOk = (equipped4 == 4)
-                    && Math.abs(maxHp4 - 24.0F) < 0.01F && hasMod4
-                    && fireOk && resOk && higherResPreservedOk && bossSafeOk
+                    && Math.abs(maxHp4 - 40.0F) < 0.01F && hasMod4
+                    && fireOk && spdOk && strOk && resOk && absOk && regOk && higherResPreservedOk && bossSafeOk
                     && Math.abs(maxHp3 - 20.0F) < 0.01F && Math.abs(hpClamped3 - 20.0F) < 0.01F && modRemoved3;
 
-            AbyssalRpgMod.LOGGER.info("[ARMOR_AUDIT] 4. FULL SET BONUS 4/4 (EQUIP/UNEQUIP/GUARD): pieces={} maxHP4={} mod4={} fireRes(amp0,{}t)={} resII(amp1,{}t)={} keepResIII={} bossSafe={} unequipMaxHP={} clampHP={} modGone={} -> {}",
+            AbyssalRpgMod.LOGGER.info("[ARMOR_AUDIT] 4. FULL SET BONUS 4/4 (EQUIP/UNEQUIP/GUARD): pieces={} maxHP4={} mod4={} fire={} spdII={} strII={} resII={} absI={} regI={} keepResIII={} bossSafe={} unequipMaxHP={} clampHP={} modGone={} -> {}",
                     equipped4, String.format("%.1f", maxHp4), hasMod4,
-                    fireEff != null ? fireEff.getDuration() : -1, fireOk,
-                    resEff != null ? resEff.getDuration() : -1, resOk,
+                    fireOk, spdOk, strOk, resOk, absOk, regOk,
                     higherResPreservedOk, bossSafeOk,
                     String.format("%.1f", maxHp3), String.format("%.1f", hpClamped3), modRemoved3,
                     setBonusSyncOk ? "PASS" : "FAIL");
 
-            // 5. Real-tick expiry check (65 server ticks ~3.25s) trên thực thể sống trong level:
-            // mặc 4/4 nhận đủ 24.0 HP + 2 buff -> tháo 1 món -> MAX_HEALTH về 20.0 ngay & 2 buff tự hết sạch sau ~3s!
+            // 5. Real-tick expiry check (165 server ticks ~8.25s) trên thực thể sống trong level:
             wearer = EntityType.ZOMBIE.create(level);
             if (wearer == null) {
                 throw new IllegalStateException("Không thể tạo Zombie real-tick audit");
@@ -2263,9 +2262,13 @@ public final class AbyssCommands {
             NightmareArmorHandler.syncPlayerImmediate(wearer);
             float wearerHp4 = wearer.getMaxHealth();
             wearer.setHealth(wearerHp4);
-            boolean wearerBuffsOn4 = Math.abs(wearerHp4 - 24.0F) < 0.01F
+            boolean wearerBuffsOn4 = Math.abs(wearerHp4 - 40.0F) < 0.01F
                     && wearer.hasEffect(MobEffects.FIRE_RESISTANCE)
-                    && wearer.hasEffect(MobEffects.DAMAGE_RESISTANCE);
+                    && wearer.hasEffect(MobEffects.MOVEMENT_SPEED)
+                    && wearer.hasEffect(MobEffects.DAMAGE_BOOST)
+                    && wearer.hasEffect(MobEffects.DAMAGE_RESISTANCE)
+                    && wearer.hasEffect(MobEffects.ABSORPTION)
+                    && wearer.hasEffect(MobEffects.REGENERATION);
 
             // Tháo mũ ngay tại tick 0 -> máu về 20.0 & 2 buff sẽ tự đếm ngược hết sạch trong 65 ticks!
             wearer.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
@@ -2345,23 +2348,27 @@ public final class AbyssCommands {
             if (this.elapsedTicks % 20 == 0) {
                 NightmareArmorHandler.applyPeriodicSetEffects(this.wearer);
             }
-            if (this.elapsedTicks >= 65) {
+            if (this.elapsedTicks >= 165) {
                 boolean fireGone = !this.wearer.hasEffect(MobEffects.FIRE_RESISTANCE);
+                boolean spdGone = !this.wearer.hasEffect(MobEffects.MOVEMENT_SPEED);
+                boolean strGone = !this.wearer.hasEffect(MobEffects.DAMAGE_BOOST);
                 boolean resGone = !this.wearer.hasEffect(MobEffects.DAMAGE_RESISTANCE);
+                boolean absGone = !this.wearer.hasEffect(MobEffects.ABSORPTION);
+                boolean regGone = !this.wearer.hasEffect(MobEffects.REGENERATION);
                 AttributeInstance attr = this.wearer.getAttribute(Attributes.MAX_HEALTH);
                 boolean modStillGone = attr != null
                         && attr.getModifier(NightmareArmorHandler.SET_HEALTH_MODIFIER_ID) == null
                         && Math.abs(this.wearer.getMaxHealth() - 20.0F) < 0.01F;
-                boolean expiryOk = fireGone && resGone && modStillGone;
-                AbyssalRpgMod.LOGGER.info("[ARMOR_AUDIT] 5. REAL-TICK EXPIRY (65 ticks after unequip): fireGone={} resGone={} maxHP={} modGone={} -> {}",
-                        fireGone, resGone, String.format("%.1f", this.wearer.getMaxHealth()), modStillGone,
+                boolean expiryOk = fireGone && spdGone && strGone && resGone && absGone && regGone && modStillGone;
+                AbyssalRpgMod.LOGGER.info("[ARMOR_AUDIT] 5. REAL-TICK EXPIRY (165 ticks after unequip): fireGone={} spdGone={} strGone={} resGone={} absGone={} regGone={} maxHP={} modGone={} -> {}",
+                        fireGone, spdGone, strGone, resGone, absGone, regGone, String.format("%.1f", this.wearer.getMaxHealth()), modStillGone,
                         expiryOk ? "PASS" : "FAIL");
                 this.wearer.discard();
 
                 boolean allPass = this.syncStagesOk && expiryOk;
                 AbyssalRpgMod.LOGGER.info("[ARMOR_AUDIT] === TỔNG KẾT: {} ===", allPass ? "ALL_PASS" : "FAIL");
                 this.source.sendSuccess(() -> Component.literal(String.format(
-                        "[Nightmare Armor Audit] %s | Def=%d (3/8/6/3) Tough=%.1f KB=%.2f Dur=%d/%d/%d/%d | Recipes=4/4 | Core=%.2f%% Shards=%d..%d | 4/4 MaxHP=%.1f->%.1f FireRes+ResII Expiry=%s",
+                        "[Nightmare Armor Audit] %s | Def=%d (8/20/15/7) Tough=%.1f KB=%.2f Dur=%d/%d/%d/%d | Recipes=4/4 | Core=%.2f%% Shards=%d..%d | 4/4 MaxHP=%.1f->%.1f Fire+SpdII+StrII+ResII+AbsI+RegI Expiry=%s",
                         allPass ? "ALL PASS" : "FAIL", this.defTotal, this.toughness, this.kbRes,
                         this.durH, this.durC, this.durL, this.durB,
                         this.coreRatePct, this.minShards, this.maxShards,

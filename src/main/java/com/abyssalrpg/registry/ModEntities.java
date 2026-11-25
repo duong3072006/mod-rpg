@@ -1,19 +1,14 @@
 package com.abyssalrpg.registry;
 
 import com.abyssalrpg.AbyssalRpgMod;
-import com.abyssalrpg.entity.AbyssalKnightBossEntity;
-import com.abyssalrpg.entity.CryptLichBossEntity;
-import com.abyssalrpg.entity.MoltenTitanBossEntity;
-import com.abyssalrpg.entity.mythic.ApepBossEntity;
 import com.abyssalrpg.entity.mythic.CerberusBossEntity;
 import com.abyssalrpg.entity.mythic.CinderDragonBossEntity;
+import com.abyssalrpg.entity.mythic.CyclopsWardenBossEntity;
 import com.abyssalrpg.entity.mythic.FenrirBossEntity;
 import com.abyssalrpg.entity.mythic.HydraBossEntity;
 import com.abyssalrpg.entity.mythic.JormungandrBossEntity;
 import com.abyssalrpg.entity.mythic.LeviathanBossEntity;
 import com.abyssalrpg.entity.mythic.NightmareKnightBossEntity;
-import com.abyssalrpg.entity.mythic.QuetzalcoatlBossEntity;
-import com.abyssalrpg.entity.mythic.TiamatBossEntity;
 import com.abyssalrpg.entity.mythic.cinder.CinderDragonHitboxPartEntity;
 import com.abyssalrpg.entity.mythic.hydra.HydraHitboxPartEntity;
 import com.abyssalrpg.entity.mythic.jormungandr.JormungandrHitboxPartEntity;
@@ -33,19 +28,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 
 public final class ModEntities {
-    // 4 Colossal Monster Bosses (compact base hitboxes multiplied by 3.0x..5.45x Attributes.SCALE!)
-    public static final EntityType<AbyssalKnightBossEntity> ABYSSAL_KNIGHT_BOSS = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE, AbyssalRpgMod.id("abyssal_knight_boss"),
-            EntityType.Builder.of(AbyssalKnightBossEntity::new, MobCategory.MONSTER).sized(1.05f, 1.15f).fireImmune().clientTrackingRange(128).build()
-    );
-    public static final EntityType<CryptLichBossEntity> CRYPT_LICH_BOSS = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE, AbyssalRpgMod.id("crypt_lich_boss"),
-            EntityType.Builder.of(CryptLichBossEntity::new, MobCategory.MONSTER).sized(1.25f, 0.95f).fireImmune().clientTrackingRange(128).build()
-    );
-    public static final EntityType<MoltenTitanBossEntity> MOLTEN_TITAN_BOSS = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE, AbyssalRpgMod.id("molten_titan_boss"),
-            EntityType.Builder.of(MoltenTitanBossEntity::new, MobCategory.MONSTER).sized(1.20f, 1.25f).fireImmune().clientTrackingRange(128).build()
-    );
+    // Core Colossal Boss (Cinder Dragon)
     public static final EntityType<CinderDragonBossEntity> CINDER_DRAGON = Registry.register(
             BuiltInRegistries.ENTITY_TYPE, AbyssalRpgMod.id("cinder_dragon"),
             EntityType.Builder.of(CinderDragonBossEntity::new, MobCategory.MONSTER)
@@ -69,18 +52,16 @@ public final class ModEntities {
                     .build()
     );
 
-    // 7 Legendary Mythological Titan Bosses (Quetzalcoatl, Apep, Fenrir, Hydra, Jormungandr, Tiamat, Leviathan)
-    public static final EntityType<QuetzalcoatlBossEntity> QUETZALCOATL_BOSS = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE, AbyssalRpgMod.id("quetzalcoatl_boss"),
-            EntityType.Builder.of(QuetzalcoatlBossEntity::new, MobCategory.MONSTER).sized(1.20f, 1.20f).fireImmune().clientTrackingRange(160).build()
-    );
-    public static final EntityType<ApepBossEntity> APEP_BOSS = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE, AbyssalRpgMod.id("apep_boss"),
-            EntityType.Builder.of(ApepBossEntity::new, MobCategory.MONSTER).sized(1.20f, 1.35f).fireImmune().clientTrackingRange(144).build()
-    );
+    // Legendary Mythological Titan Bosses (Fenrir, Spirit Hydra, Jormungandr, Leviathan, Cerberus, Nightmare Knight)
     public static final EntityType<FenrirBossEntity> FENRIR_BOSS = Registry.register(
             BuiltInRegistries.ENTITY_TYPE, AbyssalRpgMod.id("fenrir_boss"),
-            EntityType.Builder.of(FenrirBossEntity::new, MobCategory.MONSTER).sized(1.15f, 1.35f).fireImmune().clientTrackingRange(128).build()
+            EntityType.Builder.of(FenrirBossEntity::new, MobCategory.MONSTER)
+                    .sized(FenrirBossEntity.HITBOX_WIDTH, FenrirBossEntity.HITBOX_HEIGHT)
+                    .eyeHeight(FenrirBossEntity.HITBOX_EYE_HEIGHT)
+                    .fireImmune()
+                    .clientTrackingRange(24)
+                    .updateInterval(2)
+                    .build()
     );
     public static final EntityType<HydraBossEntity> HYDRA_BOSS = Registry.register(
             BuiltInRegistries.ENTITY_TYPE, AbyssalRpgMod.id("spirit_hydra"),
@@ -135,10 +116,6 @@ public final class ModEntities {
                     .clientTrackingRange(24)
                     .updateInterval(1)
                     .build()
-    );
-    public static final EntityType<TiamatBossEntity> TIAMAT_BOSS = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE, AbyssalRpgMod.id("tiamat_boss"),
-            EntityType.Builder.of(TiamatBossEntity::new, MobCategory.MONSTER).sized(1.30f, 1.35f).fireImmune().clientTrackingRange(160).build()
     );
     public static final EntityType<LeviathanBossEntity> LEVIATHAN_BOSS = Registry.register(
             BuiltInRegistries.ENTITY_TYPE, AbyssalRpgMod.id("leviathan"),
@@ -195,6 +172,15 @@ public final class ModEntities {
                     .updateInterval(2)
                     .build()
     );
+    public static final EntityType<CyclopsWardenBossEntity> CYCLOPS_WARDEN = Registry.register(
+            BuiltInRegistries.ENTITY_TYPE, AbyssalRpgMod.id("cyclops_warden"),
+            EntityType.Builder.of(CyclopsWardenBossEntity::new, MobCategory.MONSTER)
+                    .sized(CyclopsWardenBossEntity.HITBOX_WIDTH, CyclopsWardenBossEntity.HITBOX_HEIGHT)
+                    .eyeHeight(CyclopsWardenBossEntity.HITBOX_EYE_HEIGHT)
+                    .clientTrackingRange(16)
+                    .updateInterval(2)
+                    .build()
+    );
 
     // 5 Custom 3D Rendered Boss Spell & VFX Entities
     public static final EntityType<MagicCircleEntity> MAGIC_CIRCLE = Registry.register(
@@ -223,19 +209,14 @@ public final class ModEntities {
     );
 
     public static void init() {
-        FabricDefaultAttributeRegistry.register(ABYSSAL_KNIGHT_BOSS, AbyssalKnightBossEntity.createBossAttributes());
-        FabricDefaultAttributeRegistry.register(CRYPT_LICH_BOSS, CryptLichBossEntity.createBossAttributes());
-        FabricDefaultAttributeRegistry.register(MOLTEN_TITAN_BOSS, MoltenTitanBossEntity.createBossAttributes());
         FabricDefaultAttributeRegistry.register(CINDER_DRAGON, CinderDragonBossEntity.createBossAttributes());
-        FabricDefaultAttributeRegistry.register(QUETZALCOATL_BOSS, QuetzalcoatlBossEntity.createBossAttributes());
-        FabricDefaultAttributeRegistry.register(APEP_BOSS, ApepBossEntity.createBossAttributes());
         FabricDefaultAttributeRegistry.register(FENRIR_BOSS, FenrirBossEntity.createBossAttributes());
         FabricDefaultAttributeRegistry.register(HYDRA_BOSS, HydraBossEntity.createBossAttributes());
         FabricDefaultAttributeRegistry.register(JORMUNGANDR_BOSS, JormungandrBossEntity.createBossAttributes());
-        FabricDefaultAttributeRegistry.register(TIAMAT_BOSS, TiamatBossEntity.createBossAttributes());
         FabricDefaultAttributeRegistry.register(LEVIATHAN_BOSS, LeviathanBossEntity.createBossAttributes());
         FabricDefaultAttributeRegistry.register(CERBERUS, CerberusBossEntity.createBossAttributes());
         FabricDefaultAttributeRegistry.register(NIGHTMARE_KNIGHT, NightmareKnightBossEntity.createBossAttributes());
+        FabricDefaultAttributeRegistry.register(CYCLOPS_WARDEN, CyclopsWardenBossEntity.createBossAttributes());
     }
 
     private ModEntities() {}
