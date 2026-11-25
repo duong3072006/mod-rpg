@@ -44,6 +44,14 @@ public final class ModCreativeTab {
                         }
                         output.accept(ModItems.CINDER_DRAGON_HEART);
                         output.accept(ModItems.CINDER_DRAGON_SCALE);
+                        if (ModItems.SPIRIT_HYDRA_HELMET != null) {
+                            output.accept(ModItems.SPIRIT_HYDRA_HELMET);
+                            output.accept(ModItems.SPIRIT_HYDRA_CHESTPLATE);
+                            output.accept(ModItems.SPIRIT_HYDRA_LEGGINGS);
+                            output.accept(ModItems.SPIRIT_HYDRA_BOOTS);
+                        }
+                        output.accept(ModItems.SPIRIT_HYDRA_HEART);
+                        output.accept(ModItems.SPIRIT_HYDRA_SCALE);
                         params.holders().lookup(Registries.ENCHANTMENT).ifPresent(enchantRegistry -> {
                             for (ResourceKey<Enchantment> key : ModEnchantments.ALL_DUAL_KNIFE_ENCHANTS) {
                                 enchantRegistry.get(key).ifPresent(holder -> {

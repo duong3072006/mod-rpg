@@ -1,0 +1,43 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_diamond_leggings": {
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:diamond_leggings"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_spirit_hydra_scale": {
+      "conditions": {
+        "items": [
+          {
+            "items": "abyssalrpg:spirit_hydra_scale"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "abyssalrpg:spirit_hydra_leggings"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_spirit_hydra_scale",
+      "has_diamond_leggings"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "abyssalrpg:spirit_hydra_leggings"
+    ]
+  }
+}

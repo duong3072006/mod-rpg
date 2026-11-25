@@ -5,6 +5,7 @@ import com.abyssalrpg.api.BossHealthHolder;
 import com.abyssalrpg.combat.BossCombatEnhancer;
 import com.abyssalrpg.combat.CinderDragonArmorHandler;
 import com.abyssalrpg.combat.DualBladeCombatHandler;
+import com.abyssalrpg.combat.SpiritHydraArmorHandler;
 import com.abyssalrpg.combat.TogetsuCombatHandler;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import net.minecraft.nbt.CompoundTag;
@@ -108,6 +109,7 @@ public abstract class LivingEntityMixin {
             DualBladeCombatHandler.onLivingHurtReturn(self, source, true);
             TogetsuCombatHandler.onLivingHurtReturn(self, source, true);
             CinderDragonArmorHandler.onTargetHurtByAttacker(self, source);
+            SpiritHydraArmorHandler.onTargetHurtByAttacker(self, source);
             BossCombatEnhancer.onLivingHurtByBoss(self, source, amount);
         }
     }

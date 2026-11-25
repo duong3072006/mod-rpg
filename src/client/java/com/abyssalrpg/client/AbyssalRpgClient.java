@@ -15,6 +15,7 @@ import com.abyssalrpg.client.renderer.LeviathanGeoRenderer;
 import com.abyssalrpg.client.renderer.NightmareArmorRenderer;
 import com.abyssalrpg.client.renderer.NightmareHitboxPartRenderer;
 import com.abyssalrpg.client.renderer.NightmareKnightGeoRenderer;
+import com.abyssalrpg.client.renderer.SpiritHydraArmorRenderer;
 import com.abyssalrpg.client.renderer.SpiritHydraGeoRenderer;
 import com.abyssalrpg.client.renderer.TogetsuGeoRenderer;
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
@@ -42,6 +43,7 @@ import com.abyssalrpg.entity.mythic.cerberus.CerberusForm;
 import com.abyssalrpg.item.CinderDragonArmorItem;
 import com.abyssalrpg.item.DualBladeItem;
 import com.abyssalrpg.item.NightmareArmorItem;
+import com.abyssalrpg.item.SpiritHydraArmorItem;
 import com.abyssalrpg.network.CerberusVfxPayload;
 import com.abyssalrpg.network.CinderDragonVfxPayload;
 import com.abyssalrpg.network.DualBladeComboPayload;
@@ -192,10 +194,26 @@ public class AbyssalRpgClient implements ClientModInitializer {
             }
         };
 
-        // Hiển thị ngay mô tả % rõ ràng trên Sách Enchant, Dual Knife, Nightmare Knight Armor & Cinder Dragon Armor
+        // Bơm GeoArmorRenderer 3D + AutoGlowingGeoLayer chọn lọc cho bộ 4 món Giáp Spirit Hydra
+        SpiritHydraArmorItem.clientRenderProviderFactory = () -> new GeoRenderProvider() {
+            private SpiritHydraArmorRenderer renderer;
+
+            @Override
+            public <T extends LivingEntity> HumanoidModel<?> getGeoArmorRenderer(
+                    @Nullable T livingEntity, ItemStack itemStack, @Nullable EquipmentSlot equipmentSlot,
+                    @Nullable HumanoidModel<T> original) {
+                if (this.renderer == null) {
+                    this.renderer = new SpiritHydraArmorRenderer();
+                }
+                return this.renderer;
+            }
+        };
+
+        // Hiển thị ngay mô tả % rõ ràng trên Sách Enchant, Dual Knife, Nightmare Knight, Cinder Dragon & Spirit Hydra Armor
         ItemTooltipCallback.EVENT.register(DualBladeTooltipHandler::onItemTooltip);
         ItemTooltipCallback.EVENT.register(NightmareArmorTooltipHandler::onItemTooltip);
         ItemTooltipCallback.EVENT.register(CinderDragonArmorTooltipHandler::onItemTooltip);
+        ItemTooltipCallback.EVENT.register(SpiritHydraArmorTooltipHandler::onItemTooltip);
 
         // Render vệt kiếm thư pháp đôi Catmull-Rom (`DualBladeTrailRenderer`) & Song Nguyệt (`TogetsuVfxRenderer`)
         WorldRenderEvents.AFTER_TRANSLUCENT.register(context -> {

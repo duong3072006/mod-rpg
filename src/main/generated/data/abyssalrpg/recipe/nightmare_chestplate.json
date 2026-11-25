@@ -2,19 +2,19 @@
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
   "key": {
-    "C": {
-      "item": "abyssalrpg:nightmare_core"
+    "D": {
+      "item": "minecraft:diamond_chestplate"
     },
-    "N": {
-      "item": "minecraft:netherite_chestplate"
+    "H": {
+      "item": "abyssalrpg:nightmare_core"
     },
     "S": {
       "item": "abyssalrpg:nightmare_armor_shard"
     }
   },
   "pattern": [
-    "SNS",
-    "SCS",
+    "SDS",
+    "SHS",
     "SSS"
   ],
   "result": {

@@ -2,13 +2,16 @@
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
   "key": {
+    "D": {
+      "item": "minecraft:diamond_helmet"
+    },
     "S": {
       "item": "abyssalrpg:cinder_dragon_scale"
     }
   },
   "pattern": [
     "SSS",
-    "S S"
+    "SDS"
   ],
   "result": {
     "count": 1,

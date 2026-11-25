@@ -6,6 +6,8 @@ import com.abyssalrpg.item.CinderDragonHeartItem;
 import com.abyssalrpg.item.DualBladeItem;
 import com.abyssalrpg.item.NightmareArmorItem;
 import com.abyssalrpg.item.NightmareCoreItem;
+import com.abyssalrpg.item.SpiritHydraArmorItem;
+import com.abyssalrpg.item.SpiritHydraHeartItem;
 import com.abyssalrpg.item.TogetsuItem;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -47,6 +49,11 @@ public final class ModItems {
     public static final Item CINDER_DRAGON_SCALE = register("cinder_dragon_scale",
             new Item(new Item.Properties().rarity(Rarity.RARE).fireResistant()));
 
+    // Spirit Hydra Boss Armor Materials (Phase 2 Drops)
+    public static final Item SPIRIT_HYDRA_HEART = register("spirit_hydra_heart", new SpiritHydraHeartItem());
+    public static final Item SPIRIT_HYDRA_SCALE = register("spirit_hydra_scale",
+            new Item(new Item.Properties().rarity(Rarity.RARE).fireResistant()));
+
     // Endgame 4-Piece Nightmare Knight 3D Armor Set (GeckoLib GeoArmorRenderer)
     public static Item NIGHTMARE_HELMET;
     public static Item NIGHTMARE_CHESTPLATE;
@@ -58,6 +65,12 @@ public final class ModItems {
     public static Item CINDER_DRAGON_CHESTPLATE;
     public static Item CINDER_DRAGON_LEGGINGS;
     public static Item CINDER_DRAGON_BOOTS;
+
+    // Endgame 4-Piece Spirit Hydra 3D Armor Set (GeckoLib GeoArmorRenderer + AutoGlowingGeoLayer)
+    public static Item SPIRIT_HYDRA_HELMET;
+    public static Item SPIRIT_HYDRA_CHESTPLATE;
+    public static Item SPIRIT_HYDRA_LEGGINGS;
+    public static Item SPIRIT_HYDRA_BOOTS;
 
     // Signature Two-Handed Weapons (`abyssalrpg:dual_knife` & transforming `abyssalrpg:togetsu`)
     public static Item DUAL_KNIFE;
@@ -93,6 +106,11 @@ public final class ModItems {
         CINDER_DRAGON_CHESTPLATE = register("cinder_dragon_chestplate", new CinderDragonArmorItem(ArmorItem.Type.CHESTPLATE));
         CINDER_DRAGON_LEGGINGS = register("cinder_dragon_leggings", new CinderDragonArmorItem(ArmorItem.Type.LEGGINGS));
         CINDER_DRAGON_BOOTS = register("cinder_dragon_boots", new CinderDragonArmorItem(ArmorItem.Type.BOOTS));
+
+        SPIRIT_HYDRA_HELMET = register("spirit_hydra_helmet", new SpiritHydraArmorItem(ArmorItem.Type.HELMET));
+        SPIRIT_HYDRA_CHESTPLATE = register("spirit_hydra_chestplate", new SpiritHydraArmorItem(ArmorItem.Type.CHESTPLATE));
+        SPIRIT_HYDRA_LEGGINGS = register("spirit_hydra_leggings", new SpiritHydraArmorItem(ArmorItem.Type.LEGGINGS));
+        SPIRIT_HYDRA_BOOTS = register("spirit_hydra_boots", new SpiritHydraArmorItem(ArmorItem.Type.BOOTS));
 
         DUAL_KNIFE = register("dual_knife", new DualBladeItem());
         TOGETSU = register("togetsu", new TogetsuItem());

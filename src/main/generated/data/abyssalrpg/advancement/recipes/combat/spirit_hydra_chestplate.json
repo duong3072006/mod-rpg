@@ -1,0 +1,54 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_diamond_chestplate": {
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:diamond_chestplate"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_spirit_hydra_heart": {
+      "conditions": {
+        "items": [
+          {
+            "items": "abyssalrpg:spirit_hydra_heart"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_spirit_hydra_scale": {
+      "conditions": {
+        "items": [
+          {
+            "items": "abyssalrpg:spirit_hydra_scale"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "abyssalrpg:spirit_hydra_chestplate"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_spirit_hydra_heart",
+      "has_spirit_hydra_scale",
+      "has_diamond_chestplate"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "abyssalrpg:spirit_hydra_chestplate"
+    ]
+  }
+}
