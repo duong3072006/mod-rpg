@@ -1,0 +1,44 @@
+{
+  "parent": "builtin/entity",
+  "gui_light": "front",
+  "textures": {
+    "particle": "abyssalrpg:item/excalibur"
+  },
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [0, 0, 0],
+      "translation": [0.0, 0.8, 0.0],
+      "scale": [0.92, 0.86, 0.92]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [0, 0, 0],
+      "translation": [0.0, 0.8, 0.0],
+      "scale": [0.92, 0.86, 0.92]
+    },
+    "firstperson_righthand": {
+      "rotation": [-12, 12, 8],
+      "translation": [1.4, 0.2, -0.4],
+      "scale": [0.92, 0.86, 0.92]
+    },
+    "firstperson_lefthand": {
+      "rotation": [-12, 12, 8],
+      "translation": [1.4, 0.2, -0.4],
+      "scale": [0.92, 0.86, 0.92]
+    },
+    "ground": {
+      "rotation": [0, 0, 0],
+      "translation": [0, 3.2, 0],
+      "scale": [0.76, 0.70, 0.76]
+    },
+    "fixed": {
+      "rotation": [0, 90, 0],
+      "translation": [0, -2.0, 0],
+      "scale": [0.84, 0.76, 0.84]
+    },
+    "gui": {
+      "rotation": [0, 0, 0],
+      "translation": [0, 0, 0],
+      "scale": [1.0, 1.0, 1.0]
+    }
+  }
+}

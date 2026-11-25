@@ -22,9 +22,15 @@ import java.nio.file.Path;
  *    Full Set 4/4: Kháng Lửa, Tốc Độ II, Sức Mạnh II, Đề Kháng II, Hấp Thụ I, Hồi Máu I, +20.0 Máu Tối Đa (+10 tim).
  * 2. **Cinder Dragon Armor**: Defense 8/20/15/7 (= 50, ×2.5 Netherite!), Toughness 7.5 (= 30.0), KB Res 0.10 (= 40%),
  *    Độ bền 111x (×3 Netherite: 1221/1776/1665/1443); Full Set 4/4: Kháng Lửa, Đề Kháng I, Sức Mạnh II, Tốc Độ I, Nhảy Cao I, +16.0 Máu Tối Đa (+8 tim).
+ * 3. **Spirit Hydra Armor**: Defense 3/8/6/3 (= 20), Toughness 3.0 (= 12.0), KB Res 0.10 (= 40%),
+ *    Độ bền 37x (407/592/555/481); Full Set 4/4: Hồi Phục II, Thở Dưới Nước, +4.0 Máu Tối Đa,
+ *    Độc II (3s) + Hồn Lửa Xanh (3s) khi đánh trúng.
+ * 4. **Cerberus Armor**: Defense 3/8/6/3 (= 20), Toughness 3.0 (= 12.0), KB Res 0.10 (= 40%),
+ *    Độ bền 37x (407/592/555/481); Full Set 4/4: Kháng Lửa, Tốc Độ I, Sức Mạnh I, +4.0 Máu Tối Đa,
+ *    đòn đánh thiêu đốt Lửa Địa Ngục 4s.
  */
 public final class ArmorConfig {
-    public static final int CURRENT_CONFIG_VERSION = 8;
+    public static final int CURRENT_CONFIG_VERSION = 9;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path CONFIG_PATH = FabricLoader.getInstance()
@@ -109,6 +115,59 @@ public final class ArmorConfig {
     /** Thời lượng mỗi lần cấp hiệu ứng potion (mặc định 60 ticks = 3.0s, 0 nhấp nháy HUD). */
     public int cinderSetBonusEffectDurationTicks = 60;
 
+    // --- Chỉ số Spirit Hydra Armor Material (chuẩn Netherite 37x, chỉnh được độc lập) ---
+    public int hydraHelmetDefense = 3;
+    public int hydraChestplateDefense = 8;
+    public int hydraLeggingsDefense = 6;
+    public int hydraBootsDefense = 3;
+    public float hydraToughness = 3.0f;
+    public float hydraKnockbackResistance = 0.10f;
+    public int hydraDurabilityMultiplier = 37;
+    public int hydraEnchantmentValue = 18;
+    /** Tỉ lệ gốc rơi Trái Tim Hồn Xà (`spirit_hydra_heart`) khi Boss Spirit Hydra chết thật Phase 2 (mặc định 0.05 = 5%). */
+    public float hydraHeartDropChance = 0.05f;
+
+    // --- Full Set Bonus 4/4: Spirit Hydra Set ---
+    public boolean hydraEnableSetBonus = true;
+    /** Cấp Hồi Phục II (`MobEffects.REGENERATION`, amp 1) khi mặc đủ 4/4 Spirit Hydra Armor. */
+    public boolean hydraSetBonusRegeneration = true;
+    public int hydraSetBonusRegenerationAmplifier = 1;
+    /** Cấp Thở Dưới Nước (`MobEffects.WATER_BREATHING`, amp 0) khi mặc đủ 4/4 Spirit Hydra Armor. */
+    public boolean hydraSetBonusWaterBreathing = true;
+    /** Máu tối đa cộng thêm (`ADD_VALUE` trên `Attributes.MAX_HEALTH`, mặc định +4.0 HP = +2 tim). */
+    public double hydraSetBonusMaxHealth = 4.0;
+    /** Thời gian gây Độc II khi đánh trúng mục tiêu (mặc định 3s, 0 để tắt). */
+    public int hydraSetBonusPoisonSeconds = 3;
+    public int hydraSetBonusPoisonAmplifier = 1;
+    /** Thời gian thiêu đốt Hồn Lửa Xanh khi đánh trúng mục tiêu (mặc định 3s, 0 để tắt). */
+    public int hydraSetBonusSoulFlameSeconds = 3;
+    public int hydraSetBonusTickInterval = 20;
+    public int hydraSetBonusEffectDurationTicks = 60;
+
+    // --- Chỉ số Cerberus Armor Material (chuẩn Netherite 37x, chỉnh được độc lập) ---
+    public int cerberusHelmetDefense = 3;
+    public int cerberusChestplateDefense = 8;
+    public int cerberusLeggingsDefense = 6;
+    public int cerberusBootsDefense = 3;
+    public float cerberusToughness = 3.0f;
+    public float cerberusKnockbackResistance = 0.10f;
+    public int cerberusDurabilityMultiplier = 37;
+    public int cerberusEnchantmentValue = 18;
+    /** Tỉ lệ gốc rơi Trái Tim Cerberus (`cerberus_heart`) khi hạ gục Boss Cerberus Phase 2 (mặc định 0.05 = 5%). */
+    public float cerberusHeartDropChance = 0.05f;
+
+    // --- Full Set Bonus 4/4: Cerberus Set ---
+    public boolean cerberusEnableSetBonus = true;
+    public boolean cerberusSetBonusFireResistance = true;
+    public boolean cerberusSetBonusSpeed = true;
+    public int cerberusSetBonusSpeedAmplifier = 0;
+    public boolean cerberusSetBonusStrength = true;
+    public int cerberusSetBonusStrengthAmplifier = 0;
+    public double cerberusSetBonusMaxHealth = 4.0;
+    public int cerberusSetBonusIgniteSeconds = 4;
+    public int cerberusSetBonusTickInterval = 20;
+    public int cerberusSetBonusEffectDurationTicks = 60;
+
     public static ArmorConfig get() {
         return INSTANCE;
     }
@@ -158,7 +217,7 @@ public final class ArmorConfig {
                         if (fileVersion < 6) {
                             loaded.cinderDurabilityMultiplier = 111;
                         }
-                        if (fileVersion < 7) {
+                        if (fileVersion < 9) {
                             loaded.helmetDefense = 8;
                             loaded.chestplateDefense = 20;
                             loaded.leggingsDefense = 15;
@@ -178,9 +237,6 @@ public final class ArmorConfig {
                             loaded.setBonusRegeneration = true;
                             loaded.setBonusRegenerationAmplifier = 0;
                             loaded.setBonusMaxHealth = 20.0;
-                        }
-                        if (fileVersion < 8) {
-                            loaded.setBonusFireResistance = true;
                         }
                         loaded.configVersion = CURRENT_CONFIG_VERSION;
                         migrated = true;
@@ -263,6 +319,51 @@ public final class ArmorConfig {
         this.cinderSetBonusIgniteSeconds = Math.max(0, Math.min(20, this.cinderSetBonusIgniteSeconds));
         this.cinderSetBonusTickInterval = Math.max(1, Math.min(40, this.cinderSetBonusTickInterval));
         this.cinderSetBonusEffectDurationTicks = Math.max(40, Math.min(200, this.cinderSetBonusEffectDurationTicks));
+
+        this.hydraHelmetDefense = Math.max(1, Math.min(20, this.hydraHelmetDefense));
+        this.hydraChestplateDefense = Math.max(1, Math.min(24, this.hydraChestplateDefense));
+        this.hydraLeggingsDefense = Math.max(1, Math.min(22, this.hydraLeggingsDefense));
+        this.hydraBootsDefense = Math.max(1, Math.min(20, this.hydraBootsDefense));
+        this.hydraToughness = Math.max(0.0f, Math.min(12.0f, this.hydraToughness));
+        this.hydraKnockbackResistance = Math.max(0.0f, Math.min(0.25f, this.hydraKnockbackResistance));
+        this.hydraDurabilityMultiplier = Math.max(15, Math.min(120, this.hydraDurabilityMultiplier));
+        this.hydraEnchantmentValue = Math.max(1, Math.min(30, this.hydraEnchantmentValue));
+        if (!Float.isFinite(this.hydraHeartDropChance)) {
+            this.hydraHeartDropChance = 0.05f;
+        }
+        this.hydraHeartDropChance = Math.max(0.0f, Math.min(1.0f, this.hydraHeartDropChance));
+        this.hydraSetBonusRegenerationAmplifier = Math.max(0, Math.min(4, this.hydraSetBonusRegenerationAmplifier));
+        if (!Double.isFinite(this.hydraSetBonusMaxHealth)) {
+            this.hydraSetBonusMaxHealth = 4.0;
+        }
+        this.hydraSetBonusMaxHealth = Math.max(0.0, Math.min(40.0, this.hydraSetBonusMaxHealth));
+        this.hydraSetBonusPoisonSeconds = Math.max(0, Math.min(20, this.hydraSetBonusPoisonSeconds));
+        this.hydraSetBonusPoisonAmplifier = Math.max(0, Math.min(4, this.hydraSetBonusPoisonAmplifier));
+        this.hydraSetBonusSoulFlameSeconds = Math.max(0, Math.min(20, this.hydraSetBonusSoulFlameSeconds));
+        this.hydraSetBonusTickInterval = Math.max(1, Math.min(40, this.hydraSetBonusTickInterval));
+        this.hydraSetBonusEffectDurationTicks = Math.max(40, Math.min(200, this.hydraSetBonusEffectDurationTicks));
+
+        this.cerberusHelmetDefense = Math.max(1, Math.min(20, this.cerberusHelmetDefense));
+        this.cerberusChestplateDefense = Math.max(1, Math.min(24, this.cerberusChestplateDefense));
+        this.cerberusLeggingsDefense = Math.max(1, Math.min(22, this.cerberusLeggingsDefense));
+        this.cerberusBootsDefense = Math.max(1, Math.min(20, this.cerberusBootsDefense));
+        this.cerberusToughness = Math.max(0.0f, Math.min(12.0f, this.cerberusToughness));
+        this.cerberusKnockbackResistance = Math.max(0.0f, Math.min(0.25f, this.cerberusKnockbackResistance));
+        this.cerberusDurabilityMultiplier = Math.max(15, Math.min(120, this.cerberusDurabilityMultiplier));
+        this.cerberusEnchantmentValue = Math.max(1, Math.min(30, this.cerberusEnchantmentValue));
+        if (!Float.isFinite(this.cerberusHeartDropChance)) {
+            this.cerberusHeartDropChance = 0.05f;
+        }
+        this.cerberusHeartDropChance = Math.max(0.0f, Math.min(1.0f, this.cerberusHeartDropChance));
+        this.cerberusSetBonusSpeedAmplifier = Math.max(0, Math.min(4, this.cerberusSetBonusSpeedAmplifier));
+        this.cerberusSetBonusStrengthAmplifier = Math.max(0, Math.min(4, this.cerberusSetBonusStrengthAmplifier));
+        if (!Double.isFinite(this.cerberusSetBonusMaxHealth)) {
+            this.cerberusSetBonusMaxHealth = 4.0;
+        }
+        this.cerberusSetBonusMaxHealth = Math.max(0.0, Math.min(40.0, this.cerberusSetBonusMaxHealth));
+        this.cerberusSetBonusIgniteSeconds = Math.max(0, Math.min(20, this.cerberusSetBonusIgniteSeconds));
+        this.cerberusSetBonusTickInterval = Math.max(1, Math.min(40, this.cerberusSetBonusTickInterval));
+        this.cerberusSetBonusEffectDurationTicks = Math.max(40, Math.min(200, this.cerberusSetBonusEffectDurationTicks));
     }
 }
 

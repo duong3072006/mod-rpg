@@ -26,14 +26,29 @@ public final class DualBladeAnimState {
 
         public float headAddX;
         public float headAddY;
+        public float headAddZ;
 
         public float rightArmX;
         public float rightArmY;
         public float rightArmZ;
+        public float rightArmPosX;
+        public float rightArmPosZ;
 
         public float leftArmX;
         public float leftArmY;
         public float leftArmZ;
+        public float leftArmPosX;
+        public float leftArmPosZ;
+
+        public float rightElbowX;
+        public float rightElbowY;
+        public float rightElbowZ;
+
+        public float leftElbowX;
+        public float leftElbowY;
+        public float leftElbowZ;
+
+        public float elbowWeight;
 
         public float rightLegX;
         public float rightLegY;
@@ -49,9 +64,15 @@ public final class DualBladeAnimState {
         public float rightBladePitchDeg;
         public float rightBladeRollDeg;
         public float rightBladeYawDeg;
+        public float rightBladeOffX;
+        public float rightBladeOffY;
+        public float rightBladeOffZ;
         public float leftBladePitchDeg;
         public float leftBladeRollDeg;
         public float leftBladeYawDeg;
+        public float leftBladeOffX;
+        public float leftBladeOffY;
+        public float leftBladeOffZ;
 
         public float firstPersonCameraRollDeg;
         public float fovOffsetDeg;
@@ -60,14 +81,19 @@ public final class DualBladeAnimState {
             isAttacking = false;
             rootYawDeg = rootPitchDeg = rootRollDeg = rootTranslateY = 0.0F;
             bodyX = bodyY = bodyZ = 0.0F;
-            headAddX = headAddY = 0.0F;
-            rightArmX = rightArmY = rightArmZ = 0.0F;
-            leftArmX = leftArmY = leftArmZ = 0.0F;
+            headAddX = headAddY = headAddZ = 0.0F;
+            rightArmX = rightArmY = rightArmZ = rightArmPosX = rightArmPosZ = 0.0F;
+            leftArmX = leftArmY = leftArmZ = leftArmPosX = leftArmPosZ = 0.0F;
+            rightElbowX = rightElbowY = rightElbowZ = 0.0F;
+            leftElbowX = leftElbowY = leftElbowZ = 0.0F;
+            elbowWeight = 0.0F;
             rightLegX = rightLegY = rightLegZ = 0.0F;
             leftLegX = leftLegY = leftLegZ = 0.0F;
             armWeight = legWeight = 0.0F;
             rightBladePitchDeg = rightBladeRollDeg = rightBladeYawDeg = 0.0F;
+            rightBladeOffX = rightBladeOffY = rightBladeOffZ = 0.0F;
             leftBladePitchDeg = leftBladeRollDeg = leftBladeYawDeg = 0.0F;
+            leftBladeOffX = leftBladeOffY = leftBladeOffZ = 0.0F;
             firstPersonCameraRollDeg = 0.0F;
             fovOffsetDeg = 0.0F;
         }
@@ -83,12 +109,24 @@ public final class DualBladeAnimState {
             this.bodyZ = src.bodyZ;
             this.headAddX = src.headAddX;
             this.headAddY = src.headAddY;
+            this.headAddZ = src.headAddZ;
             this.rightArmX = src.rightArmX;
             this.rightArmY = src.rightArmY;
             this.rightArmZ = src.rightArmZ;
+            this.rightArmPosX = src.rightArmPosX;
+            this.rightArmPosZ = src.rightArmPosZ;
             this.leftArmX = src.leftArmX;
             this.leftArmY = src.leftArmY;
             this.leftArmZ = src.leftArmZ;
+            this.leftArmPosX = src.leftArmPosX;
+            this.leftArmPosZ = src.leftArmPosZ;
+            this.rightElbowX = src.rightElbowX;
+            this.rightElbowY = src.rightElbowY;
+            this.rightElbowZ = src.rightElbowZ;
+            this.leftElbowX = src.leftElbowX;
+            this.leftElbowY = src.leftElbowY;
+            this.leftElbowZ = src.leftElbowZ;
+            this.elbowWeight = src.elbowWeight;
             this.rightLegX = src.rightLegX;
             this.rightLegY = src.rightLegY;
             this.rightLegZ = src.rightLegZ;
@@ -100,9 +138,15 @@ public final class DualBladeAnimState {
             this.rightBladePitchDeg = src.rightBladePitchDeg;
             this.rightBladeRollDeg = src.rightBladeRollDeg;
             this.rightBladeYawDeg = src.rightBladeYawDeg;
+            this.rightBladeOffX = src.rightBladeOffX;
+            this.rightBladeOffY = src.rightBladeOffY;
+            this.rightBladeOffZ = src.rightBladeOffZ;
             this.leftBladePitchDeg = src.leftBladePitchDeg;
             this.leftBladeRollDeg = src.leftBladeRollDeg;
             this.leftBladeYawDeg = src.leftBladeYawDeg;
+            this.leftBladeOffX = src.leftBladeOffX;
+            this.leftBladeOffY = src.leftBladeOffY;
+            this.leftBladeOffZ = src.leftBladeOffZ;
             this.firstPersonCameraRollDeg = src.firstPersonCameraRollDeg;
             this.fovOffsetDeg = src.fovOffsetDeg;
         }
@@ -121,14 +165,27 @@ public final class DualBladeAnimState {
 
             this.headAddX = Mth.lerp(k, from.headAddX, this.headAddX);
             this.headAddY = Mth.lerp(k, from.headAddY, this.headAddY);
+            this.headAddZ = Mth.lerp(k, from.headAddZ, this.headAddZ);
 
             this.rightArmX = Mth.lerp(k, from.rightArmX, this.rightArmX);
             this.rightArmY = Mth.lerp(k, from.rightArmY, this.rightArmY);
             this.rightArmZ = Mth.lerp(k, from.rightArmZ, this.rightArmZ);
+            this.rightArmPosX = Mth.lerp(k, from.rightArmPosX, this.rightArmPosX);
+            this.rightArmPosZ = Mth.lerp(k, from.rightArmPosZ, this.rightArmPosZ);
 
             this.leftArmX = Mth.lerp(k, from.leftArmX, this.leftArmX);
             this.leftArmY = Mth.lerp(k, from.leftArmY, this.leftArmY);
             this.leftArmZ = Mth.lerp(k, from.leftArmZ, this.leftArmZ);
+            this.leftArmPosX = Mth.lerp(k, from.leftArmPosX, this.leftArmPosX);
+            this.leftArmPosZ = Mth.lerp(k, from.leftArmPosZ, this.leftArmPosZ);
+
+            this.rightElbowX = Mth.lerp(k, from.rightElbowX, this.rightElbowX);
+            this.rightElbowY = Mth.lerp(k, from.rightElbowY, this.rightElbowY);
+            this.rightElbowZ = Mth.lerp(k, from.rightElbowZ, this.rightElbowZ);
+            this.leftElbowX = Mth.lerp(k, from.leftElbowX, this.leftElbowX);
+            this.leftElbowY = Mth.lerp(k, from.leftElbowY, this.leftElbowY);
+            this.leftElbowZ = Mth.lerp(k, from.leftElbowZ, this.leftElbowZ);
+            this.elbowWeight = Mth.lerp(k, from.elbowWeight, this.elbowWeight);
 
             this.rightLegX = Mth.lerp(k, from.rightLegX, this.rightLegX);
             this.rightLegY = Mth.lerp(k, from.rightLegY, this.rightLegY);
@@ -144,9 +201,15 @@ public final class DualBladeAnimState {
             this.rightBladePitchDeg = Mth.rotLerp(k, from.rightBladePitchDeg, this.rightBladePitchDeg);
             this.rightBladeRollDeg = Mth.rotLerp(k, from.rightBladeRollDeg, this.rightBladeRollDeg);
             this.rightBladeYawDeg = Mth.rotLerp(k, from.rightBladeYawDeg, this.rightBladeYawDeg);
+            this.rightBladeOffX = Mth.lerp(k, from.rightBladeOffX, this.rightBladeOffX);
+            this.rightBladeOffY = Mth.lerp(k, from.rightBladeOffY, this.rightBladeOffY);
+            this.rightBladeOffZ = Mth.lerp(k, from.rightBladeOffZ, this.rightBladeOffZ);
             this.leftBladePitchDeg = Mth.rotLerp(k, from.leftBladePitchDeg, this.leftBladePitchDeg);
             this.leftBladeRollDeg = Mth.rotLerp(k, from.leftBladeRollDeg, this.leftBladeRollDeg);
             this.leftBladeYawDeg = Mth.rotLerp(k, from.leftBladeYawDeg, this.leftBladeYawDeg);
+            this.leftBladeOffX = Mth.lerp(k, from.leftBladeOffX, this.leftBladeOffX);
+            this.leftBladeOffY = Mth.lerp(k, from.leftBladeOffY, this.leftBladeOffY);
+            this.leftBladeOffZ = Mth.lerp(k, from.leftBladeOffZ, this.leftBladeOffZ);
             this.firstPersonCameraRollDeg = Mth.lerp(k, from.firstPersonCameraRollDeg, this.firstPersonCameraRollDeg);
             this.fovOffsetDeg = Mth.lerp(k, from.fovOffsetDeg, this.fovOffsetDeg);
         }

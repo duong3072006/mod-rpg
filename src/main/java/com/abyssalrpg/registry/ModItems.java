@@ -1,11 +1,16 @@
 package com.abyssalrpg.registry;
 
 import com.abyssalrpg.AbyssalRpgMod;
+import com.abyssalrpg.item.CerberusArmorItem;
+import com.abyssalrpg.item.CerberusHeartItem;
 import com.abyssalrpg.item.CinderDragonArmorItem;
 import com.abyssalrpg.item.CinderDragonHeartItem;
 import com.abyssalrpg.item.DualBladeItem;
+import com.abyssalrpg.item.ExcaliburItem;
 import com.abyssalrpg.item.NightmareArmorItem;
 import com.abyssalrpg.item.NightmareCoreItem;
+import com.abyssalrpg.item.SpiritHydraArmorItem;
+import com.abyssalrpg.item.SpiritHydraHeartItem;
 import com.abyssalrpg.item.TogetsuItem;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -47,6 +52,16 @@ public final class ModItems {
     public static final Item CINDER_DRAGON_SCALE = register("cinder_dragon_scale",
             new Item(new Item.Properties().rarity(Rarity.RARE).fireResistant()));
 
+    // Spirit Hydra Boss Armor Materials (Phase 2 Drops)
+    public static final Item SPIRIT_HYDRA_HEART = register("spirit_hydra_heart", new SpiritHydraHeartItem());
+    public static final Item SPIRIT_HYDRA_SCALE = register("spirit_hydra_scale",
+            new Item(new Item.Properties().rarity(Rarity.RARE).fireResistant()));
+
+    // Cerberus Boss Armor Materials (Phase 2 Drops)
+    public static final Item CERBERUS_HEART = register("cerberus_heart", new CerberusHeartItem());
+    public static final Item CERBERUS_HIDE = register("cerberus_hide",
+            new Item(new Item.Properties().rarity(Rarity.RARE).fireResistant()));
+
     // Endgame 4-Piece Nightmare Knight 3D Armor Set (GeckoLib GeoArmorRenderer)
     public static Item NIGHTMARE_HELMET;
     public static Item NIGHTMARE_CHESTPLATE;
@@ -59,9 +74,22 @@ public final class ModItems {
     public static Item CINDER_DRAGON_LEGGINGS;
     public static Item CINDER_DRAGON_BOOTS;
 
-    // Signature Two-Handed Weapons (`abyssalrpg:dual_knife` & transforming `abyssalrpg:togetsu`)
+    // Endgame 4-Piece Spirit Hydra 3D Armor Set (GeckoLib GeoArmorRenderer + AutoGlowingGeoLayer)
+    public static Item SPIRIT_HYDRA_HELMET;
+    public static Item SPIRIT_HYDRA_CHESTPLATE;
+    public static Item SPIRIT_HYDRA_LEGGINGS;
+    public static Item SPIRIT_HYDRA_BOOTS;
+
+    // Endgame 4-Piece Cerberus Netherite 3D Armor Set (GeckoLib GeoArmorRenderer + Emissive Layer)
+    public static Item CERBERUS_HELMET;
+    public static Item CERBERUS_CHESTPLATE;
+    public static Item CERBERUS_LEGGINGS;
+    public static Item CERBERUS_BOOTS;
+
+    // Signature Two-Handed Weapons (`abyssalrpg:dual_knife`, `abyssalrpg:togetsu`, & `abyssalrpg:excalibur`)
     public static Item DUAL_KNIFE;
     public static Item TOGETSU;
+    public static Item EXCALIBUR;
 
     // Boss Spawn Eggs (8 Colossal & Mid-Tier GeckoLib Bosses)
     public static Item CINDER_DRAGON_SPAWN_EGG;
@@ -89,8 +117,19 @@ public final class ModItems {
         CINDER_DRAGON_LEGGINGS = register("cinder_dragon_leggings", new CinderDragonArmorItem(ArmorItem.Type.LEGGINGS));
         CINDER_DRAGON_BOOTS = register("cinder_dragon_boots", new CinderDragonArmorItem(ArmorItem.Type.BOOTS));
 
+        SPIRIT_HYDRA_HELMET = register("spirit_hydra_helmet", new SpiritHydraArmorItem(ArmorItem.Type.HELMET));
+        SPIRIT_HYDRA_CHESTPLATE = register("spirit_hydra_chestplate", new SpiritHydraArmorItem(ArmorItem.Type.CHESTPLATE));
+        SPIRIT_HYDRA_LEGGINGS = register("spirit_hydra_leggings", new SpiritHydraArmorItem(ArmorItem.Type.LEGGINGS));
+        SPIRIT_HYDRA_BOOTS = register("spirit_hydra_boots", new SpiritHydraArmorItem(ArmorItem.Type.BOOTS));
+
+        CERBERUS_HELMET = register("cerberus_helmet", new CerberusArmorItem(ArmorItem.Type.HELMET));
+        CERBERUS_CHESTPLATE = register("cerberus_chestplate", new CerberusArmorItem(ArmorItem.Type.CHESTPLATE));
+        CERBERUS_LEGGINGS = register("cerberus_leggings", new CerberusArmorItem(ArmorItem.Type.LEGGINGS));
+        CERBERUS_BOOTS = register("cerberus_boots", new CerberusArmorItem(ArmorItem.Type.BOOTS));
+
         DUAL_KNIFE = register("dual_knife", new DualBladeItem());
         TOGETSU = register("togetsu", new TogetsuItem());
+        EXCALIBUR = register("excalibur", new ExcaliburItem());
 
         CINDER_DRAGON_SPAWN_EGG = register("cinder_dragon_spawn_egg",
                 new SpawnEggItem(ModEntities.CINDER_DRAGON, 0x3D3530, 0xD43818, new Item.Properties()));

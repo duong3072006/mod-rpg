@@ -2,7 +2,9 @@ package com.abyssalrpg.client.mixin;
 
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
 import com.abyssalrpg.client.anim.DualBladeAnimState.FullBodyPose;
+import com.abyssalrpg.client.anim.ExcaliburAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
+import com.abyssalrpg.client.renderer.ExcaliburGeoRenderer;
 import com.abyssalrpg.client.renderer.TogetsuGeoRenderer;
 import com.abyssalrpg.registry.ModItems;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -23,13 +25,41 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Third-Person True Two-Handed & Blade Cutting-Plane Alignment Mixin (`ItemInHandLayer`):
- * - Tự động nhân bản thanh song đao sang tay trái khi tay phụ trống (ẩn khi cầm khiên/totem/block).
- * - Căn góc mặt lưỡi song đao khớp 100% với `DualBladeAnimManager` (nằm phẳng ngang trong cú 360° Cyclone,
- *   nghiêng chữ X ở Nhịp 4 Finisher, xòe chéo sau lưng ở tư thế thủ đứng yên).
+ * Third-Person True Two-Handed & Blade Cutting-Plane Alignment Mixin (`ItemInHandLayer`).
  */
 @Mixin(ItemInHandLayer.class)
 public abstract class ItemInHandLayerMixin {
+    @Inject(
+            method = "render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;ILnet/minecraft/world/entity/LivingEntity;FFFFFF)V",
+            at = @At("HEAD")
+    )
+    private void abyssalrpg$beginTogetsuEntityRender(PoseStack poseStack, MultiBufferSource buffer, int packedLight,
+                                                     LivingEntity entity, float limbSwing, float limbSwingAmount,
+                                                     float partialTicks, float ageInTicks, float netHeadYaw,
+                                                     float headPitch, CallbackInfo ci) {
+        if (entity instanceof Player player) {
+            if (player.getMainHandItem().is(ModItems.TOGETSU)) {
+                TogetsuGeoRenderer.setCurrentRenderEntityId(player.getId());
+            } else if (player.getMainHandItem().is(ModItems.EXCALIBUR)) {
+                ExcaliburGeoRenderer.setCurrentRenderEntityId(player.getId());
+            }
+        }
+    }
+
+    @Inject(
+            method = "render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;ILnet/minecraft/world/entity/LivingEntity;FFFFFF)V",
+            at = @At("RETURN")
+    )
+    private void abyssalrpg$endTogetsuEntityRender(PoseStack poseStack, MultiBufferSource buffer, int packedLight,
+                                                   LivingEntity entity, float limbSwing, float limbSwingAmount,
+                                                   float partialTicks, float ageInTicks, float netHeadYaw,
+                                                   float headPitch, CallbackInfo ci) {
+        if (entity instanceof Player) {
+            TogetsuGeoRenderer.setCurrentRenderEntityId(-1);
+            ExcaliburGeoRenderer.setCurrentRenderEntityId(-1);
+        }
+    }
+
     @WrapOperation(
             method = "render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;ILnet/minecraft/world/entity/LivingEntity;FFFFFF)V",
             at = @At(
@@ -67,16 +97,30 @@ public abstract class ItemInHandLayerMixin {
                                                        int packedLight, CallbackInfo ci) {
         boolean isDualKnife = stack.is(ModItems.DUAL_KNIFE);
         boolean isTogetsu = stack.is(ModItems.TOGETSU);
-        if ((!isDualKnife && !isTogetsu) || !(entity instanceof Player player) || !player.getOffhandItem().isEmpty()) {
+        boolean isExcalibur = stack.is(ModItems.EXCALIBUR);
+        if ((!isDualKnife && !isTogetsu && !isExcalibur) || !(entity instanceof Player player)) {
+            return;
+        }
+        if ((isDualKnife || isTogetsu) && !player.getOffhandItem().isEmpty()) {
+            return;
+        }
+        if (isExcalibur && arm != HumanoidArm.RIGHT) {
             return;
         }
         if (isTogetsu) {
             TogetsuGeoRenderer.setCurrentRenderEntityId(player.getId());
+        } else if (isExcalibur) {
+            ExcaliburGeoRenderer.setCurrentRenderEntityId(player.getId());
         }
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
-        FullBodyPose pose = isDualKnife
-                ? DualBladeAnimManager.evaluatePose(player, partialTick, 0.0F, player.tickCount + partialTick)
-                : TogetsuAnimManager.evaluatePose(player, partialTick, 0.0F, player.tickCount + partialTick);
+        FullBodyPose pose;
+        if (isDualKnife) {
+            pose = DualBladeAnimManager.evaluatePose(player, partialTick, 0.0F, player.tickCount + partialTick);
+        } else if (isTogetsu) {
+            pose = TogetsuAnimManager.evaluatePose(player, partialTick, 0.0F, player.tickCount + partialTick);
+        } else {
+            pose = ExcaliburAnimManager.evaluatePose(player, partialTick, 0.0F, player.tickCount + partialTick);
+        }
         if (pose == null) {
             return;
         }
@@ -95,22 +139,12 @@ public abstract class ItemInHandLayerMixin {
         if (Math.abs(yaw) > 0.05F) {
             poseStack.mulPose(Axis.YP.rotationDegrees(yaw));
         }
-    }
 
-    @Inject(
-            method = "renderArmWithItem",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/ItemInHandRenderer;renderItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemDisplayContext;ZLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
-                    shift = At.Shift.AFTER
-            )
-    )
-    private void abyssalrpg$resetTogetsuRenderEntity(LivingEntity entity, ItemStack stack,
-                                                     ItemDisplayContext displayContext, HumanoidArm arm,
-                                                     PoseStack poseStack, MultiBufferSource buffer,
-                                                     int packedLight, CallbackInfo ci) {
-        if (stack.is(ModItems.TOGETSU)) {
-            TogetsuGeoRenderer.setCurrentRenderEntityId(-1);
+        float offX = isLeft ? pose.leftBladeOffX : pose.rightBladeOffX;
+        float offY = isLeft ? pose.leftBladeOffY : pose.rightBladeOffY;
+        float offZ = isLeft ? pose.leftBladeOffZ : pose.rightBladeOffZ;
+        if (Math.abs(offX) > 1e-4F || Math.abs(offY) > 1e-4F || Math.abs(offZ) > 1e-4F) {
+            poseStack.translate(offX, offY, offZ);
         }
     }
 }

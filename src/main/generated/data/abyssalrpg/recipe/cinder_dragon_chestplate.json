@@ -2,6 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
   "key": {
+    "D": {
+      "item": "minecraft:diamond_chestplate"
+    },
     "H": {
       "item": "abyssalrpg:cinder_dragon_heart"
     },
@@ -10,7 +13,7 @@
     }
   },
   "pattern": [
-    "S S",
+    "SDS",
     "SHS",
     "SSS"
   ],

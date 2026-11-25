@@ -2,6 +2,7 @@ package com.abyssalrpg.client.hud;
 
 import com.abyssalrpg.client.TogetsuClientState;
 import com.abyssalrpg.combat.TogetsuCombatHandler;
+import com.abyssalrpg.item.TogetsuGlowStyle;
 import com.abyssalrpg.item.TogetsuItem;
 import com.abyssalrpg.registry.ModItems;
 import net.minecraft.client.DeltaTracker;
@@ -69,15 +70,20 @@ public final class TogetsuHudRenderer {
         int barY = panelY + 14;
         Font font = mc.font;
 
-        // Nền tối thanh lịch + viền gọn khớp chuẩn chiều cao hotbar
+        // Nền tối thanh lịch + viền gọn ăn màu ánh sáng đang chọn của thanh kiếm
+        TogetsuGlowStyle glowStyle = TogetsuItem.getGlowStyle(stack);
+        float timeSec = time / 20.0F;
+        int priArgb = 0xFF000000 | glowStyle.resolvePrimaryRgb(TogetsuItem.getCustomPrimaryRgb(stack), timeSec);
+        int secArgb = 0xFF000000 | glowStyle.resolveSecondaryRgb(TogetsuItem.getCustomSecondaryRgb(stack), timeSec);
         g.fill(panelX, panelY, panelX + panelW, panelY + panelH, 0xB80B0D14);
         int borderCol = fused
-                ? lerpArgb(0xFF7ADFFF, 0xFFFFFFFF, pulse * 0.6F)
-                : (readyToFuse ? lerpArgb(0xFFFFD866, 0xFFFFFFFF, pulse) : 0xCC6B7894);
+                ? lerpArgb(priArgb, secArgb, pulse * 0.75F)
+                : (readyToFuse ? lerpArgb(priArgb, 0xFFFFFFFF, pulse) : (0xCC000000 | (priArgb & 0xFFFFFF)));
         g.renderOutline(panelX, panelY, panelW, panelH, borderCol);
 
-        // Nhãn gọn sạch hiển thị trạng thái, đếm ngược Song Nguyệt & phím tắt
+        // Nhãn gọn sạch hiển thị trạng thái, đếm ngược Song Nguyệt & phím tắt động
         String keyName = TogetsuClientState.getFuseKeyDisplayName();
+        String skillKeyName = TogetsuClientState.getSkillKeyDisplayName();
         int transformRemTicks = TogetsuItem.getTransformCooldownRemainingTicks(stack, gameTime);
         int vorpalRemTicks = TogetsuItem.getVorpalCooldownRemainingTicks(stack, gameTime);
         int pinRemTicks = TogetsuItem.getPinCooldownRemainingTicks(stack, gameTime);
@@ -89,20 +95,20 @@ public final class TogetsuHudRenderer {
                 label = "☾ SONG NGUYỆT " + leftStr + " · " + String.format(Locale.ROOT, "%.1fs", vorpalRemTicks / 20.0F);
                 labelCol = 0xFFA8D8FF;
             } else {
-                label = "✦ SONG NGUYỆT " + leftStr + " · [RMB]";
+                label = "✦ SONG NGUYỆT " + leftStr + " · [" + skillKeyName + "]";
                 labelCol = lerpArgb(0xFF8CE6FF, 0xFFFFFFFF, pulse);
             }
         } else if (transformRemTicks > 0) {
             label = "☾ " + Math.round(rawGauge) + "% · Đổi " + String.format(Locale.ROOT, "%.1fs", transformRemTicks / 20.0F);
             labelCol = 0xFFFFDF80;
         } else if (readyToFuse) {
-            label = "✦ SẴN SÀNG · [" + keyName + "/RMB]";
+            label = "✦ SẴN SÀNG · [" + keyName + "]";
             labelCol = lerpArgb(0xFFFFD85A, 0xFFFFFFFF, pulse);
         } else if (pinRemTicks > 0) {
-            label = "☾ " + Math.round(rawGauge) + "% · Đâm " + String.format(Locale.ROOT, "%.1fs", pinRemTicks / 20.0F);
+            label = "☾ " + Math.round(rawGauge) + "% · [" + skillKeyName + "] " + String.format(Locale.ROOT, "%.1fs", pinRemTicks / 20.0F);
             labelCol = 0xFFD4DCEB;
         } else {
-            label = "☾ TOGETSU " + Math.round(rawGauge) + "/100";
+            label = "☾ TOGETSU " + Math.round(rawGauge) + "% · [" + skillKeyName + "]";
             labelCol = 0xFFE6EEF8;
         }
 
@@ -119,12 +125,12 @@ public final class TogetsuHudRenderer {
         g.drawString(font, label, -rawTextW / 2, 0, labelCol, true);
         g.pose().popPose();
 
-        // Rãnh thanh gauge & vạch năng lượng Trắng–Xanh Nguyệt Quang
+        // Rãnh thanh gauge & vạch năng lượng đồng bộ màu điểm sáng Togetsu
         g.fill(barX, barY, barX + barW, barY + barH, 0xFF141824);
         int fillW = Mth.clamp(Math.round(barW * frac), 0, barW);
         if (fillW > 0) {
-            int leftCol = fused ? 0xFF36B8FF : (readyToFuse ? 0xFFFFC947 : 0xFF6B85A8);
-            int rightCol = fused ? 0xFFE8FAFF : 0xFFFFFFFF;
+            int leftCol = fused ? secArgb : (readyToFuse ? priArgb : lerpArgb(0xFF3E4C68, priArgb, 0.55F));
+            int rightCol = fused ? priArgb : 0xFFFFFFFF;
             g.fillGradient(barX, barY, barX + fillW, barY + barH, rightCol, leftCol);
             g.fill(barX, barY, barX + fillW, barY + 1, 0xCCFFFFFF);
         }

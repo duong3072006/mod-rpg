@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "D": {
+      "item": "minecraft:diamond_leggings"
+    },
+    "S": {
+      "item": "abyssalrpg:spirit_hydra_scale"
+    }
+  },
+  "pattern": [
+    "SSS",
+    "SDS",
+    "S S"
+  ],
+  "result": {
+    "count": 1,
+    "id": "abyssalrpg:spirit_hydra_leggings"
+  }
+}

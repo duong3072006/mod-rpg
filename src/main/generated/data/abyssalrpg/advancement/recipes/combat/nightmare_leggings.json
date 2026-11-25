@@ -1,6 +1,16 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
+    "has_diamond_leggings": {
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:diamond_leggings"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
     "has_nightmare_armor_shard": {
       "conditions": {
         "items": [
@@ -21,7 +31,8 @@
   "requirements": [
     [
       "has_the_recipe",
-      "has_nightmare_armor_shard"
+      "has_nightmare_armor_shard",
+      "has_diamond_leggings"
     ]
   ],
   "rewards": {

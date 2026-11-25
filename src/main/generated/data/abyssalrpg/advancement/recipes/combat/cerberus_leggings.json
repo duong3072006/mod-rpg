@@ -1,0 +1,43 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_cerberus_hide": {
+      "conditions": {
+        "items": [
+          {
+            "items": "abyssalrpg:cerberus_hide"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_diamond_leggings": {
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:diamond_leggings"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "abyssalrpg:cerberus_leggings"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_cerberus_hide",
+      "has_diamond_leggings"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "abyssalrpg:cerberus_leggings"
+    ]
+  }
+}

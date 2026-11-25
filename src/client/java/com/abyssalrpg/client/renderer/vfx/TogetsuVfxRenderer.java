@@ -24,12 +24,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Hệ thống VFX 3D Âm–Dương Song Nguyệt & Tuyệt Kỹ **Crescent Vorpal (`Chí Mệnh Tam Nhật Nguyệt`)**:
- * - Tách tuyệt đối 3 pass tuần tự (`BODY` -> `GLOW` -> `SPARK`, chỉ giữ 1 `VertexConsumer` mỗi pass) -> 100% an toàn cho Minecraft 1.21.1 `MultiBufferSource`!
- * - **Dạng Song Đao:** Vệt chém Trắng Ngọc (Trăng Non) & Đen Obsidian viền Bạc (Trăng Khuyết).
- * - **Dạng Đại Đao Song Nguyệt:** Vòng cung Đại Đao 2 tầng Âm–Dương khổng lồ bán kính `3.2` block!
- * - **Hợp Nhất `[R]`:** Sóng xung kích Song Nguyệt Trắng–Đen xoáy bung quanh người chơi.
- * - **Tuyệt kỹ `Crescent Vorpal`:** Luồng Năng Lượng Lưỡi Liềm Trăng Khuyết 3D rộng `4.6` block lao xuyên thẳng `22` block về phía trước!
+ * Hệ thống VFX 3D Âm–Dương Song Nguyệt & Tuyệt Kỹ **Crescent Vorpal (`Chí Mệnh
+ * Tam Nhật Nguyệt`)**:
+ * - Tách tuyệt đối 3 pass tuần tự (`BODY` -> `GLOW` -> `SPARK`, chỉ giữ 1
+ * `VertexConsumer` mỗi pass) -> 100% an toàn cho Minecraft 1.21.1
+ * `MultiBufferSource`!
+ * - **Dạng Song Đao:** Vệt chém Trắng Ngọc (Trăng Non) & Đen Obsidian viền Bạc
+ * (Trăng Khuyết).
+ * - **Dạng Đại Đao Song Nguyệt:** Vòng cung Đại Đao 2 tầng Âm–Dương khổng lồ
+ * bán kính `3.2` block!
+ * - **Hợp Nhất `[R]`:** Sóng xung kích Song Nguyệt Trắng–Đen xoáy bung quanh
+ * người chơi.
+ * - **Tuyệt kỹ `Crescent Vorpal`:** Luồng Năng Lượng Lưỡi Liềm Trăng Khuyết 3D
+ * rộng `4.6` block lao xuyên thẳng `22` block về phía trước!
  */
 public final class TogetsuVfxRenderer {
     public enum LunarPalette {
@@ -64,14 +71,14 @@ public final class TogetsuVfxRenderer {
                 true,
                 RenderType.CompositeState.builder()
                         .setShaderState(RENDERTYPE_ENTITY_TRANSLUCENT_EMISSIVE_SHADER)
-                        .setTextureState(new RenderStateShard.TextureStateShard(DualBladeTrailRenderer.SLASH_ARC_TEX, false, false))
+                        .setTextureState(new RenderStateShard.TextureStateShard(DualBladeTrailRenderer.SLASH_ARC_TEX,
+                                false, false))
                         .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
                         .setCullState(NO_CULL)
                         .setWriteMaskState(COLOR_WRITE)
                         .setOverlayState(OVERLAY)
                         .setLightmapState(LIGHTMAP)
-                        .createCompositeState(false)
-        );
+                        .createCompositeState(false));
 
         private static final RenderType GLOW = RenderType.create(
                 "abyssalrpg_togetsu_glow",
@@ -82,14 +89,14 @@ public final class TogetsuVfxRenderer {
                 true,
                 RenderType.CompositeState.builder()
                         .setShaderState(RENDERTYPE_EYES_SHADER)
-                        .setTextureState(new RenderStateShard.TextureStateShard(DualBladeTrailRenderer.SLASH_ARC_TEX, false, false))
+                        .setTextureState(new RenderStateShard.TextureStateShard(DualBladeTrailRenderer.SLASH_ARC_TEX,
+                                false, false))
                         .setTransparencyState(ADDITIVE_TRANSPARENCY)
                         .setCullState(NO_CULL)
                         .setWriteMaskState(COLOR_WRITE)
                         .setOverlayState(OVERLAY)
                         .setLightmapState(LIGHTMAP)
-                        .createCompositeState(false)
-        );
+                        .createCompositeState(false));
 
         private static final RenderType SPARK = RenderType.create(
                 "abyssalrpg_togetsu_spark",
@@ -100,17 +107,17 @@ public final class TogetsuVfxRenderer {
                 true,
                 RenderType.CompositeState.builder()
                         .setShaderState(RENDERTYPE_EYES_SHADER)
-                        .setTextureState(new RenderStateShard.TextureStateShard(VfxRenderHelper.ENERGY_SLASH_TEX, false, false))
+                        .setTextureState(
+                                new RenderStateShard.TextureStateShard(VfxRenderHelper.ENERGY_SLASH_TEX, false, false))
                         .setTransparencyState(ADDITIVE_TRANSPARENCY)
                         .setCullState(NO_CULL)
                         .setWriteMaskState(COLOR_WRITE)
                         .setOverlayState(OVERLAY)
                         .setLightmapState(LIGHTMAP)
-                        .createCompositeState(false)
-        );
+                        .createCompositeState(false));
 
         private LunarRenderTypes(String name, VertexFormat fmt, VertexFormat.Mode mode, int buf,
-                                 boolean crumble, boolean sort, Runnable setup, Runnable clear) {
+                boolean crumble, boolean sort, Runnable setup, Runnable clear) {
             super(name, fmt, mode, buf, crumble, sort, setup, clear);
         }
     }
@@ -122,7 +129,7 @@ public final class TogetsuVfxRenderer {
         final float delayFrac, sweepFrac;
 
         ArcStrip(int count, float startDeg, float endDeg, float baseR, float tipR,
-                 float startY, float endY, float archY, float delayFrac, float sweepFrac, LunarPalette palette) {
+                float startY, float endY, float archY, float delayFrac, float sweepFrac, LunarPalette palette) {
             this.count = count;
             this.bx = new float[count];
             this.by = new float[count];
@@ -160,7 +167,7 @@ public final class TogetsuVfxRenderer {
         final List<ArcStrip> strips;
 
         SlashEffect(int attackerId, TogetsuMoveType move, Vec3 anchor, float yawDeg, float pitchDeg,
-                    long startTick, float durationTicks, List<ArcStrip> strips) {
+                long startTick, float durationTicks, List<ArcStrip> strips) {
             this.attackerId = attackerId;
             this.move = move;
             this.ax = anchor.x;
@@ -192,7 +199,10 @@ public final class TogetsuVfxRenderer {
         }
     }
 
-    /** Luồng năng lượng Lưỡi Liềm Trăng Khuyết khổng lồ của tuyệt kỹ Crescent Vorpal lao xuyên 22 block! */
+    /**
+     * Luồng năng lượng Lưỡi Liềm Trăng Khuyết khổng lồ của tuyệt kỹ Crescent Vorpal
+     * lao xuyên 22 block!
+     */
     private static final class CrescentVorpalWave {
         final Vec3 origin;
         final float yawDeg, pitchDeg;
@@ -216,9 +226,15 @@ public final class TogetsuVfxRenderer {
         final int r, g, b;
         final long startTick;
         final float durationTicks;
+        final boolean ambientStar;
 
         LunarSpark(double ox, double oy, double oz, float vx, float vy, float vz, float size,
-                   int r, int g, int b, long startTick, float durationTicks) {
+                int r, int g, int b, long startTick, float durationTicks) {
+            this(ox, oy, oz, vx, vy, vz, size, r, g, b, startTick, durationTicks, false);
+        }
+
+        LunarSpark(double ox, double oy, double oz, float vx, float vy, float vz, float size,
+                int r, int g, int b, long startTick, float durationTicks, boolean ambientStar) {
             this.ox = ox;
             this.oy = oy;
             this.oz = oz;
@@ -231,10 +247,13 @@ public final class TogetsuVfxRenderer {
             this.b = b;
             this.startTick = startTick;
             this.durationTicks = durationTicks;
+            this.ambientStar = ambientStar;
         }
     }
 
-    /** Vệt đâm xuyên Trắng–Đen sắc lẹm trên thân mục tiêu cho 12 nhát đâm vô địch! */
+    /**
+     * Vệt đâm xuyên Trắng–Đen sắc lẹm trên thân mục tiêu cho 12 nhát đâm vô địch!
+     */
     private static final class PinThrustFlash {
         final double cx, cy, cz;
         final float yawDeg, pitchDeg, rollDeg;
@@ -244,7 +263,7 @@ public final class TogetsuVfxRenderer {
         final float durationTicks;
 
         PinThrustFlash(double cx, double cy, double cz, float yawDeg, float pitchDeg, float rollDeg,
-                       float halfLen, float halfWidth, LunarPalette palette, long startTick) {
+                float halfLen, float halfWidth, LunarPalette palette, long startTick) {
             this.cx = cx;
             this.cy = cy;
             this.cz = cz;
@@ -259,24 +278,64 @@ public final class TogetsuVfxRenderer {
         }
     }
 
+    private static final class MoonMarkRing {
+        final double x, y, z;
+        final long startTick;
+        final float durationTicks;
+
+        MoonMarkRing(Vec3 pos, long startTick) {
+            this.x = pos.x;
+            this.y = pos.y;
+            this.z = pos.z;
+            this.startTick = startTick;
+            this.durationTicks = 40.0F; // 2.0s rotating Moon Mark ring on target!
+        }
+    }
+
+    /**
+     * Sóng lưỡi liềm xoay tròn 2 sắc Trắng–Đen của Signature RMB (Crescent Wave
+     * Slash) bay AoE 16 block!
+     */
+    private static final class SpinningCrescentWave {
+        final Vec3 origin;
+        final float yawDeg, pitchDeg;
+        final float travelDist;
+        final long startTick;
+        final float durationTicks;
+
+        SpinningCrescentWave(Vec3 origin, float yawDeg, float pitchDeg, float travelDist, long startTick) {
+            this.origin = origin;
+            this.yawDeg = yawDeg;
+            this.pitchDeg = Mth.clamp(pitchDeg, -42.0F, 42.0F);
+            this.travelDist = Mth.clamp(travelDist, 4.0F, 20.0F);
+            this.startTick = startTick;
+            this.durationTicks = 12.0F;
+        }
+    }
+
     private static final List<SlashEffect> SLASHES = new ArrayList<>();
     private static final List<FusionShockwave> SHOCKWAVES = new ArrayList<>();
     private static final List<CrescentVorpalWave> VORPAL_WAVES = new ArrayList<>();
+    private static final List<SpinningCrescentWave> SPINNING_WAVES = new ArrayList<>();
+    private static final List<MoonMarkRing> MOON_MARKS = new ArrayList<>();
     private static final List<PinThrustFlash> PIN_STABS = new ArrayList<>();
     private static final List<LunarSpark> SPARKS = new ArrayList<>();
 
-    private TogetsuVfxRenderer() {}
+    private TogetsuVfxRenderer() {
+    }
 
     public static void clear() {
         SLASHES.clear();
         SHOCKWAVES.clear();
         VORPAL_WAVES.clear();
+        SPINNING_WAVES.clear();
+        MOON_MARKS.clear();
         PIN_STABS.clear();
         SPARKS.clear();
     }
 
     public static void spawnSlashTrail(int attackerId, Vec3 anchor, float yawDeg, float pitchDeg,
-                                       TogetsuMoveType move, float animDurTicks, long clientTick) {
+            TogetsuMoveType move, float animDurTicks, long clientTick) {
         if (!WeaponsConfig.get().enableSlashRibbon || !WeaponsConfig.get().enableSlashVfx) {
             return;
         }
@@ -288,27 +347,51 @@ public final class TogetsuVfxRenderer {
             }
         }
         List<ArcStrip> strips = buildStrips(move);
-        if (strips.isEmpty()) return;
-        if (SLASHES.size() >= 28) SLASHES.remove(0);
-        SLASHES.add(new SlashEffect(attackerId, move, anchor, yawDeg, pitchDeg,
-                clientTick, Mth.clamp(animDurTicks * 0.72F, 7.2F, 11.5F), strips));
+        if (strips.isEmpty())
+            return;
+        if (SLASHES.size() >= 28)
+            SLASHES.remove(0);
+        float trailDur = (move == TogetsuMoveType.DUAL_5)
+                ? Mth.clamp(animDurTicks * 0.96F, 9.6F, 11.5F)
+                : Mth.clamp(animDurTicks * 0.78F, 6.2F, 11.5F);
+        SLASHES.add(new SlashEffect(attackerId, move, anchor, yawDeg, pitchDeg, clientTick, trailDur, strips));
     }
 
     public static void spawnFusionShockwave(Vec3 pos, boolean fusing, long clientTick) {
-        if (SHOCKWAVES.size() >= 12) SHOCKWAVES.remove(0);
+        if (SHOCKWAVES.size() >= 12)
+            SHOCKWAVES.remove(0);
         SHOCKWAVES.add(new FusionShockwave(pos, fusing, false, clientTick));
         spawnLunarCritBurst(pos, true, clientTick);
     }
 
     public static void spawnVorpalChargeImplosion(Vec3 pos, long clientTick) {
-        if (SHOCKWAVES.size() >= 14) SHOCKWAVES.remove(0);
+        if (SHOCKWAVES.size() >= 14)
+            SHOCKWAVES.remove(0);
         SHOCKWAVES.add(new FusionShockwave(pos, true, true, clientTick));
     }
 
-    public static void spawnCrescentVorpalWave(Vec3 start, float yawDeg, float pitchDeg, float travelDist, long clientTick) {
-        if (VORPAL_WAVES.size() >= 10) VORPAL_WAVES.remove(0);
+    public static void spawnCrescentVorpalWave(Vec3 start, float yawDeg, float pitchDeg, float travelDist,
+            long clientTick) {
+        if (VORPAL_WAVES.size() >= 10)
+            VORPAL_WAVES.remove(0);
         VORPAL_WAVES.add(new CrescentVorpalWave(start, yawDeg, pitchDeg, travelDist, clientTick));
         spawnLunarCritBurst(start, true, clientTick);
+    }
+
+    public static void spawnSpinningCrescentWave(Vec3 start, float yawDeg, float pitchDeg, float travelDist,
+            long clientTick) {
+        if (SPINNING_WAVES.size() >= 12)
+            SPINNING_WAVES.remove(0);
+        SPINNING_WAVES.add(new SpinningCrescentWave(start, yawDeg, pitchDeg, travelDist, clientTick));
+        spawnLunarCritBurst(start, true, clientTick);
+        spawnLunarCritBurst(start, false, clientTick);
+    }
+
+    public static void spawnMoonMarkRing(Vec3 pos, long clientTick) {
+        if (MOON_MARKS.size() >= 16)
+            MOON_MARKS.remove(0);
+        MOON_MARKS.add(new MoonMarkRing(pos, clientTick));
+        spawnLunarCritBurst(pos, true, clientTick);
     }
 
     public static void spawnPinStabFlash(Vec3 targetPos, float yawDeg, boolean waxing, int stabIndex, long clientTick) {
@@ -322,16 +405,57 @@ public final class TogetsuVfxRenderer {
         double oy = (rng.nextDouble() - 0.5) * 0.50;
         double oz = (rng.nextDouble() - 0.5) * 0.45;
         boolean finale = (stabIndex >= 12);
-        if (PIN_STABS.size() >= 48) PIN_STABS.remove(0);
+        if (PIN_STABS.size() >= 48)
+            PIN_STABS.remove(0);
         PIN_STABS.add(new PinThrustFlash(
                 targetPos.x + ox, targetPos.y + oy, targetPos.z + oz,
                 yaw, pitch, roll,
                 finale ? 2.55F : (1.55F + rng.nextFloat() * 0.45F),
                 finale ? 0.34F : (0.20F + rng.nextFloat() * 0.08F),
                 finale ? LunarPalette.VORPAL_LUNAR : pal,
-                clientTick
-        ));
+                clientTick));
         spawnLunarCritBurst(targetPos, waxing, clientTick);
+    }
+
+    /**
+     * Tạo 1 đốm sao lấp lánh 4 cánh bay bổng nhẹ dọc lưỡi kiếm khi ở tư thế thủ
+     * Dual-Blade Idle!
+     * (Lưỡi Đen phải: tím/magenta; Lưỡi Trắng trái: cyan/xanh băng — tự đồng bộ màu
+     * tùy chỉnh [C]).
+     */
+    public static void spawnBladeSparkle(Vec3 pos, int rgb, long clientTick) {
+        if (!WeaponsConfig.get().enableSlashVfx) {
+            return;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        RandomSource rng = mc.level != null ? mc.level.random : RandomSource.create();
+        Vec3 vel = new Vec3(
+                (rng.nextFloat() - 0.5F) * 0.014F,
+                0.018F + rng.nextFloat() * 0.018F,
+                (rng.nextFloat() - 0.5F) * 0.014F);
+        spawnBladeSparkle(pos, vel, rgb, clientTick);
+    }
+
+    /**
+     * Phiên bản có vận tốc tùy chỉnh cho dải sao 4 cánh kéo vệt ngược về sau từ 2
+     * mũi đao khi chạy nước rút (`TOGETSU_DUAL_SPRINT`).
+     */
+    public static void spawnBladeSparkle(Vec3 pos, Vec3 vel, int rgb, long clientTick) {
+        if (!WeaponsConfig.get().enableSlashVfx) {
+            return;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        RandomSource rng = mc.level != null ? mc.level.random : RandomSource.create();
+        int r = (rgb >> 16) & 0xFF;
+        int g = (rgb >> 8) & 0xFF;
+        int b = rgb & 0xFF;
+        if (SPARKS.size() >= 180) {
+            SPARKS.remove(0);
+        }
+        float sz = 0.044F + rng.nextFloat() * 0.024F;
+        SPARKS.add(new LunarSpark(pos.x, pos.y, pos.z,
+                (float) vel.x, (float) vel.y, (float) vel.z,
+                sz, r, g, b, clientTick, 11.5F, true));
     }
 
     public static void spawnLunarCritBurst(Vec3 pos, boolean waxing, long clientTick) {
@@ -345,7 +469,8 @@ public final class TogetsuVfxRenderer {
             int r = white ? 255 : 118;
             int g = white ? 252 : 210;
             int b = 255;
-            if (SPARKS.size() >= 96) SPARKS.remove(0);
+            if (SPARKS.size() >= 96)
+                SPARKS.remove(0);
             SPARKS.add(new LunarSpark(pos.x, pos.y, pos.z,
                     (float) (Math.cos(th) * Math.cos(ph) * spd),
                     (float) (Math.sin(ph) * spd + 0.10),
@@ -357,27 +482,87 @@ public final class TogetsuVfxRenderer {
     private static List<ArcStrip> buildStrips(TogetsuMoveType move) {
         List<ArcStrip> list = new ArrayList<>(2);
         switch (move) {
-            case DUAL_1 -> list.add(new ArcStrip(26, -122.0F, 114.0F, 0.45F, 2.05F, 0.46F, -0.34F, 0.14F, 0.0F, 0.36F, LunarPalette.WANING_BLACK));
-            case DUAL_2 -> list.add(new ArcStrip(26, 120.0F, -118.0F, 0.45F, 2.05F, 0.36F, -0.28F, 0.16F, 0.0F, 0.36F, LunarPalette.WAXING_WHITE));
+            // Neo trực tiếp phía trước tầm ngực/mắt bán kính gọn 1.8 block khớp chuẩn mặt
+            // phẳng vung lưỡi Eclipse Style!
+            case DUAL_1 -> {
+                // Nhát 1 Song Đao: 1 dải Đen duy nhất (Tay Phải: Phải-Trên -> Trái-Dưới)
+                list.add(new ArcStrip(28, -82.0F, 82.0F, 0.62F, 1.85F, 0.56F, -0.42F, 0.10F, 0.10F, 0.34F,
+                        LunarPalette.WANING_BLACK));
+            }
+            case DUAL_2 -> {
+                // Nhát 2 Song Đao: 1 dải Trắng duy nhất (Tay Trái: Trái-Trên -> Phải-Dưới)
+                list.add(new ArcStrip(28, 82.0F, -82.0F, 0.62F, 1.85F, 0.56F, -0.42F, 0.10F, 0.10F, 0.34F,
+                        LunarPalette.WAXING_WHITE));
+            }
             case DUAL_3 -> {
-                list.add(new ArcStrip(26, -118.0F, 118.0F, 0.44F, 2.12F, 0.34F, -0.22F, 0.16F, 0.0F, 0.36F, LunarPalette.WANING_BLACK));
-                list.add(new ArcStrip(26, 118.0F, -118.0F, 0.44F, 2.12F, -0.14F, 0.42F, -0.14F, 0.04F, 0.36F, LunarPalette.WAXING_WHITE));
+                // Nhát 3 Song Đao: 1 dải Đen duy nhất (Tay Phải chém hất: Trái-Dưới ->
+                // Phải-Trên)
+                list.add(new ArcStrip(28, 80.0F, -80.0F, 0.62F, 1.88F, -0.44F, 0.60F, 0.12F, 0.10F, 0.34F,
+                        LunarPalette.WANING_BLACK));
             }
             case DUAL_4 -> {
-                list.add(new ArcStrip(28, -110.0F, 110.0F, 0.48F, 2.30F, 0.68F, -0.52F, 0.18F, 0.06F, 0.36F, LunarPalette.WAXING_WHITE));
-                list.add(new ArcStrip(28, 110.0F, -110.0F, 0.48F, 2.25F, 0.64F, -0.52F, -0.12F, 0.08F, 0.36F, LunarPalette.WANING_BLACK));
+                // Nhát 4 Song Đao: 1 dải Trắng duy nhất (Tay Trái chém ngược: Phải-Dưới ->
+                // Trái-Trên + Moon Mark)
+                list.add(new ArcStrip(28, -80.0F, 80.0F, 0.62F, 1.88F, -0.44F, 0.60F, 0.12F, 0.10F, 0.34F,
+                        LunarPalette.WAXING_WHITE));
+            }
+            case DUAL_5 -> {
+                // NHÁT 5 ĐÒN ĐÁNH ĐẶC BIỆT (Auto-Fuse Eclipse Morphing Finisher): vòng bổ 180°
+                // Trắng–Đen siêu rộng từ đỉnh đầu xuống chéo!
+                list.add(new ArcStrip(36, 86.0F, -86.0F, 0.64F, 1.98F, 1.22F, -0.58F, 0.26F, 0.28F, 0.30F,
+                        LunarPalette.WAXING_WHITE));
+                list.add(new ArcStrip(36, 86.0F, -86.0F, 0.74F, 2.04F, 1.16F, -0.64F, 0.22F, 0.30F, 0.32F,
+                        LunarPalette.WANING_BLACK));
+            }
+            case DUAL_SPRINT_THRUST -> {
+                list.add(new ArcStrip(26, -82.0F, 82.0F, 0.62F, 1.85F, 0.28F, -0.22F, 0.12F, 0.0F, 0.36F,
+                        LunarPalette.WANING_BLACK));
+                list.add(new ArcStrip(26, 82.0F, -82.0F, 0.62F, 1.85F, 0.22F, -0.18F, 0.12F, 0.06F, 0.36F,
+                        LunarPalette.WAXING_WHITE));
+            }
+            case DUAL_AIR_SLASH -> {
+                list.add(new ArcStrip(28, -86.0F, 86.0F, 0.62F, 1.88F, -0.36F, 0.52F, 0.16F, 0.0F, 0.40F,
+                        LunarPalette.WAXING_WHITE));
+                list.add(new ArcStrip(28, 86.0F, -86.0F, 0.62F, 1.84F, -0.32F, 0.48F, -0.12F, 0.04F, 0.40F,
+                        LunarPalette.WANING_BLACK));
+            }
+            case DUAL_LANDING_DASH -> {
+                list.add(new ArcStrip(28, -84.0F, 84.0F, 0.62F, 1.86F, 0.04F, -0.04F, 0.05F, 0.0F, 0.36F,
+                        LunarPalette.WANING_BLACK));
+                list.add(new ArcStrip(28, 84.0F, -84.0F, 0.62F, 1.86F, -0.02F, 0.06F, -0.05F, 0.02F, 0.36F,
+                        LunarPalette.WAXING_WHITE));
             }
             case FUSED_1 -> {
-                // Đại Đao Song Nguyệt: duy nhất 1 vết chém bổ chéo dứt khoát!
-                list.add(new ArcStrip(34, -128.0F, 128.0F, 0.62F, 3.25F, 1.05F, -0.78F, 0.25F, 0.04F, 0.40F, LunarPalette.WAXING_WHITE));
+                // Song Nguyệt Nhát 1 (0.3s): Dải bổ chém cắm thẳng từ Đỉnh Đầu-Phải xuống mặt
+                // đất bên Trái!
+                list.add(new ArcStrip(34, -46.0F, 48.0F, 0.62F, 1.96F, 1.32F, -0.94F, 0.22F, 0.12F, 0.34F,
+                        LunarPalette.WAXING_WHITE));
+                list.add(new ArcStrip(34, -46.0F, 48.0F, 0.72F, 2.04F, 1.26F, -0.98F, 0.18F, 0.14F, 0.36F,
+                        LunarPalette.WANING_BLACK));
             }
             case FUSED_2 -> {
-                // Đại Đao Song Nguyệt: duy nhất 1 vết chém quét ngang 240° rộng!
-                list.add(new ArcStrip(36, 138.0F, -138.0F, 0.62F, 3.35F, -0.18F, 0.28F, 0.12F, 0.0F, 0.42F, LunarPalette.VORPAL_LUNAR));
+                // Song Nguyệt Nhát 2 (0.3s): Dải bổ chém cắm thẳng từ Đỉnh Đầu-Trái xuống mặt
+                // đất bên Phải!
+                list.add(new ArcStrip(34, 46.0F, -48.0F, 0.62F, 1.96F, 1.32F, -0.94F, 0.22F, 0.12F, 0.34F,
+                        LunarPalette.WAXING_WHITE));
+                list.add(new ArcStrip(34, 46.0F, -48.0F, 0.72F, 2.04F, 1.26F, -0.98F, 0.18F, 0.14F, 0.36F,
+                        LunarPalette.WANING_BLACK));
             }
             case FUSED_3 -> {
-                // Đại Đao Song Nguyệt: duy nhất 1 vết chém hất ngược cực mạnh!
-                list.add(new ArcStrip(34, -126.0F, 126.0F, 0.62F, 3.30F, -0.74F, 0.98F, 0.26F, 0.02F, 0.40F, LunarPalette.WAXING_WHITE));
+                // Song Nguyệt Nhát 3 (0.3s): Dải chém hất vòng cung thanh thoát từ Thấp-Trái
+                // lên Cao-Phải (Rising Crescent Sweep!)
+                list.add(new ArcStrip(34, 82.0F, -82.0F, 0.66F, 2.08F, -0.46F, 0.72F, 0.14F, 0.08F, 0.32F,
+                        LunarPalette.WAXING_WHITE));
+                list.add(new ArcStrip(34, 82.0F, -82.0F, 0.76F, 2.16F, -0.52F, 0.66F, 0.10F, 0.10F, 0.34F,
+                        LunarPalette.WANING_BLACK));
+            }
+            case CRESCENT_WAVE_SLASH -> {
+                // Signature RMB Draw-Slash: dải rút kiếm ngang sắc nét Trái -> Phải trực diện
+                // 2.05 block!
+                list.add(new ArcStrip(32, 86.0F, -86.0F, 0.68F, 2.05F, -0.04F, 0.06F, 0.04F, 0.02F, 0.32F,
+                        LunarPalette.WAXING_WHITE));
+                list.add(new ArcStrip(32, 86.0F, -86.0F, 0.80F, 2.14F, -0.10F, 0.00F, 0.04F, 0.04F, 0.34F,
+                        LunarPalette.WANING_BLACK));
             }
             default -> {
             }
@@ -386,7 +571,8 @@ public final class TogetsuVfxRenderer {
     }
 
     public static void renderWorld(WorldRenderContext context, long clientTick) {
-        if (SLASHES.isEmpty() && SHOCKWAVES.isEmpty() && VORPAL_WAVES.isEmpty() && PIN_STABS.isEmpty() && SPARKS.isEmpty()) {
+        if (SLASHES.isEmpty() && SHOCKWAVES.isEmpty() && VORPAL_WAVES.isEmpty()
+                && SPINNING_WAVES.isEmpty() && MOON_MARKS.isEmpty() && PIN_STABS.isEmpty() && SPARKS.isEmpty()) {
             return;
         }
         PoseStack poseStack = context.matrixStack();
@@ -407,10 +593,13 @@ public final class TogetsuVfxRenderer {
         SLASHES.removeIf(s -> Math.max(0.0F, nowF - s.startTick) >= s.durationTicks);
         SHOCKWAVES.removeIf(sw -> Math.max(0.0F, nowF - sw.startTick) >= sw.durationTicks);
         VORPAL_WAVES.removeIf(vw -> Math.max(0.0F, nowF - vw.startTick) >= vw.durationTicks);
+        SPINNING_WAVES.removeIf(spw -> Math.max(0.0F, nowF - spw.startTick) >= spw.durationTicks);
+        MOON_MARKS.removeIf(mm -> Math.max(0.0F, nowF - mm.startTick) >= mm.durationTicks);
         PIN_STABS.removeIf(ps -> Math.max(0.0F, nowF - ps.startTick) >= ps.durationTicks);
         SPARKS.removeIf(sp -> Math.max(0.0F, nowF - sp.startTick) >= sp.durationTicks);
 
-        boolean hasQuads = !SLASHES.isEmpty() || !SHOCKWAVES.isEmpty() || !VORPAL_WAVES.isEmpty() || !PIN_STABS.isEmpty();
+        boolean hasQuads = !SLASHES.isEmpty() || !SHOCKWAVES.isEmpty() || !VORPAL_WAVES.isEmpty()
+                || !SPINNING_WAVES.isEmpty() || !MOON_MARKS.isEmpty() || !PIN_STABS.isEmpty();
 
         // Pass 1: BODY (duy nhất 1 VertexConsumer đang mở!)
         if (hasQuads) {
@@ -435,8 +624,8 @@ public final class TogetsuVfxRenderer {
     }
 
     private static void renderPass(PoseStack poseStack, VertexConsumer vc, boolean glowPass,
-                                   ClientLevel level, Vec3 camPos, float nowF, float partialTick,
-                                   int localId, boolean firstPerson) {
+            ClientLevel level, Vec3 camPos, float nowF, float partialTick,
+            int localId, boolean firstPerson) {
         // 1. Vệt chém Song Đao & Đại Đao Song Nguyệt
         for (SlashEffect tr : SLASHES) {
             float progress = Mth.clamp(Math.max(0.0F, nowF - tr.startTick) / tr.durationTicks, 0.0F, 1.0F);
@@ -445,23 +634,31 @@ public final class TogetsuVfxRenderer {
             if (ent != null && ent.isAlive()) {
                 Vec3 ep = ent.getPosition(partialTick);
                 wx = ep.x;
-                wy = ep.y + ent.getBbHeight() * 0.56;
+                // Neo chuẩn tầm ngực `eyeY - 0.35` để lưỡi kiếm chém cắt thẳng qua tâm vệt
+                // sáng!
+                wy = ep.y + ent.getEyeHeight() - 0.35;
                 wz = ep.z;
             }
             boolean localFp = firstPerson && tr.attackerId == localId;
-            float scale = localFp ? 0.78F : 1.00F;
-            float fade = progress < 0.10F ? (progress / 0.10F) : (1.0F - Mth.clamp((progress - 0.50F) / 0.50F, 0.0F, 1.0F));
+            boolean spin360 = false;
+            float scale = localFp ? 0.80F : 1.00F;
+            float fade = progress < 0.10F ? (progress / 0.10F)
+                    : (1.0F - Mth.clamp((progress - 0.50F) / 0.50F, 0.0F, 1.0F));
             fade = fade * fade * (3.0F - 2.0F * fade);
-            if (fade <= 0.01F) continue;
+            if (fade <= 0.01F)
+                continue;
 
+            float alignedPitch = spin360 ? 0.0F : Mth.clamp(tr.pitchDeg * 0.72F, -48.0F, 48.0F);
             poseStack.pushPose();
             poseStack.translate(wx - camPos.x, wy - camPos.y, wz - camPos.z);
             poseStack.mulPose(Axis.YP.rotationDegrees(-tr.yawDeg));
-            if (localFp) {
-                poseStack.translate(0.0, -0.14, 0.56);
-                poseStack.mulPose(Axis.XP.rotationDegrees(Mth.clamp(tr.pitchDeg * 0.40F, -24.0F, 24.0F)));
-            } else {
-                poseStack.mulPose(Axis.XP.rotationDegrees(Mth.clamp(tr.pitchDeg * 0.20F, -14.0F, 14.0F)));
+            if (Math.abs(alignedPitch) > 0.05F) {
+                poseStack.mulPose(Axis.XP.rotationDegrees(alignedPitch));
+            }
+            // Đẩy tâm vòng cung tiến trực tiếp theo vector hướng nhìn phía trước người chơi
+            // (trừ chiêu xoay 360° quanh trục thân)!
+            if (!spin360) {
+                poseStack.translate(0.0, localFp ? -0.10 : 0.0, localFp ? 0.44 : 0.30);
             }
             poseStack.scale(scale, scale, scale);
             for (ArcStrip strip : tr.strips) {
@@ -470,12 +667,14 @@ public final class TogetsuVfxRenderer {
             poseStack.popPose();
         }
 
-        // 2. Sóng xung kích Hợp Nhất / Tách Song Nguyệt & Vòng hút tụ lực 4s Crescent Vorpal!
+        // 2. Sóng xung kích Hợp Nhất / Tách Song Nguyệt & Vòng hút tụ lực 4s Crescent
+        // Vorpal!
         for (FusionShockwave sw : SHOCKWAVES) {
             float p = Mth.clamp(Math.max(0.0F, nowF - sw.startTick) / sw.durationTicks, 0.0F, 1.0F);
             float ease = DualBladeAnimState.easeOutQuart(p);
             float fade = sw.imploding ? Mth.sin(p * Mth.PI) : ((1.0F - p) * (1.0F - p));
-            if (fade <= 0.01F) continue;
+            if (fade <= 0.01F)
+                continue;
             float rOuter = sw.imploding
                     ? Mth.lerp(ease, 3.4F, 0.45F)
                     : Mth.lerp(ease, 0.65F, sw.fusing ? 4.2F : 2.8F);
@@ -486,16 +685,19 @@ public final class TogetsuVfxRenderer {
             drawLunarRing(poseStack.last(), vc, glowPass, rInner, rOuter, 0.0F, fade,
                     sw.imploding ? LunarPalette.VORPAL_LUNAR : LunarPalette.WAXING_WHITE);
             poseStack.mulPose(Axis.XP.rotationDegrees(26.0F));
-            drawLunarRing(poseStack.last(), vc, glowPass, rInner * 0.92F, rOuter * 0.92F, 0.22F, fade, LunarPalette.WANING_BLACK);
+            drawLunarRing(poseStack.last(), vc, glowPass, rInner * 0.92F, rOuter * 0.92F, 0.22F, fade,
+                    LunarPalette.WANING_BLACK);
             poseStack.popPose();
         }
 
-        // 3. LUỒNG SÓNG TRĂNG KHUYẾT KHỔNG LỒ: CRESCENT VORPAL (CHÍ MỆNH TAM NHẬT NGUYỆT — 22 BLOCK!)
+        // 3. LUỒNG SÓNG TRĂNG KHUYẾT KHỔNG LỒ: CRESCENT VORPAL (CHÍ MỆNH TAM NHẬT
+        // NGUYỆT — 22 BLOCK!)
         for (CrescentVorpalWave vw : VORPAL_WAVES) {
             float p = Mth.clamp(Math.max(0.0F, nowF - vw.startTick) / vw.durationTicks, 0.0F, 1.0F);
             float travel = DualBladeAnimState.easeOutCubic(Mth.clamp(p / 0.85F, 0.0F, 1.0F));
             float fade = p < 0.08F ? (p / 0.08F) : (1.0F - Mth.clamp((p - 0.68F) / 0.32F, 0.0F, 1.0F));
-            if (fade <= 0.01F) continue;
+            if (fade <= 0.01F)
+                continue;
 
             Vec3 fwd = Vec3.directionFromRotation(vw.pitchDeg, vw.yawDeg).normalize();
             Vec3 headPos = vw.origin.add(fwd.scale(1.4 + travel * (vw.travelDist - 1.4)));
@@ -505,7 +707,8 @@ public final class TogetsuVfxRenderer {
             poseStack.translate(headPos.x - camPos.x, headPos.y - camPos.y, headPos.z - camPos.z);
             poseStack.mulPose(Axis.YP.rotationDegrees(-vw.yawDeg));
             poseStack.mulPose(Axis.XP.rotationDegrees(vw.pitchDeg));
-            // Nghiêng nhẹ lưỡi liềm 14° tạo dáng chém xiên siêu ngầu như Sunraku chém xuyên Tensei!
+            // Nghiêng nhẹ lưỡi liềm 14° tạo dáng chém xiên siêu ngầu như Sunraku chém xuyên
+            // Tensei!
             poseStack.mulPose(Axis.ZP.rotationDegrees(14.0F));
             poseStack.scale(scale, scale, scale);
             drawVorpalCrescentMesh(poseStack.last(), vc, glowPass, fade);
@@ -517,7 +720,8 @@ public final class TogetsuVfxRenderer {
             float p = Mth.clamp(Math.max(0.0F, nowF - ps.startTick) / ps.durationTicks, 0.0F, 1.0F);
             float exp = DualBladeAnimState.easeOutQuart(Mth.clamp(p / 0.28F, 0.0F, 1.0F));
             float fade = p < 0.14F ? (p / 0.14F) : (1.0F - Mth.clamp((p - 0.30F) / 0.70F, 0.0F, 1.0F));
-            if (fade <= 0.01F) continue;
+            if (fade <= 0.01F)
+                continue;
             float len = ps.halfLen * (0.30F + 0.70F * exp);
             float w = ps.halfWidth * (1.05F - p * 0.55F);
             LunarPalette pal = ps.palette;
@@ -534,27 +738,78 @@ public final class TogetsuVfxRenderer {
             if (!glowPass) {
                 emitQuad(vc, pose,
                         -len, 0.0F, 0.0F, 0.02F, 0.50F, pal.tailR, pal.tailG, pal.tailB, aTail,
-                        0.0F, -w,   0.0F, 0.50F, 0.08F, pal.tailR, pal.tailG, pal.tailB, aTail,
-                        0.0F,  w,   0.0F, 0.50F, 0.92F, pal.midR,  pal.midG,  pal.midB,  aMid,
-                        -len, 0.0F, 0.0F, 0.02F, 0.50F, pal.midR,  pal.midG,  pal.midB,  aMid);
+                        0.0F, -w, 0.0F, 0.50F, 0.08F, pal.tailR, pal.tailG, pal.tailB, aTail,
+                        0.0F, w, 0.0F, 0.50F, 0.92F, pal.midR, pal.midG, pal.midB, aMid,
+                        -len, 0.0F, 0.0F, 0.02F, 0.50F, pal.midR, pal.midG, pal.midB, aMid);
                 emitQuad(vc, pose,
-                        0.0F, -w,   0.0F, 0.50F, 0.08F, pal.tailR, pal.tailG, pal.tailB, aTail,
-                         len, 0.0F, 0.0F, 0.98F, 0.50F, pal.tailR, pal.tailG, pal.tailB, aTail,
-                         len, 0.0F, 0.0F, 0.98F, 0.50F, pal.midR,  pal.midG,  pal.midB,  aMid,
-                        0.0F,  w,   0.0F, 0.50F, 0.92F, pal.midR,  pal.midG,  pal.midB,  aMid);
+                        0.0F, -w, 0.0F, 0.50F, 0.08F, pal.tailR, pal.tailG, pal.tailB, aTail,
+                        len, 0.0F, 0.0F, 0.98F, 0.50F, pal.tailR, pal.tailG, pal.tailB, aTail,
+                        len, 0.0F, 0.0F, 0.98F, 0.50F, pal.midR, pal.midG, pal.midB, aMid,
+                        0.0F, w, 0.0F, 0.50F, 0.92F, pal.midR, pal.midG, pal.midB, aMid);
             } else {
                 float mw = w * 0.52F;
                 emitQuad(vc, pose,
-                        -len, 0.0F,  0.01F, 0.02F, 0.92F, pal.coreR, pal.coreG, pal.coreB, aCore,
-                        0.0F, -mw,   0.01F, 0.50F, 0.80F, pal.midR,  pal.midG,  pal.midB,  aMid,
-                         len, 0.0F,  0.01F, 0.98F, 0.92F, pal.coreR, pal.coreG, pal.coreB, aCore,
-                        0.0F,  mw,   0.01F, 0.50F, 0.98F, pal.coreR, pal.coreG, pal.coreB, aCore);
+                        -len, 0.0F, 0.01F, 0.02F, 0.92F, pal.coreR, pal.coreG, pal.coreB, aCore,
+                        0.0F, -mw, 0.01F, 0.50F, 0.80F, pal.midR, pal.midG, pal.midB, aMid,
+                        len, 0.0F, 0.01F, 0.98F, 0.92F, pal.coreR, pal.coreG, pal.coreB, aCore,
+                        0.0F, mw, 0.01F, 0.50F, 0.98F, pal.coreR, pal.coreG, pal.coreB, aCore);
             }
+            poseStack.popPose();
+        }
+
+        // 5. Spinning Dual-Colored (Black & White) Crescent Projectile Wave (Signature
+        // RMB Crescent Wave Slash!)
+        for (SpinningCrescentWave spw : SPINNING_WAVES) {
+            float p = Mth.clamp(Math.max(0.0F, nowF - spw.startTick) / spw.durationTicks, 0.0F, 1.0F);
+            float travel = DualBladeAnimState.easeOutCubic(Math.min(1.0F, p / 0.92F));
+            float fade = p < 0.08F ? (p / 0.08F) : (1.0F - Mth.clamp((p - 0.72F) / 0.28F, 0.0F, 1.0F));
+            if (fade <= 0.01F)
+                continue;
+
+            Vec3 fwd = Vec3.directionFromRotation(spw.pitchDeg, spw.yawDeg).normalize();
+            Vec3 headPos = spw.origin.add(fwd.scale(1.2 + travel * (spw.travelDist - 1.2)));
+            float spinDeg = p * 780.0F; // Fast dual-colored spinning crescent disc!
+            float sc = 0.78F + 0.34F * Mth.sin(Math.min(1.0F, p * 1.5F) * Mth.PI * 0.5F);
+
+            poseStack.pushPose();
+            poseStack.translate(headPos.x - camPos.x, headPos.y - camPos.y, headPos.z - camPos.z);
+            poseStack.mulPose(Axis.YP.rotationDegrees(-spw.yawDeg));
+            poseStack.mulPose(Axis.XP.rotationDegrees(spw.pitchDeg));
+            poseStack.mulPose(Axis.ZP.rotationDegrees(10.0F));
+            poseStack.mulPose(Axis.YP.rotationDegrees(spinDeg));
+            poseStack.scale(sc, sc, sc);
+            drawLunarRing(poseStack.last(), vc, glowPass, 0.95F, 1.95F, 0.03F, fade, LunarPalette.WAXING_WHITE);
+            poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
+            drawLunarRing(poseStack.last(), vc, glowPass, 0.85F, 1.85F, -0.03F, fade, LunarPalette.WANING_BLACK);
+            poseStack.popPose();
+        }
+
+        // 6. Rotating Moon Mark Ring (Hit 3 Reverse-Grip Twin Thrust mark on hit
+        // target!)
+        for (MoonMarkRing mm : MOON_MARKS) {
+            float p = Mth.clamp(Math.max(0.0F, nowF - mm.startTick) / mm.durationTicks, 0.0F, 1.0F);
+            float pop = DualBladeAnimState.easeOutQuart(Math.min(1.0F, p / 0.14F));
+            float fade = p < 0.08F ? (p / 0.08F) : (1.0F - Mth.clamp((p - 0.75F) / 0.25F, 0.0F, 1.0F));
+            if (fade <= 0.01F)
+                continue;
+            float rOuter = Mth.lerp(pop, 0.35F, 1.05F);
+            float rInner = rOuter * 0.68F;
+            poseStack.pushPose();
+            poseStack.translate(mm.x - camPos.x, mm.y - camPos.y, mm.z - camPos.z);
+            poseStack.mulPose(Axis.YP.rotationDegrees(p * 360.0F));
+            poseStack.mulPose(Axis.XP.rotationDegrees(18.0F));
+            drawLunarRing(poseStack.last(), vc, glowPass, rInner, rOuter, 0.02F, fade, LunarPalette.WAXING_WHITE);
+            poseStack.mulPose(Axis.XP.rotationDegrees(-36.0F));
+            drawLunarRing(poseStack.last(), vc, glowPass, rInner * 0.88F, rOuter * 0.88F, -0.02F, fade,
+                    LunarPalette.WANING_BLACK);
             poseStack.popPose();
         }
     }
 
-    /** Vẽ lưới 3D Lưỡi Liềm Trăng Khuyết khổng lồ (rộng 4.6 block, đuôi kéo ngược 3.2 block) phóng xuyên 22 block! */
+    /**
+     * Vẽ lưới 3D Lưỡi Liềm Trăng Khuyết khổng lồ (rộng 4.6 block, đuôi kéo ngược
+     * 3.2 block) phóng xuyên 22 block!
+     */
     private static void drawVorpalCrescentMesh(PoseStack.Pose pose, VertexConsumer vc, boolean glowPass, float fade) {
         int segs = 22;
         LunarPalette pal = LunarPalette.VORPAL_LUNAR;
@@ -571,7 +826,8 @@ public final class TogetsuVfxRenderer {
             float t0 = (float) Math.pow(Math.max(0.0F, Mth.sin(u0 * Mth.PI)), 0.55);
             float t1 = (float) Math.pow(Math.max(0.0F, Mth.sin(u1 * Mth.PI)), 0.55);
 
-            // Cạnh cắt sáng dẫn đầu (+Z) & đuôi năng lượng kéo lùi (-Z) theo hình trăng khuyết sắc lẹm!
+            // Cạnh cắt sáng dẫn đầu (+Z) & đuôi năng lượng kéo lùi (-Z) theo hình trăng
+            // khuyết sắc lẹm!
             float ox0 = Mth.sin(a0) * rOuter;
             float oz0 = (Mth.cos(a0) - 0.38F) * rOuter;
             float ox1 = Mth.sin(a1) * rOuter;
@@ -595,21 +851,21 @@ public final class TogetsuVfxRenderer {
                 emitQuad(vc, pose,
                         ix0, yArch0 * 0.4F, iz0, u0, 0.05F, pal.tailR, pal.tailG, pal.tailB, aTail0,
                         ix1, yArch1 * 0.4F, iz1, u1, 0.05F, pal.tailR, pal.tailG, pal.tailB, aTail1,
-                        ox1, yArch1,        oz1, u1, 0.98F, pal.coreR, pal.coreG, pal.coreB, aCore1,
-                        ox0, yArch0,        oz0, u0, 0.98F, pal.coreR, pal.coreG, pal.coreB, aCore0);
+                        ox1, yArch1, oz1, u1, 0.98F, pal.coreR, pal.coreG, pal.coreB, aCore1,
+                        ox0, yArch0, oz0, u0, 0.98F, pal.coreR, pal.coreG, pal.coreB, aCore0);
                 // Cánh dọc chữ thập giúp nhìn dày 3D dù ở góc nhìn ngang hay trên xuống!
                 emitQuad(vc, pose,
                         ix0, -0.32F * t0, iz0, u0, 0.12F, pal.tailR, pal.tailG, pal.tailB, aTail0 / 2,
                         ix1, -0.32F * t1, iz1, u1, 0.12F, pal.tailR, pal.tailG, pal.tailB, aTail1 / 2,
-                        ox1,  0.32F * t1, oz1, u1, 0.92F, pal.midR,  pal.midG,  pal.midB,  aCore1,
-                        ox0,  0.32F * t0, oz0, u0, 0.92F, pal.midR,  pal.midG,  pal.midB,  aCore0);
+                        ox1, 0.32F * t1, oz1, u1, 0.92F, pal.midR, pal.midG, pal.midB, aCore1,
+                        ox0, 0.32F * t0, oz0, u0, 0.92F, pal.midR, pal.midG, pal.midB, aCore0);
             } else {
                 // Hào quang rực chói dọc mũi cắt lưỡi liềm!
                 float mx0 = Mth.lerp(0.60F, ix0, ox0), mz0 = Mth.lerp(0.60F, iz0, oz0);
                 float mx1 = Mth.lerp(0.60F, ix1, ox1), mz1 = Mth.lerp(0.60F, iz1, oz1);
                 emitQuad(vc, pose,
-                        mx0, yArch0 + 0.04F, mz0, u0, 0.60F, pal.midR,  pal.midG,  pal.midB,  aCore0,
-                        mx1, yArch1 + 0.04F, mz1, u1, 0.60F, pal.midR,  pal.midG,  pal.midB,  aCore1,
+                        mx0, yArch0 + 0.04F, mz0, u0, 0.60F, pal.midR, pal.midG, pal.midB, aCore0,
+                        mx1, yArch1 + 0.04F, mz1, u1, 0.60F, pal.midR, pal.midG, pal.midB, aCore1,
                         ox1, yArch1 + 0.06F, oz1, u1, 0.99F, pal.coreR, pal.coreG, pal.coreB, aCore1,
                         ox0, yArch0 + 0.06F, oz0, u0, 0.99F, pal.coreR, pal.coreG, pal.coreB, aCore0);
             }
@@ -617,7 +873,7 @@ public final class TogetsuVfxRenderer {
     }
 
     private static void drawLunarRing(PoseStack.Pose pose, VertexConsumer vc, boolean glowPass,
-                                      float rInner, float rOuter, float yOff, float fade, LunarPalette pal) {
+            float rInner, float rOuter, float yOff, float fade, LunarPalette pal) {
         int segs = 28;
         int aIn = Mth.clamp(Math.round(fade * 140.0F), 0, 255);
         int aOut = Mth.clamp(Math.round(fade * 250.0F), 0, 255);
@@ -646,11 +902,12 @@ public final class TogetsuVfxRenderer {
     }
 
     private static void drawStrip(PoseStack.Pose pose, VertexConsumer vc, boolean glowPass,
-                                  ArcStrip strip, float progress, float globalFade) {
+            ArcStrip strip, float progress, float globalFade) {
         float localP = Mth.clamp((progress - strip.delayFrac) / Math.max(0.15F, 1.0F - strip.delayFrac), 0.0F, 1.0F);
         float head = DualBladeAnimState.easeOutQuart(Mth.clamp(localP / strip.sweepFrac, 0.0F, 1.0F));
         float tail = Mth.clamp((localP - 0.36F) / 0.64F, 0.0F, 0.92F);
-        if (head <= tail + 0.03F) return;
+        if (head <= tail + 0.03F)
+            return;
 
         int i0 = Mth.clamp((int) Math.floor(tail * (strip.count - 1)), 0, strip.count - 2);
         int i1 = Mth.clamp((int) Math.ceil(head * (strip.count - 1)), i0 + 1, strip.count - 1);
@@ -688,19 +945,19 @@ public final class TogetsuVfxRenderer {
                 emitQuad(vc, pose,
                         bx0, by0, bz0, u0, 0.04F, pal.tailR, pal.tailG, pal.tailB, aTail0,
                         bx1, by1, bz1, u1, 0.04F, pal.tailR, pal.tailG, pal.tailB, aTail1,
-                        mx1, my1, mz1, u1, 0.56F, pal.midR,  pal.midG,  pal.midB,  aMid1,
-                        mx0, my0, mz0, u0, 0.56F, pal.midR,  pal.midG,  pal.midB,  aMid0);
+                        mx1, my1, mz1, u1, 0.56F, pal.midR, pal.midG, pal.midB, aMid1,
+                        mx0, my0, mz0, u0, 0.56F, pal.midR, pal.midG, pal.midB, aMid0);
                 emitQuad(vc, pose,
-                        mx0, my0, mz0, u0, 0.56F, pal.midR,  pal.midG,  pal.midB,  aMid0,
-                        mx1, my1, mz1, u1, 0.56F, pal.midR,  pal.midG,  pal.midB,  aMid1,
+                        mx0, my0, mz0, u0, 0.56F, pal.midR, pal.midG, pal.midB, aMid0,
+                        mx1, my1, mz1, u1, 0.56F, pal.midR, pal.midG, pal.midB, aMid1,
                         tx1, ty1, tz1, u1, 0.98F, pal.coreR, pal.coreG, pal.coreB, aCore1,
                         tx0, ty0, tz0, u0, 0.98F, pal.coreR, pal.coreG, pal.coreB, aCore0);
             } else {
                 float cx0 = Mth.lerp(0.74F, bx0, tx0), cy0 = Mth.lerp(0.74F, by0, ty0), cz0 = Mth.lerp(0.74F, bz0, tz0);
                 float cx1 = Mth.lerp(0.74F, bx1, tx1), cy1 = Mth.lerp(0.74F, by1, ty1), cz1 = Mth.lerp(0.74F, bz1, tz1);
                 emitQuad(vc, pose,
-                        cx0, cy0 + 0.015F, cz0, u0, 0.74F, pal.midR,  pal.midG,  pal.midB,  aMid0,
-                        cx1, cy1 + 0.015F, cz1, u1, 0.74F, pal.midR,  pal.midG,  pal.midB,  aMid1,
+                        cx0, cy0 + 0.015F, cz0, u0, 0.74F, pal.midR, pal.midG, pal.midB, aMid0,
+                        cx1, cy1 + 0.015F, cz1, u1, 0.74F, pal.midR, pal.midG, pal.midB, aMid1,
                         tx1, ty1 + 0.025F, tz1, u1, 0.98F, pal.coreR, pal.coreG, pal.coreB, aCore1,
                         tx0, ty0 + 0.025F, tz0, u0, 0.98F, pal.coreR, pal.coreG, pal.coreB, aCore0);
             }
@@ -708,31 +965,71 @@ public final class TogetsuVfxRenderer {
     }
 
     private static void renderSpark(PoseStack poseStack, VertexConsumer vc, Camera camera, Vec3 camPos,
-                                    LunarSpark sp, float t) {
+            LunarSpark sp, float t) {
+        if (sp.ambientStar) {
+            double px = sp.ox + sp.vx * t * 2.2;
+            double py = sp.oy + sp.vy * t * 2.6;
+            double pz = sp.oz + sp.vz * t * 2.2;
+            float twinkle = Mth.sin(t * Mth.PI);
+            float s = sp.size * (0.45F + 0.70F * twinkle);
+            int a = Mth.clamp(Math.round(twinkle * 250.0F), 0, 255);
+            if (s <= 0.004F || a <= 4) {
+                return;
+            }
+            float w = s * 0.27F;
+            poseStack.pushPose();
+            poseStack.translate(px - camPos.x, py - camPos.y, pz - camPos.z);
+            poseStack.mulPose(camera.rotation());
+            PoseStack.Pose pose = poseStack.last();
+            // Đốm sao 4 cánh phát sáng sắc nét (tâm trắng lóa + 4 tia sao mảnh, không có ô
+            // vuông/thoi thừa) cho cả Song Đao & Song Nguyệt!
+            emitQuad(vc, pose,
+                    0.0F, -s, 0.0F, 0.50F, 0.15F, sp.r, sp.g, sp.b, a,
+                    w, 0.0F, 0.0F, 0.85F, 0.50F, sp.r, sp.g, sp.b, a,
+                    0.0F, s, 0.0F, 0.50F, 0.85F, sp.r, sp.g, sp.b, a,
+                    -w, 0.0F, 0.0F, 0.15F, 0.50F, sp.r, sp.g, sp.b, a);
+            emitQuad(vc, pose,
+                    -s, 0.0F, 0.0F, 0.15F, 0.50F, sp.r, sp.g, sp.b, a,
+                    0.0F, -w, 0.0F, 0.50F, 0.15F, sp.r, sp.g, sp.b, a,
+                    s, 0.0F, 0.0F, 0.85F, 0.50F, sp.r, sp.g, sp.b, a,
+                    0.0F, w, 0.0F, 0.50F, 0.85F, sp.r, sp.g, sp.b, a);
+            float core = s * 0.34F;
+            int coreR = Math.min(255, sp.r + 85);
+            int coreG = Math.min(255, sp.g + 85);
+            int coreB = Math.min(255, sp.b + 85);
+            emitQuad(vc, pose,
+                    -core, -core, 0.002F, 0.30F, 0.30F, coreR, coreG, coreB, a,
+                    core, -core, 0.002F, 0.70F, 0.30F, coreR, coreG, coreB, a,
+                    core, core, 0.002F, 0.70F, 0.70F, coreR, coreG, coreB, a,
+                    -core, core, 0.002F, 0.30F, 0.70F, coreR, coreG, coreB, a);
+            poseStack.popPose();
+            return;
+        }
         float ease = DualBladeAnimState.easeOutCubic(t);
         double px = sp.ox + sp.vx * ease * 3.0;
         double py = sp.oy + sp.vy * ease * 3.0 - 0.14 * t * t;
         double pz = sp.oz + sp.vz * ease * 3.0;
         float s = sp.size * (1.0F - t * 0.58F);
         int a = Mth.clamp(Math.round((1.0F - t) * 250.0F), 0, 255);
-        if (s <= 0.005F || a <= 4) return;
+        if (s <= 0.005F || a <= 4)
+            return;
         poseStack.pushPose();
         poseStack.translate(px - camPos.x, py - camPos.y, pz - camPos.z);
         poseStack.mulPose(camera.rotation());
         poseStack.mulPose(Axis.ZP.rotationDegrees(45.0F + t * 90.0F));
         emitQuad(vc, poseStack.last(),
                 -s, -s, 0.0F, 0.25F, 0.25F, sp.r, sp.g, sp.b, a,
-                 s, -s, 0.0F, 0.75F, 0.25F, sp.r, sp.g, sp.b, a,
-                 s,  s, 0.0F, 0.75F, 0.75F, sp.r, sp.g, sp.b, a,
-                -s,  s, 0.0F, 0.25F, 0.75F, sp.r, sp.g, sp.b, a);
+                s, -s, 0.0F, 0.75F, 0.25F, sp.r, sp.g, sp.b, a,
+                s, s, 0.0F, 0.75F, 0.75F, sp.r, sp.g, sp.b, a,
+                -s, s, 0.0F, 0.25F, 0.75F, sp.r, sp.g, sp.b, a);
         poseStack.popPose();
     }
 
     private static void emitQuad(VertexConsumer vc, PoseStack.Pose pose,
-                                 float x0, float y0, float z0, float u0, float v0, int r0, int g0, int b0, int a0,
-                                 float x1, float y1, float z1, float u1, float v1, int r1, int g1, int b1, int a1,
-                                 float x2, float y2, float z2, float u2, float v2, int r2, int g2, int b2, int a2,
-                                 float x3, float y3, float z3, float u3, float v3, int r3, int g3, int b3, int a3) {
+            float x0, float y0, float z0, float u0, float v0, int r0, int g0, int b0, int a0,
+            float x1, float y1, float z1, float u1, float v1, int r1, int g1, int b1, int a1,
+            float x2, float y2, float z2, float u2, float v2, int r2, int g2, int b2, int a2,
+            float x3, float y3, float z3, float u3, float v3, int r3, int g3, int b3, int a3) {
         VfxRenderHelper.addVertex(vc, pose, x0, y0, z0, r0, g0, b0, a0, u0, v0, 0.0F, 1.0F, 0.0F);
         VfxRenderHelper.addVertex(vc, pose, x1, y1, z1, r1, g1, b1, a1, u1, v1, 0.0F, 1.0F, 0.0F);
         VfxRenderHelper.addVertex(vc, pose, x2, y2, z2, r2, g2, b2, a2, u2, v2, 0.0F, 1.0F, 0.0F);

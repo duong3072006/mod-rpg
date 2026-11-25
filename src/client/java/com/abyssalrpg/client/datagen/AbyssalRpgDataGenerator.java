@@ -143,12 +143,13 @@ public final class AbyssalRpgDataGenerator implements DataGeneratorEntrypoint {
         @Override
         protected void addTags(HolderLookup.Provider wrapperLookup) {
             getOrCreateTagBuilder(ModEnchantments.DUAL_KNIFE_ENCHANTABLE)
-                    .add(ModItems.DUAL_KNIFE);
+                    .add(ModItems.DUAL_KNIFE)
+                    .add(ModItems.TOGETSU);
 
             getOrCreateTagBuilder(ModEnchantments.DUAL_KNIFE_REPAIR_ITEMS)
                     .add(Items.DIAMOND);
 
-            // Hỗ trợ Unbreaking & Mending cho Dual Knife, Giáp Nightmare Knight & Giáp Cinder Dragon
+            // Hỗ trợ Unbreaking & Mending cho Dual Knife, Giáp Nightmare Knight, Cinder Dragon, Spirit Hydra & Cerberus
             getOrCreateTagBuilder(ItemTags.DURABILITY_ENCHANTABLE)
                     .add(ModItems.DUAL_KNIFE)
                     .add(ModItems.NIGHTMARE_HELMET)
@@ -158,7 +159,15 @@ public final class AbyssalRpgDataGenerator implements DataGeneratorEntrypoint {
                     .add(ModItems.CINDER_DRAGON_HELMET)
                     .add(ModItems.CINDER_DRAGON_CHESTPLATE)
                     .add(ModItems.CINDER_DRAGON_LEGGINGS)
-                    .add(ModItems.CINDER_DRAGON_BOOTS);
+                    .add(ModItems.CINDER_DRAGON_BOOTS)
+                    .add(ModItems.SPIRIT_HYDRA_HELMET)
+                    .add(ModItems.SPIRIT_HYDRA_CHESTPLATE)
+                    .add(ModItems.SPIRIT_HYDRA_LEGGINGS)
+                    .add(ModItems.SPIRIT_HYDRA_BOOTS)
+                    .add(ModItems.CERBERUS_HELMET)
+                    .add(ModItems.CERBERUS_CHESTPLATE)
+                    .add(ModItems.CERBERUS_LEGGINGS)
+                    .add(ModItems.CERBERUS_BOOTS);
 
             // Tương thích đầy đủ hệ thống Enchant Giáp Vanilla MC 1.21.1 (Protection, Unbreaking, Mending, Respiration, Feather Falling...)
             getOrCreateTagBuilder(ItemTags.ARMOR_ENCHANTABLE)
@@ -169,7 +178,15 @@ public final class AbyssalRpgDataGenerator implements DataGeneratorEntrypoint {
                     .add(ModItems.CINDER_DRAGON_HELMET)
                     .add(ModItems.CINDER_DRAGON_CHESTPLATE)
                     .add(ModItems.CINDER_DRAGON_LEGGINGS)
-                    .add(ModItems.CINDER_DRAGON_BOOTS);
+                    .add(ModItems.CINDER_DRAGON_BOOTS)
+                    .add(ModItems.SPIRIT_HYDRA_HELMET)
+                    .add(ModItems.SPIRIT_HYDRA_CHESTPLATE)
+                    .add(ModItems.SPIRIT_HYDRA_LEGGINGS)
+                    .add(ModItems.SPIRIT_HYDRA_BOOTS)
+                    .add(ModItems.CERBERUS_HELMET)
+                    .add(ModItems.CERBERUS_CHESTPLATE)
+                    .add(ModItems.CERBERUS_LEGGINGS)
+                    .add(ModItems.CERBERUS_BOOTS);
             getOrCreateTagBuilder(ItemTags.EQUIPPABLE_ENCHANTABLE)
                     .add(ModItems.NIGHTMARE_HELMET)
                     .add(ModItems.NIGHTMARE_CHESTPLATE)
@@ -178,31 +195,55 @@ public final class AbyssalRpgDataGenerator implements DataGeneratorEntrypoint {
                     .add(ModItems.CINDER_DRAGON_HELMET)
                     .add(ModItems.CINDER_DRAGON_CHESTPLATE)
                     .add(ModItems.CINDER_DRAGON_LEGGINGS)
-                    .add(ModItems.CINDER_DRAGON_BOOTS);
+                    .add(ModItems.CINDER_DRAGON_BOOTS)
+                    .add(ModItems.SPIRIT_HYDRA_HELMET)
+                    .add(ModItems.SPIRIT_HYDRA_CHESTPLATE)
+                    .add(ModItems.SPIRIT_HYDRA_LEGGINGS)
+                    .add(ModItems.SPIRIT_HYDRA_BOOTS)
+                    .add(ModItems.CERBERUS_HELMET)
+                    .add(ModItems.CERBERUS_CHESTPLATE)
+                    .add(ModItems.CERBERUS_LEGGINGS)
+                    .add(ModItems.CERBERUS_BOOTS);
             getOrCreateTagBuilder(ItemTags.HEAD_ARMOR_ENCHANTABLE)
                     .add(ModItems.NIGHTMARE_HELMET)
-                    .add(ModItems.CINDER_DRAGON_HELMET);
+                    .add(ModItems.CINDER_DRAGON_HELMET)
+                    .add(ModItems.SPIRIT_HYDRA_HELMET)
+                    .add(ModItems.CERBERUS_HELMET);
             getOrCreateTagBuilder(ItemTags.CHEST_ARMOR_ENCHANTABLE)
                     .add(ModItems.NIGHTMARE_CHESTPLATE)
-                    .add(ModItems.CINDER_DRAGON_CHESTPLATE);
+                    .add(ModItems.CINDER_DRAGON_CHESTPLATE)
+                    .add(ModItems.SPIRIT_HYDRA_CHESTPLATE)
+                    .add(ModItems.CERBERUS_CHESTPLATE);
             getOrCreateTagBuilder(ItemTags.LEG_ARMOR_ENCHANTABLE)
                     .add(ModItems.NIGHTMARE_LEGGINGS)
-                    .add(ModItems.CINDER_DRAGON_LEGGINGS);
+                    .add(ModItems.CINDER_DRAGON_LEGGINGS)
+                    .add(ModItems.SPIRIT_HYDRA_LEGGINGS)
+                    .add(ModItems.CERBERUS_LEGGINGS);
             getOrCreateTagBuilder(ItemTags.FOOT_ARMOR_ENCHANTABLE)
                     .add(ModItems.NIGHTMARE_BOOTS)
-                    .add(ModItems.CINDER_DRAGON_BOOTS);
+                    .add(ModItems.CINDER_DRAGON_BOOTS)
+                    .add(ModItems.SPIRIT_HYDRA_BOOTS)
+                    .add(ModItems.CERBERUS_BOOTS);
             getOrCreateTagBuilder(ItemTags.HEAD_ARMOR)
                     .add(ModItems.NIGHTMARE_HELMET)
-                    .add(ModItems.CINDER_DRAGON_HELMET);
+                    .add(ModItems.CINDER_DRAGON_HELMET)
+                    .add(ModItems.SPIRIT_HYDRA_HELMET)
+                    .add(ModItems.CERBERUS_HELMET);
             getOrCreateTagBuilder(ItemTags.CHEST_ARMOR)
                     .add(ModItems.NIGHTMARE_CHESTPLATE)
-                    .add(ModItems.CINDER_DRAGON_CHESTPLATE);
+                    .add(ModItems.CINDER_DRAGON_CHESTPLATE)
+                    .add(ModItems.SPIRIT_HYDRA_CHESTPLATE)
+                    .add(ModItems.CERBERUS_CHESTPLATE);
             getOrCreateTagBuilder(ItemTags.LEG_ARMOR)
                     .add(ModItems.NIGHTMARE_LEGGINGS)
-                    .add(ModItems.CINDER_DRAGON_LEGGINGS);
+                    .add(ModItems.CINDER_DRAGON_LEGGINGS)
+                    .add(ModItems.SPIRIT_HYDRA_LEGGINGS)
+                    .add(ModItems.CERBERUS_LEGGINGS);
             getOrCreateTagBuilder(ItemTags.FOOT_ARMOR)
                     .add(ModItems.NIGHTMARE_BOOTS)
-                    .add(ModItems.CINDER_DRAGON_BOOTS);
+                    .add(ModItems.CINDER_DRAGON_BOOTS)
+                    .add(ModItems.SPIRIT_HYDRA_BOOTS)
+                    .add(ModItems.CERBERUS_BOOTS);
         }
     }
 
@@ -268,78 +309,171 @@ public final class AbyssalRpgDataGenerator implements DataGeneratorEntrypoint {
                     .unlockedBy(getHasName(Items.DIAMOND_SWORD), has(Items.DIAMOND_SWORD))
                     .save(exporter);
 
-            // --- Bộ 4 công thức Shaped Crafting Table cho Giáp Nightmare Knight (Tổng: 1 Core + 23 Shards + 1 bộ Netherite) ---
+            // --- ĐỦ 12 CÔNG THỨC CHẾ TẠO GIÁP BOSS BẮT BUỘC KẸP GIÁP KIM CƯƠNG (`minecraft:diamond_*`) ---
+            // Pattern chuẩn 1.21.1: Mũ 2 dòng ("SSS"/"SDS"), Áo 3 dòng ("SDS"/"SHS"/"SSS"), Quần 3 dòng ("SSS"/"SDS"/"S S"), Giày 2 dòng ("S S"/"SDS")
+
+            // 1. Bộ Giáp Nightmare Knight (S = nightmare_armor_shard, H = nightmare_core, D = diamond_*)
             ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, ModItems.NIGHTMARE_HELMET)
                     .pattern("SSS")
-                    .pattern("SNS")
+                    .pattern("SDS")
                     .define('S', ModItems.NIGHTMARE_ARMOR_SHARD)
-                    .define('N', Items.NETHERITE_HELMET)
+                    .define('D', Items.DIAMOND_HELMET)
                     .unlockedBy(getHasName(ModItems.NIGHTMARE_ARMOR_SHARD), has(ModItems.NIGHTMARE_ARMOR_SHARD))
+                    .unlockedBy(getHasName(Items.DIAMOND_HELMET), has(Items.DIAMOND_HELMET))
                     .save(exporter);
 
             ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, ModItems.NIGHTMARE_CHESTPLATE)
-                    .pattern("SNS")
-                    .pattern("SCS")
+                    .pattern("SDS")
+                    .pattern("SHS")
                     .pattern("SSS")
                     .define('S', ModItems.NIGHTMARE_ARMOR_SHARD)
-                    .define('N', Items.NETHERITE_CHESTPLATE)
-                    .define('C', ModItems.NIGHTMARE_CORE)
+                    .define('H', ModItems.NIGHTMARE_CORE)
+                    .define('D', Items.DIAMOND_CHESTPLATE)
                     .unlockedBy(getHasName(ModItems.NIGHTMARE_CORE), has(ModItems.NIGHTMARE_CORE))
                     .unlockedBy(getHasName(ModItems.NIGHTMARE_ARMOR_SHARD), has(ModItems.NIGHTMARE_ARMOR_SHARD))
+                    .unlockedBy(getHasName(Items.DIAMOND_CHESTPLATE), has(Items.DIAMOND_CHESTPLATE))
                     .save(exporter);
 
             ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, ModItems.NIGHTMARE_LEGGINGS)
                     .pattern("SSS")
-                    .pattern("SNS")
+                    .pattern("SDS")
                     .pattern("S S")
                     .define('S', ModItems.NIGHTMARE_ARMOR_SHARD)
-                    .define('N', Items.NETHERITE_LEGGINGS)
+                    .define('D', Items.DIAMOND_LEGGINGS)
                     .unlockedBy(getHasName(ModItems.NIGHTMARE_ARMOR_SHARD), has(ModItems.NIGHTMARE_ARMOR_SHARD))
+                    .unlockedBy(getHasName(Items.DIAMOND_LEGGINGS), has(Items.DIAMOND_LEGGINGS))
                     .save(exporter);
 
             ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, ModItems.NIGHTMARE_BOOTS)
                     .pattern("S S")
-                    .pattern("SNS")
+                    .pattern("SDS")
                     .define('S', ModItems.NIGHTMARE_ARMOR_SHARD)
-                    .define('N', Items.NETHERITE_BOOTS)
+                    .define('D', Items.DIAMOND_BOOTS)
                     .unlockedBy(getHasName(ModItems.NIGHTMARE_ARMOR_SHARD), has(ModItems.NIGHTMARE_ARMOR_SHARD))
+                    .unlockedBy(getHasName(Items.DIAMOND_BOOTS), has(Items.DIAMOND_BOOTS))
                     .save(exporter);
 
-            // --- Bộ 4 công thức Shaped Crafting Table cho Giáp Cinder Dragon (trực tiếp bằng Vảy & Trái Tim Rồng: 23 Scales + 1 Heart, 0 Netherite!) ---
-            // 1. Mũ (5 Vảy): SSS / S.S
+            // 2. Bộ Giáp Cinder Dragon (S = cinder_dragon_scale, H = cinder_dragon_heart, D = diamond_*)
             ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, ModItems.CINDER_DRAGON_HELMET)
                     .pattern("SSS")
-                    .pattern("S S")
+                    .pattern("SDS")
                     .define('S', ModItems.CINDER_DRAGON_SCALE)
+                    .define('D', Items.DIAMOND_HELMET)
                     .unlockedBy(getHasName(ModItems.CINDER_DRAGON_SCALE), has(ModItems.CINDER_DRAGON_SCALE))
+                    .unlockedBy(getHasName(Items.DIAMOND_HELMET), has(Items.DIAMOND_HELMET))
                     .save(exporter);
 
-            // 2. Áo giáp (7 Vảy + 1 Trái Tim Rồng ở giữa): S.S / SHS / SSS
             ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, ModItems.CINDER_DRAGON_CHESTPLATE)
-                    .pattern("S S")
+                    .pattern("SDS")
                     .pattern("SHS")
                     .pattern("SSS")
                     .define('S', ModItems.CINDER_DRAGON_SCALE)
                     .define('H', ModItems.CINDER_DRAGON_HEART)
+                    .define('D', Items.DIAMOND_CHESTPLATE)
                     .unlockedBy(getHasName(ModItems.CINDER_DRAGON_HEART), has(ModItems.CINDER_DRAGON_HEART))
                     .unlockedBy(getHasName(ModItems.CINDER_DRAGON_SCALE), has(ModItems.CINDER_DRAGON_SCALE))
+                    .unlockedBy(getHasName(Items.DIAMOND_CHESTPLATE), has(Items.DIAMOND_CHESTPLATE))
                     .save(exporter);
 
-            // 3. Quần (7 Vảy): SSS / S.S / S.S
             ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, ModItems.CINDER_DRAGON_LEGGINGS)
                     .pattern("SSS")
-                    .pattern("S S")
+                    .pattern("SDS")
                     .pattern("S S")
                     .define('S', ModItems.CINDER_DRAGON_SCALE)
+                    .define('D', Items.DIAMOND_LEGGINGS)
                     .unlockedBy(getHasName(ModItems.CINDER_DRAGON_SCALE), has(ModItems.CINDER_DRAGON_SCALE))
+                    .unlockedBy(getHasName(Items.DIAMOND_LEGGINGS), has(Items.DIAMOND_LEGGINGS))
                     .save(exporter);
 
-            // 4. Giày (4 Vảy): S.S / S.S
             ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, ModItems.CINDER_DRAGON_BOOTS)
                     .pattern("S S")
-                    .pattern("S S")
+                    .pattern("SDS")
                     .define('S', ModItems.CINDER_DRAGON_SCALE)
+                    .define('D', Items.DIAMOND_BOOTS)
                     .unlockedBy(getHasName(ModItems.CINDER_DRAGON_SCALE), has(ModItems.CINDER_DRAGON_SCALE))
+                    .unlockedBy(getHasName(Items.DIAMOND_BOOTS), has(Items.DIAMOND_BOOTS))
+                    .save(exporter);
+
+            // 3. Bộ Giáp Spirit Hydra (S = spirit_hydra_scale, H = spirit_hydra_heart, D = diamond_*)
+            ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, ModItems.SPIRIT_HYDRA_HELMET)
+                    .pattern("SSS")
+                    .pattern("SDS")
+                    .define('S', ModItems.SPIRIT_HYDRA_SCALE)
+                    .define('D', Items.DIAMOND_HELMET)
+                    .unlockedBy(getHasName(ModItems.SPIRIT_HYDRA_SCALE), has(ModItems.SPIRIT_HYDRA_SCALE))
+                    .unlockedBy(getHasName(Items.DIAMOND_HELMET), has(Items.DIAMOND_HELMET))
+                    .save(exporter);
+
+            ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, ModItems.SPIRIT_HYDRA_CHESTPLATE)
+                    .pattern("SDS")
+                    .pattern("SHS")
+                    .pattern("SSS")
+                    .define('S', ModItems.SPIRIT_HYDRA_SCALE)
+                    .define('H', ModItems.SPIRIT_HYDRA_HEART)
+                    .define('D', Items.DIAMOND_CHESTPLATE)
+                    .unlockedBy(getHasName(ModItems.SPIRIT_HYDRA_HEART), has(ModItems.SPIRIT_HYDRA_HEART))
+                    .unlockedBy(getHasName(ModItems.SPIRIT_HYDRA_SCALE), has(ModItems.SPIRIT_HYDRA_SCALE))
+                    .unlockedBy(getHasName(Items.DIAMOND_CHESTPLATE), has(Items.DIAMOND_CHESTPLATE))
+                    .save(exporter);
+
+            ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, ModItems.SPIRIT_HYDRA_LEGGINGS)
+                    .pattern("SSS")
+                    .pattern("SDS")
+                    .pattern("S S")
+                    .define('S', ModItems.SPIRIT_HYDRA_SCALE)
+                    .define('D', Items.DIAMOND_LEGGINGS)
+                    .unlockedBy(getHasName(ModItems.SPIRIT_HYDRA_SCALE), has(ModItems.SPIRIT_HYDRA_SCALE))
+                    .unlockedBy(getHasName(Items.DIAMOND_LEGGINGS), has(Items.DIAMOND_LEGGINGS))
+                    .save(exporter);
+
+            ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, ModItems.SPIRIT_HYDRA_BOOTS)
+                    .pattern("S S")
+                    .pattern("SDS")
+                    .define('S', ModItems.SPIRIT_HYDRA_SCALE)
+                    .define('D', Items.DIAMOND_BOOTS)
+                    .unlockedBy(getHasName(ModItems.SPIRIT_HYDRA_SCALE), has(ModItems.SPIRIT_HYDRA_SCALE))
+                    .unlockedBy(getHasName(Items.DIAMOND_BOOTS), has(Items.DIAMOND_BOOTS))
+                    .save(exporter);
+
+            // 4. Bộ Giáp Cerberus (S = cerberus_hide, H = cerberus_heart, D = diamond_*)
+            ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, ModItems.CERBERUS_HELMET)
+                    .pattern("SSS")
+                    .pattern("SDS")
+                    .define('S', ModItems.CERBERUS_HIDE)
+                    .define('D', Items.DIAMOND_HELMET)
+                    .unlockedBy(getHasName(ModItems.CERBERUS_HIDE), has(ModItems.CERBERUS_HIDE))
+                    .unlockedBy(getHasName(Items.DIAMOND_HELMET), has(Items.DIAMOND_HELMET))
+                    .save(exporter);
+
+            ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, ModItems.CERBERUS_CHESTPLATE)
+                    .pattern("SDS")
+                    .pattern("SHS")
+                    .pattern("SSS")
+                    .define('S', ModItems.CERBERUS_HIDE)
+                    .define('H', ModItems.CERBERUS_HEART)
+                    .define('D', Items.DIAMOND_CHESTPLATE)
+                    .unlockedBy(getHasName(ModItems.CERBERUS_HEART), has(ModItems.CERBERUS_HEART))
+                    .unlockedBy(getHasName(ModItems.CERBERUS_HIDE), has(ModItems.CERBERUS_HIDE))
+                    .unlockedBy(getHasName(Items.DIAMOND_CHESTPLATE), has(Items.DIAMOND_CHESTPLATE))
+                    .save(exporter);
+
+            ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, ModItems.CERBERUS_LEGGINGS)
+                    .pattern("SSS")
+                    .pattern("SDS")
+                    .pattern("S S")
+                    .define('S', ModItems.CERBERUS_HIDE)
+                    .define('D', Items.DIAMOND_LEGGINGS)
+                    .unlockedBy(getHasName(ModItems.CERBERUS_HIDE), has(ModItems.CERBERUS_HIDE))
+                    .unlockedBy(getHasName(Items.DIAMOND_LEGGINGS), has(Items.DIAMOND_LEGGINGS))
+                    .save(exporter);
+
+            ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, ModItems.CERBERUS_BOOTS)
+                    .pattern("S S")
+                    .pattern("SDS")
+                    .define('S', ModItems.CERBERUS_HIDE)
+                    .define('D', Items.DIAMOND_BOOTS)
+                    .unlockedBy(getHasName(ModItems.CERBERUS_HIDE), has(ModItems.CERBERUS_HIDE))
+                    .unlockedBy(getHasName(Items.DIAMOND_BOOTS), has(Items.DIAMOND_BOOTS))
                     .save(exporter);
         }
     }

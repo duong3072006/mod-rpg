@@ -2,6 +2,7 @@ package com.abyssalrpg.client.mixin;
 
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
 import com.abyssalrpg.client.anim.DualBladeAnimState.FullBodyPose;
+import com.abyssalrpg.client.anim.ExcaliburAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
 import com.abyssalrpg.config.WeaponsConfig;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
@@ -20,9 +21,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * First-Person Camera Tilt & Flash Dash FOV Mixin (`GameRenderer`):
- * 1. `bobHurt`: nghiêng camera cực nhẹ (`roll ±3°–4°`, `firstPersonCameraTilt`) theo từng nhịp chém mà không xoay 360°.
- * 2. `getFov`: co nhẹ FOV (`-6.5°`) khi nén đà Pha 1 Flash Dash & bung nhanh (`+11.5°`) lúc phóng 10 block (`dashFovEffect`).
+ * First-Person Camera Tilt & Ultimate / Flash Dash FOV Mixin (`GameRenderer`).
  */
 @Mixin(GameRenderer.class)
 public abstract class GameRendererMixin {
@@ -42,6 +41,9 @@ public abstract class GameRendererMixin {
         FullBodyPose pose = DualBladeAnimManager.evaluatePose(player, partialTicks, 0.0F, player.tickCount + partialTicks);
         if (pose == null) {
             pose = TogetsuAnimManager.evaluatePose(player, partialTicks, 0.0F, player.tickCount + partialTicks);
+        }
+        if (pose == null) {
+            pose = ExcaliburAnimManager.evaluatePose(player, partialTicks, 0.0F, player.tickCount + partialTicks);
         }
         if (pose == null) {
             return;
@@ -64,6 +66,9 @@ public abstract class GameRendererMixin {
         FullBodyPose pose = DualBladeAnimManager.evaluatePose(player, partialTicks, 0.0F, player.tickCount + partialTicks);
         if (pose == null) {
             pose = TogetsuAnimManager.evaluatePose(player, partialTicks, 0.0F, player.tickCount + partialTicks);
+        }
+        if (pose == null) {
+            pose = ExcaliburAnimManager.evaluatePose(player, partialTicks, 0.0F, player.tickCount + partialTicks);
         }
         if (pose == null || Math.abs(pose.fovOffsetDeg) < 0.05F) {
             return original;

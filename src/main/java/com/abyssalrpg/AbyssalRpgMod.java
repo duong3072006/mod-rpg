@@ -1,9 +1,12 @@
 package com.abyssalrpg;
 
 import com.abyssalrpg.combat.BossCombatEnhancer;
+import com.abyssalrpg.combat.CerberusArmorHandler;
 import com.abyssalrpg.combat.CinderDragonArmorHandler;
 import com.abyssalrpg.combat.DualBladeCombatHandler;
+import com.abyssalrpg.combat.ExcaliburCombatHandler;
 import com.abyssalrpg.combat.NightmareArmorHandler;
+import com.abyssalrpg.combat.SpiritHydraArmorHandler;
 import com.abyssalrpg.combat.TogetsuCombatHandler;
 import com.abyssalrpg.command.AbyssCommands;
 import com.abyssalrpg.config.ArmorConfig;
@@ -69,22 +72,31 @@ public class AbyssalRpgMod implements ModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(CerberusGroupManager::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(DualBladeCombatHandler::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(TogetsuCombatHandler::tickServer);
+        ServerTickEvents.END_SERVER_TICK.register(ExcaliburCombatHandler::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(NightmareArmorHandler::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(CinderDragonArmorHandler::tickServer);
+        ServerTickEvents.END_SERVER_TICK.register(SpiritHydraArmorHandler::tickServer);
+        ServerTickEvents.END_SERVER_TICK.register(CerberusArmorHandler::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(BossCombatEnhancer::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(AbyssCommands::tickActiveAudits);
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             NightmareArmorHandler.syncPlayerImmediate(handler.getPlayer());
             CinderDragonArmorHandler.syncPlayerImmediate(handler.getPlayer());
+            SpiritHydraArmorHandler.syncPlayerImmediate(handler.getPlayer());
+            CerberusArmorHandler.syncPlayerImmediate(handler.getPlayer());
         });
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
             NightmareArmorHandler.syncPlayerImmediate(newPlayer);
             CinderDragonArmorHandler.syncPlayerImmediate(newPlayer);
+            SpiritHydraArmorHandler.syncPlayerImmediate(newPlayer);
+            CerberusArmorHandler.syncPlayerImmediate(newPlayer);
         });
         ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) -> {
             NightmareArmorHandler.syncPlayerImmediate(player);
             CinderDragonArmorHandler.syncPlayerImmediate(player);
+            SpiritHydraArmorHandler.syncPlayerImmediate(player);
+            CerberusArmorHandler.syncPlayerImmediate(player);
         });
 
         LOGGER.info("Abyssal Spire RPG initialized — 13 Colossal Multi-Phase Bosses & 7 Mythic Boss Temples ready!");

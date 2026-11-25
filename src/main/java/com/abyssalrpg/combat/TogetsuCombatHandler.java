@@ -2,10 +2,13 @@ package com.abyssalrpg.combat;
 
 import com.abyssalrpg.AbyssalRpgMod;
 import com.abyssalrpg.api.BossDefenseHolder;
+import com.abyssalrpg.config.WeaponsConfig;
 import com.abyssalrpg.entity.AbstractAbyssalBoss;
+import com.abyssalrpg.item.TogetsuGlowStyle;
 import com.abyssalrpg.item.TogetsuItem;
 import com.abyssalrpg.network.ModNetworking;
 import com.abyssalrpg.network.TogetsuActionC2SPayload;
+import com.abyssalrpg.network.TogetsuColorC2SPayload;
 import com.abyssalrpg.network.TogetsuSyncPayload;
 import com.abyssalrpg.registry.ModEnchantments;
 import com.abyssalrpg.registry.ModItems;
@@ -30,9 +33,11 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
@@ -78,6 +83,10 @@ public final class TogetsuCombatHandler {
     public static final int FUSION_DURATION_TICKS = 300;       // 15.0 giây duy trì trạng thái Song Nguyệt
     public static final int VORPAL_COOLDOWN_TICKS = 140;       // 7.0 giây hồi chiêu Crescent Vorpal
     public static final int PIN_FLURRY_COOLDOWN_TICKS = 160;   // 8.0 giây hồi chiêu Lao Đè 12 Liên Đâm
+    public static final int WAVE_SLASH_COOLDOWN_TICKS = 70;    // 3.5 giây hồi chiêu Signature RMB Crescent Wave Slash
+    private static final double WAVE_SLASH_RANGE = 16.0;       // Tầm phóng sóng lưỡi liềm xoay tròn 16 block
+    private static final int WAVE_SLASH_TRAVEL_TICKS = 11;     // Bay 16 block trong 11 ticks (~0.55s)
+    private static final float WAVE_SLASH_DAMAGE_MULT = 1.85F; // 185% sát thương gốc + xuyên 25% DEF AoE dọc đường bay
     private static final long CHARGE_DECAY_IDLE_TICKS = 100L;  // 5.0 giây không đánh sẽ giảm dần fusion_charge
     private static final float CHARGE_DECAY_PER_TICK = 0.20F;  // -4.0 điểm / giây
     private static final float SLASH_CHARGE_GAIN = 10.0F;      // +10 điểm nguyện lực mỗi nhát chém ở dạng tách!
@@ -86,7 +95,7 @@ public final class TogetsuCombatHandler {
     private static final float VORPAL_BASE_MULT = 3.60F;       // 360% sát thương cơ bản (× 1.5 Crit, xuyên 100% DEF!)
     private static final int VORPAL_WEAKNESS_TICKS = 100;      // Dính Suy Yếu (Weakness I) trong 5 giây sau khi dùng!
     private static final double VORPAL_RANGE = 20.0;           // Tầm xa 20 block!
-    private static final double PIN_SEARCH_RANGE = 12.5;
+    private static final double PIN_SEARCH_RANGE = 15.0;       // Bán kính 15.0 block khóa mục tiêu Lao Tới Địch!
     private static final int PIN_TOTAL_HITS = 12;
     private static final float PIN_DAMAGE_MULT = 1.60F;
     private static final float PIN_BASE_ARMOR_PIERCE = 0.10F;
@@ -96,18 +105,53 @@ public final class TogetsuCombatHandler {
     private static final Map<UUID, PlayerTogetsuState> PLAYER_STATES = new HashMap<>();
     private static final Map<UUID, PendingVorpalCast> ACTIVE_VORPALS = new HashMap<>();
     private static final Map<UUID, ActivePinFlurry> ACTIVE_PINS = new HashMap<>();
+    private static final java.util.List<ActiveCrescentWave> ACTIVE_WAVES = new java.util.ArrayList<>();
     private static final ThreadLocal<ActiveHitContext> ACTIVE_HIT = new ThreadLocal<>();
     private static final ThreadLocal<Float> OVERRIDE_ARMOR_PIERCE = new ThreadLocal<>();
 
     private TogetsuCombatHandler() {}
 
+    private static final class ActiveCrescentWave {
+        final ServerPlayer owner;
+        final ServerLevel level;
+        final Vec3 origin;
+        final Vec3 dir;
+        final float damage;
+        final float armorPierce;
+        final Set<UUID> hitTargets = new HashSet<>();
+        int tick = 0;
+
+        ActiveCrescentWave(ServerPlayer owner, ServerLevel level, Vec3 origin, Vec3 dir, float damage, float armorPierce) {
+            this.owner = owner;
+            this.level = level;
+            this.origin = origin;
+            this.dir = dir;
+            this.damage = damage;
+            this.armorPierce = armorPierce;
+        }
+    }
+
     private static final class PlayerTogetsuState {
         int nextComboStep = 0;
+        int leftHandVariant = 0;
+        int rightHandVariant = 0;
         long lastSwingGameTime = -1000L;
+        long lastRightSwingGameTime = -1000L;
+        long lastLungeGameTime = -1000L;
         long lastCombatGameTime = -1000L;
         long underdogSpeedUntilTick = -1000L;
         /** Luân phiên Trăng Non (trừ 1 HP -> +30% đòn kế) & Trăng Khuyết (hồi 1 HP) tạo vòng lặp cân bằng máu! */
         boolean nextCritIsWaxing = true;
+    }
+
+    /** Tính thời lượng hiển thị combo 5 nhịp Song Đao (Nhịp 5 Đòn Đặc Biệt luôn giữ trọn 10.5 ticks ~0.52s)! */
+    public static float computeDualComboDurationTicks(double actualAttackSpeed, TogetsuMoveType move) {
+        if (move == TogetsuMoveType.DUAL_5) {
+            return move.baseDisplayTicks; // 10.5F ticks exact cho Đòn Đánh Đặc Biệt nhát thứ 5!
+        }
+        double safeSpd = Math.max(1.2, actualAttackSpeed);
+        float speedScale = (float) Mth.clamp(2.4 / safeSpd, 0.84, 1.25);
+        return Mth.clamp(move.baseDisplayTicks * speedScale, 7.0F, 12.0F);
     }
 
     private static final class PendingVorpalCast {
@@ -350,46 +394,210 @@ public final class TogetsuCombatHandler {
                 }
             }
         }
+
+        // 4. Thực thi sóng lưỡi liềm xoay tròn trắng–đen của Signature RMB (Crescent Wave Slash) bay AoE dọc 16 block!
+        if (!ACTIVE_WAVES.isEmpty()) {
+            Iterator<ActiveCrescentWave> wit = ACTIVE_WAVES.iterator();
+            while (wit.hasNext()) {
+                ActiveCrescentWave wave = wit.next();
+                if (!tickActiveCrescentWave(wave)) {
+                    wit.remove();
+                }
+            }
+        }
     }
 
-    // ==================== CHUỘT PHẢI DẠNG THƯỜNG: LAO ĐÈ 12 LIÊN ĐÂM HOẶC HỢP NHẤT KHI ĐẦY 100 ĐIỂM ====================
-
-    public static boolean handleDualRightClick(ServerPlayer player, ItemStack stack) {
-        if (TogetsuItem.isFused(stack) || ACTIVE_PINS.containsKey(player.getUUID()) || ACTIVE_VORPALS.containsKey(player.getUUID())) {
+    private static boolean tickActiveCrescentWave(ActiveCrescentWave wave) {
+        if (wave.owner.isRemoved() || !wave.owner.isAlive()) {
             return false;
         }
-        boolean canFuse = TogetsuItem.getFusionGauge(stack) >= 99.5F || player.getAbilities().instabuild;
-        // Nếu người chơi đang giữ Shift + đầy 100 điểm -> ưu tiên kích hoạt Hợp Nhất Song Nguyệt ngay!
-        if (player.isShiftKeyDown() && canFuse) {
-            return tryActivateFusion(player, stack);
+        wave.tick++;
+        float prevFrac = (wave.tick - 1) / (float) WAVE_SLASH_TRAVEL_TICKS;
+        float curFrac = wave.tick / (float) WAVE_SLASH_TRAVEL_TICKS;
+        Vec3 segStart = wave.origin.add(wave.dir.scale(1.1 + prevFrac * (WAVE_SLASH_RANGE - 1.1)));
+        Vec3 segEnd = wave.origin.add(wave.dir.scale(1.1 + curFrac * (WAVE_SLASH_RANGE - 1.1)));
+
+        HitResult wall = wave.level.clip(new ClipContext(
+                segStart, segEnd, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, wave.owner));
+        boolean hitWall = (wall.getType() == HitResult.Type.BLOCK);
+        Vec3 actualEnd = hitWall ? wall.getLocation() : segEnd;
+
+        AABB box = new AABB(segStart, actualEnd).inflate(2.15, 1.35, 2.15);
+        for (Projectile proj : wave.level.getEntitiesOfClass(Projectile.class, box,
+                p -> p.isAlive() && p.getOwner() != wave.owner)) {
+            if (distanceToSegmentSqr(proj.position(), segStart, actualEnd) <= 2.1 * 2.1) {
+                proj.discard();
+            }
         }
 
-        // Tìm kẻ địch phía trước để thực hiện chiêu Lao Đè 12 Liên Đâm Vô Địch (dùng hồi chiêu độc lập của dạng tách!)
+        OVERRIDE_ARMOR_PIERCE.set(wave.armorPierce);
+        try {
+            for (Entity cand : wave.level.getEntities(wave.owner, box, e -> e.isAlive() && e.isPickable() && e != wave.owner)) {
+                if (distanceToSegmentSqr(cand.getBoundingBox().getCenter(), segStart, actualEnd) > 2.15 * 2.15) {
+                    continue;
+                }
+                LivingEntity real = DualBladeCombatHandler.resolveRealLivingTarget(cand);
+                if (real == null || !real.isAlive() || real == wave.owner || real.isAlliedTo(wave.owner)) {
+                    continue;
+                }
+                if (!wave.hitTargets.add(real.getUUID())) {
+                    continue;
+                }
+                real.invulnerableTime = 0;
+                real.hurtTime = 0;
+                cand.hurt(wave.owner.damageSources().playerAttack(wave.owner), wave.damage);
+                real.push(wave.dir.x * 0.42, 0.24, wave.dir.z * 0.42);
+                real.hurtMarked = true;
+                Vec3 hp = real.getBoundingBox().getCenter();
+                wave.level.sendParticles(ParticleTypes.CRIT, hp.x, hp.y, hp.z, 10, 0.30, 0.30, 0.30, 0.16);
+                wave.level.playSound(null, hp.x, hp.y, hp.z,
+                        ModSounds.DUAL_BLADE_CRIT, SoundSource.PLAYERS, 0.92F, 1.08F);
+            }
+        } finally {
+            OVERRIDE_ARMOR_PIERCE.remove();
+        }
+        return !hitWall && wave.tick < WAVE_SLASH_TRAVEL_TICKS;
+    }
+
+    /** Signature RMB — Crescent Wave Slash: rút kiếm nhanh phóng sóng lưỡi liềm xoay tròn trắng–đen gây sát thương AoE dọc đường bay! */
+    public static boolean tryCastCrescentWaveSlash(ServerPlayer player, ItemStack stack) {
+        if (ACTIVE_PINS.containsKey(player.getUUID()) || ACTIVE_VORPALS.containsKey(player.getUUID())) {
+            return false;
+        }
         ServerLevel level = player.serverLevel();
-        Entity hitEntity = findPinTarget(player, level);
-        LivingEntity realTarget = DualBladeCombatHandler.resolveRealLivingTarget(hitEntity);
-        if (hitEntity != null && realTarget != null && realTarget.isAlive()) {
-            int pinRem = TogetsuItem.getPinCooldownRemainingTicks(stack, level.getGameTime());
-            if (pinRem > 0) {
-                String remStr = String.format(Locale.ROOT, "%.1f", Math.max(0.1F, pinRem / 20.0F));
+        long now = level.getGameTime();
+        int rem = TogetsuItem.getWaveCooldownRemainingTicks(stack, now);
+        if (rem > 0) {
+            String remStr = String.format(Locale.ROOT, "%.1f", Math.max(0.1F, rem / 20.0F));
+            player.displayClientMessage(
+                    Component.translatable("message.abyssalrpg.togetsu.skill_cooldown", remStr)
+                            .withStyle(ChatFormatting.YELLOW),
+                    true);
+            return false;
+        }
+        boolean fused = TogetsuItem.isFused(stack);
+        if (!fused && !player.getAbilities().instabuild && TogetsuItem.getFusionGauge(stack) < 99.5F) {
+            return false;
+        }
+
+        if (!player.getAbilities().instabuild) {
+            stack.hurtAndBreak(4, player, EquipmentSlot.MAINHAND);
+            if (!fused) {
+                // Tiêu thụ 35 điểm nộ khi tung Crescent Wave Slash từ trạng thái thanh nộ đầy ở dạng Song Đao!
+                TogetsuItem.setFusionState(stack, false, Math.max(0.0F, TogetsuItem.getFusionGauge(stack) - 35.0F), 0L);
+            }
+        }
+        TogetsuItem.setWaveCooldownUntil(stack, now + WAVE_SLASH_COOLDOWN_TICKS);
+        player.getCooldowns().addCooldown(ModItems.TOGETSU, WAVE_SLASH_COOLDOWN_TICKS);
+        PlayerTogetsuState st = PLAYER_STATES.computeIfAbsent(player.getUUID(), id -> new PlayerTogetsuState());
+        st.lastCombatGameTime = now;
+
+        float baseDmg = (float) Math.max(fused ? TogetsuItem.FUSED_DAMAGE : TogetsuItem.DUAL_DAMAGE * 1.25,
+                player.getAttributeValue(Attributes.ATTACK_DAMAGE));
+        float dmg = baseDmg * WAVE_SLASH_DAMAGE_MULT;
+        int pierceLv = ModEnchantments.getLevel(level, stack, ModEnchantments.ARMOR_PIERCE);
+        float armorPierce = Mth.clamp(0.25F + pierceLv * 0.07F, 0.25F, 0.70F);
+
+        Vec3 dir = Vec3.directionFromRotation(Mth.clamp(player.getXRot(), -42.0F, 42.0F), player.getYRot()).normalize();
+        Vec3 start = player.position().add(0.0, player.getBbHeight() * 0.66, 0.0);
+        ACTIVE_WAVES.add(new ActiveCrescentWave(player, level, start, dir, dmg, armorPierce));
+
+        level.playSound(null, player.getX(), player.getY() + 1.1, player.getZ(),
+                ModSounds.DUAL_BLADE_CROSS_SLASH, SoundSource.PLAYERS, 1.10F, 0.88F);
+        level.playSound(null, player.getX(), player.getY() + 1.1, player.getZ(),
+                ModSounds.DUAL_BLADE_DASH_WHOOSH, SoundSource.PLAYERS, 0.95F, 1.22F);
+        ModNetworking.sendShakeNearby(level, player.position(), 18.0, 0.42F, 5);
+        broadcastSync(level, player, TogetsuMoveType.CRESCENT_WAVE_SLASH, true,
+                TogetsuSyncPayload.VFX_CRESCENT_WAVE_PROJ, start, (float) WAVE_SLASH_RANGE);
+        return true;
+    }
+
+    // ==================== PHÍM KỸ NĂNG [V]: LAO TỚI ĐỊCH 15 BLOCK / CRESCENT WAVE / CRESCENT VORPAL ====================
+
+    public static boolean handleSkillKey(ServerPlayer player, boolean shiftHeld) {
+        ItemStack stack = player.getMainHandItem();
+        if (!stack.is(ModItems.TOGETSU) || ACTIVE_PINS.containsKey(player.getUUID()) || ACTIVE_VORPALS.containsKey(player.getUUID())) {
+            return false;
+        }
+        ServerLevel level = player.serverLevel();
+        long now = level.getGameTime();
+
+        // 1. Dạng Hợp Nhất (Song Nguyệt):
+        //    - [V]: Tuyệt Kỹ Tất Sát Crescent Vorpal (gồng 2s -> trảm 20 block xuyên 100% DEF!)
+        //    - Shift + [V]: Trảm Sóng Nguyệt Thực Crescent Wave Slash (hồi 3.5s, giữ nguyên form!)
+        if (TogetsuItem.isFused(stack)) {
+            if (shiftHeld) {
+                int waveRem = TogetsuItem.getWaveCooldownRemainingTicks(stack, now);
+                if (waveRem > 0) {
+                    String remStr = String.format(Locale.ROOT, "%.1f", Math.max(0.1F, waveRem / 20.0F));
+                    player.displayClientMessage(
+                            Component.translatable("message.abyssalrpg.togetsu.skill_cooldown", remStr)
+                                    .withStyle(ChatFormatting.YELLOW),
+                            true);
+                    return false;
+                }
+                return tryCastCrescentWaveSlash(player, stack);
+            }
+            int vorpalRem = TogetsuItem.getVorpalCooldownRemainingTicks(stack, now);
+            if (vorpalRem > 0) {
+                String remStr = String.format(Locale.ROOT, "%.1f", Math.max(0.1F, vorpalRem / 20.0F));
                 player.displayClientMessage(
                         Component.translatable("message.abyssalrpg.togetsu.skill_cooldown", remStr)
                                 .withStyle(ChatFormatting.YELLOW),
                         true);
                 return false;
             }
-            return startDualPinFlurry(player, stack, hitEntity, realTarget);
+            return tryCastCrescentVorpal(player, stack);
         }
 
-        // Nếu không có kẻ địch trước mặt mà thanh Hợp Nhất đã đầy 100 điểm -> Chuột Phải kích hoạt Hợp Nhất Song Nguyệt luôn!
-        if (canFuse) {
-            return tryActivateFusion(player, stack);
+        // 2. Dạng Song Đao:
+        //    - Shift + [V]: Phóng sóng Crescent Wave Slash (khi đủ Nguyện Lực hoặc Creative).
+        //    - [V]: Lao Tới Địch trong bán kính 15 block + 12 Liên Đâm Vô Địch!
+        boolean gaugeReady = TogetsuItem.getFusionGauge(stack) >= 99.5F || player.getAbilities().instabuild;
+        if (shiftHeld) {
+            int waveRem = TogetsuItem.getWaveCooldownRemainingTicks(stack, now);
+            if (waveRem > 0) {
+                String remStr = String.format(Locale.ROOT, "%.1f", Math.max(0.1F, waveRem / 20.0F));
+                player.displayClientMessage(
+                        Component.translatable("message.abyssalrpg.togetsu.skill_cooldown", remStr)
+                                .withStyle(ChatFormatting.YELLOW),
+                        true);
+                return false;
+            }
+            if (!gaugeReady) {
+                int pct = Math.round(TogetsuItem.getFusionGauge(stack));
+                player.displayClientMessage(
+                        Component.translatable("message.abyssalrpg.togetsu.gauge_not_full", pct)
+                                .withStyle(ChatFormatting.YELLOW),
+                        true);
+                return false;
+            }
+            return tryCastCrescentWaveSlash(player, stack);
+        }
+
+        int pinRem = TogetsuItem.getPinCooldownRemainingTicks(stack, now);
+        if (pinRem > 0) {
+            String remStr = String.format(Locale.ROOT, "%.1f", Math.max(0.1F, pinRem / 20.0F));
+            player.displayClientMessage(
+                    Component.translatable("message.abyssalrpg.togetsu.skill_cooldown", remStr)
+                            .withStyle(ChatFormatting.YELLOW),
+                    true);
+            return false;
+        }
+        Entity hitEntity = findPinTarget(player, level);
+        LivingEntity realTarget = DualBladeCombatHandler.resolveRealLivingTarget(hitEntity);
+        if (hitEntity != null && realTarget != null && realTarget.isAlive()) {
+            return startDualPinFlurry(player, stack, hitEntity, realTarget);
         }
 
         player.displayClientMessage(
                 Component.translatable("message.abyssalrpg.togetsu.pin_no_target").withStyle(ChatFormatting.YELLOW),
                 true);
         return false;
+    }
+
+    public static boolean handleDualRightClick(ServerPlayer player, ItemStack stack) {
+        return handleSkillKey(player, player.isShiftKeyDown());
     }
 
     private static boolean startDualPinFlurry(ServerPlayer player, ItemStack stack, Entity hitEntity, LivingEntity realTarget) {
@@ -428,11 +636,16 @@ public final class TogetsuCombatHandler {
     private static Entity findPinTarget(ServerPlayer player, ServerLevel level) {
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle().normalize();
-        Vec3 end = eye.add(look.scale(PIN_SEARCH_RANGE));
-        AABB box = new AABB(eye, end).inflate(2.8);
+        // Quét trọn bán kính 15.0 block xung quanh người chơi!
+        AABB box = player.getBoundingBox().inflate(PIN_SEARCH_RANGE, 6.5, PIN_SEARCH_RANGE);
 
-        Entity best = null;
-        double bestScore = Double.MAX_VALUE;
+        Entity bestAimed = null;
+        double bestAimedScore = Double.MAX_VALUE;
+        Entity bestAnyHostile = null;
+        double bestHostileDist = Double.MAX_VALUE;
+        Entity bestAnyLiving = null;
+        double bestLivingDist = Double.MAX_VALUE;
+
         for (Entity cand : level.getEntities(player, box, e -> e.isAlive() && e.isPickable() && e != player)) {
             LivingEntity real = DualBladeCombatHandler.resolveRealLivingTarget(cand);
             if (real == null || !real.isAlive() || real == player || real.isAlliedTo(player)) {
@@ -444,16 +657,26 @@ public final class TogetsuCombatHandler {
                 continue;
             }
             double dot = to.scale(1.0 / dist).dot(look);
-            if (dot < 0.62) {
-                continue;
+            if (dot >= 0.40) {
+                double score = dist * (1.38 - dot);
+                if (score < bestAimedScore) {
+                    bestAimedScore = score;
+                    bestAimed = cand;
+                }
             }
-            double score = dist * (1.35 - dot);
-            if (score < bestScore) {
-                bestScore = score;
-                best = cand;
+            boolean hostile = (real instanceof Enemy) || (real instanceof AbstractAbyssalBoss);
+            if (hostile && dist < bestHostileDist) {
+                bestHostileDist = dist;
+                bestAnyHostile = cand;
+            } else if (dist < bestLivingDist) {
+                bestLivingDist = dist;
+                bestAnyLiving = cand;
             }
         }
-        return best;
+        // Ưu tiên 1: mục tiêu phía trước tầm ngắm -> Ưu tiên 2: quái thù địch/Boss gần nhất trong 15 block -> Ưu tiên 3: sinh vật gần nhất trong 15 block!
+        if (bestAimed != null) return bestAimed;
+        if (bestAnyHostile != null) return bestAnyHostile;
+        return bestAnyLiving;
     }
 
     private static boolean tickActivePinFlurry(ActivePinFlurry pin) {
@@ -598,7 +821,45 @@ public final class TogetsuCombatHandler {
             handleToggleFuse(player);
         } else if (payload.action() == TogetsuActionC2SPayload.ACTION_AIR_SLASH) {
             handleAirSlash(player, payload.targetEntityId());
+        } else if (payload.action() == TogetsuActionC2SPayload.ACTION_RIGHT_SLASH) {
+            handleDualRightHandSlash(player, payload.targetEntityId());
+        } else if (payload.action() == TogetsuActionC2SPayload.ACTION_CAST_SKILL) {
+            handleSkillKey(player, payload.targetEntityId() != 0);
         }
+    }
+
+    public static void handleColorPacket(ServerPlayer player, TogetsuColorC2SPayload payload) {
+        if (!player.isAlive() || player.isSpectator() || !isHoldingTogetsu(player)) {
+            return;
+        }
+        ItemStack stack = player.getMainHandItem();
+        TogetsuGlowStyle targetStyle;
+        int pri;
+        int sec;
+        if (payload.cycleNext()) {
+            targetStyle = TogetsuItem.getGlowStyle(stack).nextPreset();
+            pri = targetStyle.defaultPrimaryRgb;
+            sec = targetStyle.defaultSecondaryRgb;
+        } else {
+            targetStyle = TogetsuGlowStyle.byId(payload.styleId());
+            pri = payload.primaryRgb() & 0xFFFFFF;
+            sec = payload.secondaryRgb() & 0xFFFFFF;
+        }
+        TogetsuItem.setGlowColor(stack, targetStyle, pri, sec);
+
+        ServerLevel level = player.serverLevel();
+        level.playSound(null, player.getX(), player.getY() + 1.0, player.getZ(),
+                SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.85F, 1.35F);
+
+        int showPri = targetStyle.resolvePrimaryRgb(pri, 0.0F);
+        int showSec = targetStyle.resolveSecondaryRgb(sec, 0.0F);
+        player.displayClientMessage(
+                Component.translatable("message.abyssalrpg.togetsu.color_changed",
+                        Component.literal("◆").withStyle(s -> s.withColor(showPri)),
+                        Component.literal("◆").withStyle(s -> s.withColor(showSec)),
+                        Component.translatable(targetStyle.translationKey()).withStyle(s -> s.withColor(showPri).withBold(true)))
+                        .withStyle(ChatFormatting.WHITE),
+                true);
     }
 
     private static void handleToggleFuse(ServerPlayer player) {
@@ -887,7 +1148,11 @@ public final class TogetsuCombatHandler {
             st.nextComboStep = 0;
         }
         int step = st.nextComboStep;
-        TogetsuMoveType moveType = fused ? TogetsuMoveType.fusedByStep(step) : TogetsuMoveType.dualByStep(step);
+        // Chuột Trái ở dạng Song Đao = Kiếm Trái (Trăng Non — Lưỡi Trắng: DUAL_2 / DUAL_4, nhát thứ 5 = DUAL_5 Đặc Biệt!)
+        TogetsuMoveType moveType = fused
+                ? TogetsuMoveType.fusedByStep(step)
+                : TogetsuMoveType.resolveDualHandMove(false, player.onGround(), player.isInWater(),
+                        player.fallDistance, player.isSprinting(), step, st.leftHandVariant);
         float underdogDmgBonus = computeUnderdogDamageBonus(player, realTarget);
         float gapRatio = underdogDmgBonus; // 0.0..1.0
 
@@ -935,6 +1200,10 @@ public final class TogetsuCombatHandler {
         if (ctx.waxingEmpowerApplied > 0.01F) {
             mult *= (1.0F + ctx.waxingEmpowerApplied);
         }
+        // Đòn Đánh Đặc Biệt nhát thứ 5 (DUAL_5 — Auto-Fuse Eclipse Morphing Finisher): ×1.60 sát thương kết liễu!
+        if (!ctx.fused && ctx.moveType == TogetsuMoveType.DUAL_5) {
+            mult *= 1.60F;
+        }
         // Nhân sát thương Chí Mạng (tránh nhân đúp 1.5x nếu vanilla fall-crit đã nhân!)
         if (ctx.critTriggered) {
             boolean vanillaFallCrit = ctx.player.fallDistance > 0.0F && !ctx.player.onGround()
@@ -956,7 +1225,7 @@ public final class TogetsuCombatHandler {
         }
         ctx.hitLanded = true;
         if (ctx.directFullHit) {
-            int resTicks = ctx.fused ? 10 : 7;
+            int resTicks = ctx.fused ? 5 : 6; // Đảm bảo nhịp chém cắm 0.3s (6 ticks) của Song Nguyệt ăn sát thương 100% mỗi nhát!
             victim.invulnerableTime = 10 + resTicks;
             victim.hurtTime = Math.min(victim.hurtTime, resTicks);
         }
@@ -978,7 +1247,14 @@ public final class TogetsuCombatHandler {
         long now = level.getGameTime();
         PlayerTogetsuState st = PLAYER_STATES.computeIfAbsent(player.getUUID(), id -> new PlayerTogetsuState());
         st.lastSwingGameTime = now;
-        st.nextComboStep = (ctx.comboStep + 1) % (ctx.fused ? TogetsuMoveType.FUSED_COMBO_COUNT : TogetsuMoveType.DUAL_COMBO_COUNT);
+        if (!ctx.fused) {
+            st.leftHandVariant = (st.leftHandVariant + 1) & 1;
+        }
+        if (!ctx.fused && (ctx.moveType == TogetsuMoveType.DUAL_SPRINT_THRUST || ctx.moveType == TogetsuMoveType.DUAL_AIR_SLASH)) {
+            st.nextComboStep = 1;
+        } else {
+            st.nextComboStep = (ctx.comboStep + 1) % (ctx.fused ? TogetsuMoveType.FUSED_COMBO_COUNT : TogetsuMoveType.DUAL_COMBO_COUNT);
+        }
 
         // Xóa buff Trăng Non sau khi đã xả vào đòn đánh
         if (ctx.waxingEmpowerApplied > 0.01F) {
@@ -1003,25 +1279,35 @@ public final class TogetsuCombatHandler {
                     notifyFusionReady(level, player);
                 }
 
-                // Nội tại Song Kiếm khi gây Chí Mạng (có sẵn 40%+ tỉ lệ Crit khi đánh thường):
-                // - Trăng Non: trừ 1 HP (nửa tim) -> +30% sát thương đòn kế tiếp
-                // - Trăng Khuyết: hồi 1 HP (nửa tim) -> vòng lặp cân bằng máu
+                // Nội tại Chuột Trái (Kiếm Trái — Trăng Non): Chí Mạng trừ 1 HP (nửa tim) -> +30% sát thương đòn kế tiếp!
                 if (ctx.critTriggered) {
                     level.sendParticles(ParticleTypes.CRIT, vfxPos.x, vfxPos.y, vfxPos.z, 10, 0.30, 0.30, 0.30, 0.16);
                     level.playSound(null, vfxPos.x, vfxPos.y, vfxPos.z,
                             ModSounds.DUAL_BLADE_CRIT, SoundSource.PLAYERS, 0.80F, 1.15F);
 
-                    if (st.nextCritIsWaxing) {
-                        if (!player.getAbilities().instabuild && player.getHealth() > 1.5F) {
-                            player.setHealth(Math.max(1.0F, player.getHealth() - 1.0F));
-                        }
-                        TogetsuItem.setWaxingEmpower(ctx.stack, true, WAXING_EMPOWER_BONUS);
-                        vfxKind = TogetsuSyncPayload.VFX_WAXING_CRIT;
-                    } else {
-                        player.heal(1.0F);
-                        vfxKind = TogetsuSyncPayload.VFX_WANING_CRIT;
+                    if (!player.getAbilities().instabuild && player.getHealth() > 1.5F) {
+                        player.setHealth(Math.max(1.0F, player.getHealth() - 1.0F));
                     }
-                    st.nextCritIsWaxing = !st.nextCritIsWaxing;
+                    TogetsuItem.setWaxingEmpower(ctx.stack, true, WAXING_EMPOWER_BONUS);
+                    vfxKind = TogetsuSyncPayload.VFX_WAXING_CRIT;
+                    st.nextCritIsWaxing = false;
+                }
+
+                // Combo 5 nhịp Song Đao (1-4 chém luân phiên mỗi bên 1 nhát -> Nhát 5 ĐÒN ĐÁNH ĐẶC BIỆT!):
+                // - Hit 4 (Chém ngược Tay Trái Trăng Non): gắn ấn Moon Mark sáng vòng tròn trên mục tiêu!
+                // - Hit 5 (Đòn Đặc Biệt — Auto-Fuse Eclipse Morphing Finisher): hất tung mục tiêu + chém lan 3.5 block + rung màn hình + hit-stop 0.08s!
+                if (ctx.moveType == TogetsuMoveType.DUAL_4) {
+                    vfxKind = TogetsuSyncPayload.VFX_MOON_MARK;
+                    level.playSound(null, vfxPos.x, vfxPos.y, vfxPos.z,
+                            SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.95F, 1.65F);
+                } else if (ctx.moveType == TogetsuMoveType.DUAL_5) {
+                    vfxKind = TogetsuSyncPayload.VFX_MORPH_FINISHER_IMPACT;
+                    ctx.realTarget.push(0.0, 0.46, 0.0);
+                    ctx.realTarget.hurtMarked = true;
+                    triggerDualSpinCleave(level, player, ctx.realTarget, ctx.finalRawDamage * 0.72F, ctx.armorPierce, 3.50);
+                    level.playSound(null, vfxPos.x, vfxPos.y, vfxPos.z,
+                            ModSounds.DUAL_BLADE_CROSS_SLASH, SoundSource.PLAYERS, 1.18F, 0.72F);
+                    ModNetworking.sendShakeNearby(level, vfxPos, 18.0, 0.56F, 5);
                 }
             } else {
                 // Dạng Song Nguyệt: giữ chuẩn tốc đánh 1.5 + Chém Lan (Sweeping Edge) diện rộng 4.5 block!
@@ -1034,10 +1320,83 @@ public final class TogetsuCombatHandler {
             }
         }
 
+        if (!ctx.fused && ctx.directFullHit && player.getOffhandItem().isEmpty()) {
+            applySafeDualComboLunge(level, player, st, ctx.moveType, now);
+        }
+
         level.playSound(null, player.getX(), player.getY() + 1.0, player.getZ(),
                 ctx.fused ? ModSounds.DUAL_BLADE_CROSS_SLASH : ModSounds.DUAL_BLADE_SLASH,
                 SoundSource.PLAYERS, ctx.fused ? 1.0F : 0.82F, ctx.fused ? 0.78F : 1.12F);
         broadcastSync(level, player, ctx.moveType, ctx.fused, vfxKind, vfxPos, 1.0F);
+    }
+
+    /** Bước lướt combo an toàn + nhảy bật ở nhịp 5 giống 1:1 `DualBladeCombatHandler.applySafeComboLunge`! */
+    private static void applySafeDualComboLunge(ServerLevel level, Player player, PlayerTogetsuState st,
+                                                TogetsuMoveType moveType, long now) {
+        WeaponsConfig cfg = WeaponsConfig.get();
+        if (!cfg.enableComboLunge || now - st.lastLungeGameTime < 4L || player.isShiftKeyDown()) {
+            return;
+        }
+        double base = (moveType == TogetsuMoveType.DUAL_SPRINT_THRUST) ? cfg.sprintLungeSpeed : cfg.comboLungeDistance;
+        double mult = switch (moveType) {
+            case DUAL_1 -> 0.95;
+            case DUAL_2 -> 0.95;
+            case DUAL_3 -> 1.05;
+            case DUAL_4 -> 1.10;
+            case DUAL_5 -> 1.25; // Nhảy bật uy lực cho Đòn Đánh Đặc Biệt nhát thứ 5!
+            case DUAL_SPRINT_THRUST -> 1.22;
+            case DUAL_AIR_SLASH -> 0.90;
+            default -> 1.00;
+        };
+        double dist = Mth.clamp(base * mult, 0.0, 0.30);
+        if (dist <= 0.01) {
+            return;
+        }
+
+        float yawRad = player.getYRot() * Mth.DEG_TO_RAD;
+        double dx = -Math.sin(yawRad);
+        double dz = Math.cos(yawRad);
+        if (!DualBladeCombatHandler.isForwardStepSafe(level, player, dx, dz)) {
+            return;
+        }
+
+        st.lastLungeGameTime = now;
+        Vec3 cur = player.getDeltaMovement();
+        double boostY = (moveType == TogetsuMoveType.DUAL_5 && player.onGround()) ? 0.24 : 0.0;
+        player.setDeltaMovement(
+                Mth.clamp(cur.x + dx * dist, -0.48, 0.48),
+                Math.max(cur.y, boostY > 0.0 ? boostY : cur.y),
+                Mth.clamp(cur.z + dz * dist, -0.48, 0.48)
+        );
+        player.hurtMarked = true;
+    }
+
+    /** Quét sát thương lan diện rộng cho Eclipse Hit 2 (360° Shadow Spin) & Hit 4 (Morphing Finisher)! */
+    private static void triggerDualSpinCleave(ServerLevel level, Player player, LivingEntity primary,
+                                              float cleaveDmg, float armorPierce, double radius) {
+        AABB box = player.getBoundingBox().inflate(radius, 1.4, radius);
+        List<Entity> cands = level.getEntities(player, box, e -> e.isAlive() && e.isPickable() && e != player);
+        Set<UUID> seen = new HashSet<>();
+        seen.add(primary.getUUID());
+        int hits = 0;
+        OVERRIDE_ARMOR_PIERCE.set(armorPierce);
+        try {
+            for (Entity cand : cands) {
+                if (hits >= 5) break;
+                LivingEntity real = DualBladeCombatHandler.resolveRealLivingTarget(cand);
+                if (real == null || !real.isAlive() || real == player || real.isAlliedTo(player)) continue;
+                if (!seen.add(real.getUUID())) continue;
+                if (real.position().subtract(player.position()).horizontalDistanceSqr() > radius * radius) continue;
+                cand.hurt(player.damageSources().playerAttack(player), cleaveDmg);
+                if (radius > 3.0) {
+                    real.push(0.0, 0.36, 0.0);
+                    real.hurtMarked = true;
+                }
+                hits++;
+            }
+        } finally {
+            OVERRIDE_ARMOR_PIERCE.remove();
+        }
     }
 
     /** Chém lan diện rộng (Sweeping Edge) bán kính 4.5 block hình vòng cung cho mọi đòn đánh thường dạng Song Nguyệt! */
@@ -1085,32 +1444,197 @@ public final class TogetsuCombatHandler {
 
         long now = level.getGameTime();
         PlayerTogetsuState st = PLAYER_STATES.computeIfAbsent(player.getUUID(), id -> new PlayerTogetsuState());
-        long minInterval = fused ? 12L : 4L;
+        long minInterval = fused ? 6L : 3L; // Song Nguyệt: đúng 6 ticks = 0.30s; Song Đao: cho phép luân phiên LMB <-> RMB mượt!
         if (now - st.lastSwingGameTime < minInterval) {
             return;
         }
         if (now - st.lastSwingGameTime > COMBO_RESET_TICKS) {
             st.nextComboStep = 0;
         }
+        float airStrength = player.getAttackStrengthScale(0.5F);
         int step = st.nextComboStep;
-        TogetsuMoveType moveType = fused ? TogetsuMoveType.fusedByStep(step) : TogetsuMoveType.dualByStep(step);
+        // Chuột Trái ở dạng Song Đao = Kiếm Trái (Trăng Non — Lưỡi Trắng: DUAL_2 / DUAL_4, nhát thứ 5 = DUAL_5 Đặc Biệt!)
+        TogetsuMoveType moveType = fused
+                ? TogetsuMoveType.fusedByStep(step)
+                : TogetsuMoveType.resolveDualHandMove(false, player.onGround(), player.isInWater(),
+                        player.fallDistance, player.isSprinting(), step, st.leftHandVariant);
         st.lastSwingGameTime = now;
-        st.nextComboStep = (step + 1) % (fused ? TogetsuMoveType.FUSED_COMBO_COUNT : TogetsuMoveType.DUAL_COMBO_COUNT);
+        if (!fused) {
+            st.leftHandVariant = (st.leftHandVariant + 1) & 1;
+        }
+        if (!fused && (moveType == TogetsuMoveType.DUAL_SPRINT_THRUST || moveType == TogetsuMoveType.DUAL_AIR_SLASH)) {
+            st.nextComboStep = 1;
+        } else {
+            st.nextComboStep = (step + 1) % (fused ? TogetsuMoveType.FUSED_COMBO_COUNT : TogetsuMoveType.DUAL_COMBO_COUNT);
+        }
 
         player.resetAttackStrengthTicker();
         player.swing(InteractionHand.MAIN_HAND, true);
+        if (!fused && airStrength >= 0.85F && player.getOffhandItem().isEmpty()) {
+            applySafeDualComboLunge(level, player, st, moveType, now);
+        }
         level.playSound(null, player.getX(), player.getY() + 1.0, player.getZ(),
                 fused ? ModSounds.DUAL_BLADE_CROSS_SLASH : ModSounds.DUAL_BLADE_SLASH,
                 SoundSource.PLAYERS, fused ? 0.95F : 0.78F, fused ? 0.76F : 1.12F);
         broadcastSync(level, player, moveType, fused, TogetsuSyncPayload.VFX_NONE, player.position().add(0, 1.0, 0), 1.0F);
     }
 
+    /**
+     * Chuột Phải ở dạng Song Đao — Chém trực tiếp bằng **Kiếm Phải (Trăng Khuyết — Lưỡi Đen)**:
+     * - Luân phiên `DUAL_1` (ngang Phải->Trái) & `DUAL_3` (hất chéo Phải), nhát thứ 5 tổng hợp kích hoạt Đòn Đặc Biệt `DUAL_5`!
+     * - Nội tại Trăng Khuyết khi Chí Mạng: hồi `+1.0 HP` (nửa tim), tạo vòng lặp cân bằng máu khi phối hợp Chuột Trái & Chuột Phải!
+     */
+    private static void handleDualRightHandSlash(ServerPlayer player, int targetId) {
+        ItemStack stack = player.getMainHandItem();
+        if (TogetsuItem.isFused(stack) || ACTIVE_PINS.containsKey(player.getUUID()) || ACTIVE_VORPALS.containsKey(player.getUUID())) {
+            return;
+        }
+        ServerLevel level = player.serverLevel();
+        long now = level.getGameTime();
+        PlayerTogetsuState st = PLAYER_STATES.computeIfAbsent(player.getUUID(), id -> new PlayerTogetsuState());
+        if ((now - st.lastRightSwingGameTime) < 6L || (now - st.lastSwingGameTime) < 3L) {
+            return;
+        }
+        if (now - st.lastSwingGameTime > COMBO_RESET_TICKS) {
+            st.nextComboStep = 0;
+        }
+
+        int step = st.nextComboStep;
+        TogetsuMoveType moveType = TogetsuMoveType.resolveDualHandMove(
+                true, player.onGround(), player.isInWater(), player.fallDistance,
+                player.isSprinting(), step, st.rightHandVariant);
+        st.lastRightSwingGameTime = now;
+        st.lastSwingGameTime = now;
+        st.rightHandVariant = (st.rightHandVariant + 1) & 1;
+        if (moveType == TogetsuMoveType.DUAL_SPRINT_THRUST || moveType == TogetsuMoveType.DUAL_AIR_SLASH) {
+            st.nextComboStep = 1;
+        } else {
+            st.nextComboStep = (step + 1) % TogetsuMoveType.DUAL_COMBO_COUNT;
+        }
+
+        double reach = player.entityInteractionRange() + 1.05;
+        Entity hitTarget = null;
+        if (targetId >= 0) {
+            Entity cand = level.getEntity(targetId);
+            if (cand != null && cand.isAlive() && cand != player && cand.isAttackable()
+                    && cand.getBoundingBox().distanceToSqr(player.getEyePosition()) <= reach * reach) {
+                hitTarget = cand;
+            }
+        }
+        if (hitTarget == null) {
+            Vec3 eye = player.getEyePosition();
+            Vec3 look = player.getLookAngle().normalize();
+            AABB box = player.getBoundingBox().inflate(reach, 1.5, reach);
+            double bestScore = Double.MAX_VALUE;
+            for (Entity cand : level.getEntities(player, box, e -> e.isAlive() && e.isPickable() && e.isAttackable() && e != player)) {
+                LivingEntity real = DualBladeCombatHandler.resolveRealLivingTarget(cand);
+                if (real == null || !real.isAlive() || real == player || real.isAlliedTo(player)) continue;
+                Vec3 to = cand.getBoundingBox().getCenter().subtract(eye);
+                double dist = to.length();
+                if (dist > reach || dist < 0.05) continue;
+                double dot = to.scale(1.0 / dist).dot(look);
+                if (dot < 0.45) continue;
+                double score = dist * (1.35 - dot);
+                if (score < bestScore) {
+                    bestScore = score;
+                    hitTarget = cand;
+                }
+            }
+        }
+
+        byte vfxKind = TogetsuSyncPayload.VFX_NONE;
+        Vec3 vfxPos = player.position().add(0, 1.0, 0);
+
+        LivingEntity realTarget = hitTarget != null ? DualBladeCombatHandler.resolveRealLivingTarget(hitTarget) : null;
+        if (hitTarget != null && realTarget != null && realTarget.isAlive()) {
+            st.lastCombatGameTime = now;
+            vfxPos = hitTarget.getBoundingBox().getCenter();
+            DamageSource src = player.damageSources().playerAttack(player);
+            float baseDmg = (float) Math.max(TogetsuItem.DUAL_DAMAGE, player.getAttributeValue(Attributes.ATTACK_DAMAGE));
+            baseDmg = EnchantmentHelper.modifyDamage(level, stack, hitTarget, src, baseDmg);
+
+            float empowerApplied = 0.0F;
+            if (TogetsuItem.isWaxingEmpowered(stack)) {
+                empowerApplied = TogetsuItem.getWaxingEmpowerBonus(stack);
+                TogetsuItem.setWaxingEmpower(stack, false, 0.0F);
+            }
+            float gapRatio = computeUnderdogDamageBonus(player, realTarget);
+            int critLv = ModEnchantments.getLevel(level, stack, ModEnchantments.CRITICAL_STRIKE);
+            int pierceLv = ModEnchantments.getLevel(level, stack, ModEnchantments.ARMOR_PIERCE);
+            boolean vanillaFallCrit = player.fallDistance > 0.0F && !player.onGround() && !player.onClimbable() && !player.isInWater();
+            float critChance = Mth.clamp(0.40F + gapRatio * 0.20F + critLv * 0.08F, 0.0F, 0.95F);
+            boolean crit = vanillaFallCrit || level.random.nextFloat() < critChance;
+            float armorPierce = Mth.clamp(0.05F + pierceLv * 0.07F, 0.0F, 0.65F);
+
+            float dmg = baseDmg;
+            if (empowerApplied > 0.01F) dmg *= (1.0F + empowerApplied);
+            if (moveType == TogetsuMoveType.DUAL_5) dmg *= 1.60F;
+            if (crit) dmg *= 1.50F;
+
+            realTarget.invulnerableTime = 0;
+            OVERRIDE_ARMOR_PIERCE.set(armorPierce);
+            boolean hurtOk;
+            try {
+                hurtOk = hitTarget.hurt(src, dmg);
+            } finally {
+                OVERRIDE_ARMOR_PIERCE.remove();
+            }
+
+            if (hurtOk) {
+                int resTicks = 5;
+                realTarget.invulnerableTime = 10 + resTicks;
+                realTarget.hurtTime = Math.min(realTarget.hurtTime, resTicks);
+                if (!player.getAbilities().instabuild) {
+                    stack.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
+                }
+
+                float prevGauge = TogetsuItem.getFusionGauge(stack);
+                TogetsuItem.addFusionGauge(stack, SLASH_CHARGE_GAIN);
+                level.playSound(null, vfxPos.x, vfxPos.y, vfxPos.z,
+                        SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.62F, 1.48F);
+                if (prevGauge < 100.0F && TogetsuItem.getFusionGauge(stack) >= 100.0F) {
+                    notifyFusionReady(level, player);
+                }
+
+                if (crit) {
+                    level.sendParticles(ParticleTypes.CRIT, vfxPos.x, vfxPos.y, vfxPos.z, 10, 0.30, 0.30, 0.30, 0.16);
+                    level.playSound(null, vfxPos.x, vfxPos.y, vfxPos.z,
+                            ModSounds.DUAL_BLADE_CRIT, SoundSource.PLAYERS, 0.80F, 1.05F);
+                    player.heal(1.0F);
+                    vfxKind = TogetsuSyncPayload.VFX_WANING_CRIT;
+                    st.nextCritIsWaxing = true;
+                }
+
+                if (moveType == TogetsuMoveType.DUAL_5) {
+                    vfxKind = TogetsuSyncPayload.VFX_MORPH_FINISHER_IMPACT;
+                    realTarget.push(0.0, 0.46, 0.0);
+                    realTarget.hurtMarked = true;
+                    triggerDualSpinCleave(level, player, realTarget, dmg * 0.72F, armorPierce, 3.50);
+                    level.playSound(null, vfxPos.x, vfxPos.y, vfxPos.z,
+                            ModSounds.DUAL_BLADE_CROSS_SLASH, SoundSource.PLAYERS, 1.18F, 0.72F);
+                    ModNetworking.sendShakeNearby(level, vfxPos, 18.0, 0.56F, 5);
+                }
+            }
+        }
+
+        if (player.getOffhandItem().isEmpty()) {
+            applySafeDualComboLunge(level, player, st, moveType, now);
+        }
+        level.playSound(null, player.getX(), player.getY() + 1.0, player.getZ(),
+                moveType == TogetsuMoveType.DUAL_5 ? ModSounds.DUAL_BLADE_CROSS_SLASH : ModSounds.DUAL_BLADE_SLASH,
+                SoundSource.PLAYERS, 0.84F, 0.96F);
+        broadcastSync(level, player, moveType, false, vfxKind, vfxPos, 1.0F);
+    }
+
     private static void broadcastSync(ServerLevel level, Player player, TogetsuMoveType move,
                                       boolean fused, byte vfxKind, Vec3 pos, float powerScale) {
+        float durTicks = move.isDualComboMove()
+                ? computeDualComboDurationTicks(player.getAttributeValue(Attributes.ATTACK_SPEED), move)
+                : move.baseDisplayTicks;
         TogetsuSyncPayload payload = new TogetsuSyncPayload(
                 player.getId(),
                 move.id,
-                move.baseDisplayTicks,
+                durTicks,
                 fused,
                 vfxKind,
                 pos.x, pos.y, pos.z,

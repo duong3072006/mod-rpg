@@ -2,8 +2,8 @@
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
   "key": {
-    "N": {
-      "item": "minecraft:netherite_leggings"
+    "D": {
+      "item": "minecraft:diamond_leggings"
     },
     "S": {
       "item": "abyssalrpg:nightmare_armor_shard"
@@ -11,7 +11,7 @@
   },
   "pattern": [
     "SSS",
-    "SNS",
+    "SDS",
     "S S"
   ],
   "result": {

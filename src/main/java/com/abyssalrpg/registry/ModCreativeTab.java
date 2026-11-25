@@ -28,6 +28,9 @@ public final class ModCreativeTab {
                         if (ModItems.TOGETSU != null) {
                             output.accept(ModItems.TOGETSU);
                         }
+                        if (ModItems.EXCALIBUR != null) {
+                            output.accept(ModItems.EXCALIBUR);
+                        }
                         if (ModItems.NIGHTMARE_HELMET != null) {
                             output.accept(ModItems.NIGHTMARE_HELMET);
                             output.accept(ModItems.NIGHTMARE_CHESTPLATE);
@@ -44,6 +47,22 @@ public final class ModCreativeTab {
                         }
                         output.accept(ModItems.CINDER_DRAGON_HEART);
                         output.accept(ModItems.CINDER_DRAGON_SCALE);
+                        if (ModItems.SPIRIT_HYDRA_HELMET != null) {
+                            output.accept(ModItems.SPIRIT_HYDRA_HELMET);
+                            output.accept(ModItems.SPIRIT_HYDRA_CHESTPLATE);
+                            output.accept(ModItems.SPIRIT_HYDRA_LEGGINGS);
+                            output.accept(ModItems.SPIRIT_HYDRA_BOOTS);
+                        }
+                        output.accept(ModItems.SPIRIT_HYDRA_HEART);
+                        output.accept(ModItems.SPIRIT_HYDRA_SCALE);
+                        if (ModItems.CERBERUS_HELMET != null) {
+                            output.accept(ModItems.CERBERUS_HELMET);
+                            output.accept(ModItems.CERBERUS_CHESTPLATE);
+                            output.accept(ModItems.CERBERUS_LEGGINGS);
+                            output.accept(ModItems.CERBERUS_BOOTS);
+                        }
+                        output.accept(ModItems.CERBERUS_HEART);
+                        output.accept(ModItems.CERBERUS_HIDE);
                         params.holders().lookup(Registries.ENCHANTMENT).ifPresent(enchantRegistry -> {
                             for (ResourceKey<Enchantment> key : ModEnchantments.ALL_DUAL_KNIFE_ENCHANTS) {
                                 enchantRegistry.get(key).ifPresent(holder -> {
