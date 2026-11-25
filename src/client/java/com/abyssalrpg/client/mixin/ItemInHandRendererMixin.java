@@ -3,11 +3,14 @@ package com.abyssalrpg.client.mixin;
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
 import com.abyssalrpg.client.anim.DualBladeAnimState;
 import com.abyssalrpg.client.anim.ExcaliburAnimManager;
+import com.abyssalrpg.client.anim.SeaWeaponsAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
 import com.abyssalrpg.client.renderer.ExcaliburGeoRenderer;
+import com.abyssalrpg.client.renderer.SeaTridentGeoRenderer;
 import com.abyssalrpg.client.renderer.TogetsuGeoRenderer;
 import com.abyssalrpg.combat.DualBladeMoveType;
 import com.abyssalrpg.combat.ExcaliburMoveType;
+import com.abyssalrpg.combat.SeaWeaponsMoveType;
 import com.abyssalrpg.combat.TogetsuMoveType;
 import com.abyssalrpg.registry.ModItems;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -47,18 +50,22 @@ public abstract class ItemInHandRendererMixin {
     @Unique
     private boolean abyssalrpg$wasHoldingExcalibur;
 
+    @Unique
+    private boolean abyssalrpg$wasHoldingSeaTrident;
+
     @org.spongepowered.asm.mixin.injection.Inject(method = "tick", at = @At("HEAD"))
     private void abyssalrpg$captureExcaliburBeforeTick(org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
         this.abyssalrpg$wasHoldingExcalibur = this.mainHandItem.is(ModItems.EXCALIBUR);
+        this.abyssalrpg$wasHoldingSeaTrident = this.mainHandItem.is(ModItems.SEA_TRIDENT);
     }
 
     @org.spongepowered.asm.mixin.injection.Inject(method = "tick", at = @At("TAIL"))
     private void abyssalrpg$stabilizeExcaliburHandHeight(
             org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
         net.minecraft.client.player.LocalPlayer lp = net.minecraft.client.Minecraft.getInstance().player;
-        if (lp != null && this.abyssalrpg$wasHoldingExcalibur && lp.getMainHandItem().is(ModItems.EXCALIBUR)) {
-            // Giữ thanh kiếm ĐỨNG IM 100% khi đang cầm & tích năng lượng (không tụt tay hay
-            // giật khi cooldown/energy cập nhật!)
+        if (lp != null && ((this.abyssalrpg$wasHoldingExcalibur && lp.getMainHandItem().is(ModItems.EXCALIBUR))
+                || (this.abyssalrpg$wasHoldingSeaTrident && lp.getMainHandItem().is(ModItems.SEA_TRIDENT)))) {
+            // Giữ vũ khí ĐỨNG IM 100% khi đang cầm (không tụt tay hay giật khi cooldown/energy cập nhật!)
             this.mainHandItem = lp.getMainHandItem();
             this.mainHandHeight = 1.0F;
             this.oMainHandHeight = 1.0F;
@@ -83,6 +90,97 @@ public abstract class ItemInHandRendererMixin {
         boolean dualWieldActive = mainStack.is(ModItems.DUAL_KNIFE) && player.getOffhandItem().isEmpty();
         boolean togetsuActive = mainStack.is(ModItems.TOGETSU) && player.getOffhandItem().isEmpty();
         boolean excaliburActive = (hand == InteractionHand.MAIN_HAND) && stack.is(ModItems.EXCALIBUR);
+        boolean seaActive = mainStack.is(ModItems.SEA_TRIDENT)
+                && (hand == InteractionHand.MAIN_HAND || player.getOffhandItem().isEmpty());
+
+        if (seaActive) {
+            boolean isOffhand = (hand == InteractionHand.OFF_HAND);
+            ItemStack effectiveStack = isOffhand ? mainStack : stack;
+            float effectiveEquip = isOffhand
+                    ? (1.0F - Mth.lerp(partialTicks, this.oMainHandHeight, this.mainHandHeight))
+                    : equippedProgress;
+            float alpha = SeaWeaponsAnimManager.getActionProgress(player.getId(), partialTicks);
+            SeaWeaponsMoveType move = SeaWeaponsAnimManager.getMoveType(player.getId());
+            float sprint = SeaWeaponsAnimManager.getSprintBlend(player.getId(), partialTicks);
+
+            poseStack.pushPose();
+            if (alpha > 0.001F) {
+                float ret = (alpha > 0.78F) ? (1.0F - DualBladeAnimState.easeInOutCubic((alpha - 0.78F) / 0.22F)) : 1.0F;
+                switch (move) {
+                    case THRUST_1 -> {
+                        if (!isOffhand) {
+                            float thrust = DualBladeAnimState.easeOutQuart(Mth.clamp((alpha - 0.14F) / 0.36F, 0.0F, 1.0F));
+                            poseStack.translate(Mth.lerp(thrust, 0.12F, -0.18F) * ret, Mth.lerp(thrust, -0.06F, 0.06F) * ret,
+                                    Mth.lerp(thrust, 0.16F, -0.62F) * ret);
+                            poseStack.mulPose(Axis.XP.rotationDegrees(Mth.lerp(thrust, 10.0F, -68.0F) * ret));
+                        }
+                    }
+                    case SWEEP_2 -> {
+                        if (!isOffhand) {
+                            float sweep = DualBladeAnimState.easeInOutCubic(Mth.clamp((alpha - 0.10F) / 0.48F, 0.0F, 1.0F));
+                            poseStack.translate(Mth.lerp(sweep, 0.28F, -0.78F) * ret, -0.14F * ret, -0.34F * ret);
+                            poseStack.mulPose(Axis.YP.rotationDegrees(Mth.lerp(sweep, -36.0F, 86.0F) * ret));
+                            poseStack.mulPose(Axis.XP.rotationDegrees(-62.0F * ret));
+                            poseStack.mulPose(Axis.ZP.rotationDegrees(62.0F * ret));
+                        }
+                    }
+                    case TRIDENT_SLAM_3 -> {
+                        if (!isOffhand) {
+                            float raise = DualBladeAnimState.easeOutCubic(Mth.clamp(alpha / 0.26F, 0.0F, 1.0F));
+                            float slam = DualBladeAnimState.easeOutQuart(Mth.clamp((alpha - 0.24F) / 0.36F, 0.0F, 1.0F));
+                            poseStack.translate(-0.18F * ret, Mth.lerp(slam, 0.36F * raise, -0.44F) * ret, -0.38F * ret);
+                            poseStack.mulPose(Axis.XP.rotationDegrees(Mth.lerp(slam, 28.0F * raise, -84.0F) * ret));
+                        }
+                    }
+                    case LANTERN_TIDAL_WAVE -> {
+                        // Đèn Lồng tay trái nâng cao rực sáng rồi đẩy mạnh về trước gọi SÓNG THẦN!
+                        float raise = DualBladeAnimState.easeOutCubic(Mth.clamp(alpha / 0.28F, 0.0F, 1.0F));
+                        float surge = DualBladeAnimState.easeOutQuart(Mth.clamp((alpha - 0.26F) / 0.34F, 0.0F, 1.0F));
+                        if (isOffhand) {
+                            poseStack.translate(Mth.lerp(surge, 0.20F * raise, 0.42F) * ret,
+                                    Mth.lerp(surge, 0.36F * raise, 0.12F) * ret,
+                                    Mth.lerp(surge, -0.14F * raise, -0.52F) * ret);
+                            poseStack.mulPose(Axis.XP.rotationDegrees(Mth.lerp(surge, -16.0F * raise, -38.0F) * ret));
+                        } else {
+                            poseStack.translate(0.14F * raise * ret, -0.12F * ret, 0.14F * ret);
+                        }
+                    }
+                    case TRIDENT_WHIRLPOOL -> {
+                        // Giơ Đinh Ba tay phải THẲNG LÊN TRỜI triệu hồi 5 Đinh Ba 3D rồi vung nhẹ chỉ lệnh!
+                        float raise = DualBladeAnimState.easeOutCubic(Mth.clamp(alpha / 0.24F, 0.0F, 1.0F));
+                        float cmd = DualBladeAnimState.easeOutQuart(Mth.clamp((alpha - 0.62F) / 0.20F, 0.0F, 1.0F));
+                        float pulse = (alpha > 0.20F && alpha < 0.64F) ? (Mth.sin(alpha * 42.0F) * 0.015F) : 0.0F;
+                        if (!isOffhand) {
+                            poseStack.translate(
+                                    Mth.lerp(cmd, -0.16F * raise, -0.22F) * ret,
+                                    Mth.lerp(cmd, 0.44F * raise + pulse, -0.10F) * ret,
+                                    Mth.lerp(cmd, -0.16F * raise, -0.44F) * ret);
+                            poseStack.mulPose(Axis.ZP.rotationDegrees(Mth.lerp(cmd, -22.0F * raise, -8.0F) * ret));
+                            poseStack.mulPose(Axis.XP.rotationDegrees(Mth.lerp(cmd, 24.0F * raise, -44.0F) * ret));
+                        } else {
+                            poseStack.translate(-0.08F * ret, 0.08F * raise * ret, -0.10F * ret);
+                        }
+                    }
+                }
+            } else if (sprint > 0.001F) {
+                if (!isOffhand) {
+                    poseStack.translate(0.08F * sprint, -0.08F * sprint, 0.08F * sprint);
+                    poseStack.mulPose(Axis.XP.rotationDegrees(18.0F * sprint));
+                } else {
+                    poseStack.translate(-0.05F * sprint, -0.04F * sprint, -0.04F * sprint);
+                }
+            }
+            float effectiveSwing = (alpha > 0.001F) ? 0.0F : (isOffhand ? 0.0F : swingProgress);
+            SeaTridentGeoRenderer.setCurrentRenderEntityId(player.getId());
+            try {
+                original.call(instance, player, partialTicks, pitch, hand, effectiveSwing, effectiveStack,
+                        effectiveEquip, poseStack, buffer, combinedLight);
+            } finally {
+                SeaTridentGeoRenderer.setCurrentRenderEntityId(-1);
+                poseStack.popPose();
+            }
+            return;
+        }
 
         if (excaliburActive) {
             float alpha = ExcaliburAnimManager.getActionProgress(player.getId(), partialTicks);

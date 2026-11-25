@@ -3,8 +3,10 @@ package com.abyssalrpg.client.mixin;
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
 import com.abyssalrpg.client.anim.DualBladeAnimState.FullBodyPose;
 import com.abyssalrpg.client.anim.ExcaliburAnimManager;
+import com.abyssalrpg.client.anim.SeaWeaponsAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
 import com.abyssalrpg.client.renderer.ExcaliburGeoRenderer;
+import com.abyssalrpg.client.renderer.SeaTridentGeoRenderer;
 import com.abyssalrpg.client.renderer.TogetsuGeoRenderer;
 import com.abyssalrpg.registry.ModItems;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -42,6 +44,8 @@ public abstract class ItemInHandLayerMixin {
                 TogetsuGeoRenderer.setCurrentRenderEntityId(player.getId());
             } else if (player.getMainHandItem().is(ModItems.EXCALIBUR)) {
                 ExcaliburGeoRenderer.setCurrentRenderEntityId(player.getId());
+            } else if (player.getMainHandItem().is(ModItems.SEA_TRIDENT)) {
+                SeaTridentGeoRenderer.setCurrentRenderEntityId(player.getId());
             }
         }
     }
@@ -57,6 +61,7 @@ public abstract class ItemInHandLayerMixin {
         if (entity instanceof Player) {
             TogetsuGeoRenderer.setCurrentRenderEntityId(-1);
             ExcaliburGeoRenderer.setCurrentRenderEntityId(-1);
+            SeaTridentGeoRenderer.setCurrentRenderEntityId(-1);
         }
     }
 
@@ -80,6 +85,10 @@ public abstract class ItemInHandLayerMixin {
                     return main;
                 }
             }
+            if (main.is(ModItems.SEA_TRIDENT) && entity instanceof Player player
+                    && SeaWeaponsAnimManager.shouldMirrorLanternOffhand(player)) {
+                return main;
+            }
         }
         return realOffhand;
     }
@@ -98,7 +107,8 @@ public abstract class ItemInHandLayerMixin {
         boolean isDualKnife = stack.is(ModItems.DUAL_KNIFE);
         boolean isTogetsu = stack.is(ModItems.TOGETSU);
         boolean isExcalibur = stack.is(ModItems.EXCALIBUR);
-        if ((!isDualKnife && !isTogetsu && !isExcalibur) || !(entity instanceof Player player)) {
+        boolean isSeaTrident = stack.is(ModItems.SEA_TRIDENT);
+        if ((!isDualKnife && !isTogetsu && !isExcalibur && !isSeaTrident) || !(entity instanceof Player player)) {
             return;
         }
         if ((isDualKnife || isTogetsu) && !player.getOffhandItem().isEmpty()) {
@@ -111,6 +121,8 @@ public abstract class ItemInHandLayerMixin {
             TogetsuGeoRenderer.setCurrentRenderEntityId(player.getId());
         } else if (isExcalibur) {
             ExcaliburGeoRenderer.setCurrentRenderEntityId(player.getId());
+        } else if (isSeaTrident) {
+            SeaTridentGeoRenderer.setCurrentRenderEntityId(player.getId());
         }
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
         FullBodyPose pose;
@@ -118,8 +130,10 @@ public abstract class ItemInHandLayerMixin {
             pose = DualBladeAnimManager.evaluatePose(player, partialTick, 0.0F, player.tickCount + partialTick);
         } else if (isTogetsu) {
             pose = TogetsuAnimManager.evaluatePose(player, partialTick, 0.0F, player.tickCount + partialTick);
-        } else {
+        } else if (isExcalibur) {
             pose = ExcaliburAnimManager.evaluatePose(player, partialTick, 0.0F, player.tickCount + partialTick);
+        } else {
+            pose = SeaWeaponsAnimManager.evaluatePose(player, partialTick, 0.0F, player.tickCount + partialTick);
         }
         if (pose == null) {
             return;

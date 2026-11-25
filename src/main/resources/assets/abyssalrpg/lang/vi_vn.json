@@ -265,5 +265,19 @@
   "subtitles.abyssalrpg.excalibur.slash": "Excalibur vung chém thánh quang uy mãnh",
   "subtitles.abyssalrpg.excalibur.charge": "Excalibur tụ luồng ma lực cuồn cuộn",
   "subtitles.abyssalrpg.excalibur.beam": "Excalibur khai hỏa chùm tia năng lượng chấn động",
-  "subtitles.abyssalrpg.excalibur.morgan_transform": "Excalibur Morgan bùng nổ sấm sét hắc ám"
+  "subtitles.abyssalrpg.excalibur.morgan_transform": "Excalibur Morgan bùng nổ sấm sét hắc ám",
+  "item.abyssalrpg.sea_trident": "Hải Thần Đinh Ba & Đèn Lồng Biển",
+  "tooltip.abyssalrpg.sea_trident.subtitle": "Song Cổ Vật Đại Dương — Tay Phải: Đinh Ba | Tay Trái: Đèn Lồng Biển",
+  "tooltip.abyssalrpg.sea_trident.combo": "[Chuột Trái] Combo 3 Nhịp Đinh Ba (+1.25 Tầm Đánh | Đòn 3 Sóng Đập AoE)",
+  "tooltip.abyssalrpg.sea_trident.lantern_wave": "[Chuột Phải] Đèn Lồng Biển: Triệu Hồi SÓNG THẦN (khổng lồ 22 block, hất tung & Làm Chậm II)",
+  "tooltip.abyssalrpg.sea_trident.trident_whirlpool": "[%s] / [Shift+Chuột Phải] Đinh Ba Biển: Giơ Trời Triệu Hồi 5 Đinh Ba Phóng Mục Tiêu",
+  "tooltip.abyssalrpg.sea_trident.synergy": "Cộng Hưởng Hải Thần: Sóng Thần quét qua vùng trúng 5 Đinh Ba kích nổ Đại Hồng Thủy!",
+  "tooltip.abyssalrpg.sea_trident.passive": "Hải Đăng Hộ Mệnh: Thở Dưới Nước + Bơi Siêu Tốc & Nhìn Xuyên Đáy Biển",
+  "tooltip.abyssalrpg.sea_trident.offhand_warn": "Hãy để trống ô tay phụ để cầm Đèn Lồng Biển ở tay trái!",
+  "message.abyssalrpg.sea_trident.need_offhand": "Hãy để trống ô tay phụ để cầm Đèn Lồng Biển!",
+  "message.abyssalrpg.sea_trident.wave_cd": "Sóng Thần đang hồi (%ss)",
+  "message.abyssalrpg.sea_trident.whirlpool_cd": "Ngũ Thần Kích (5 Đinh Ba) đang hồi (%ss)",
+  "message.abyssalrpg.sea_trident.cast_wave": "Đèn Lồng Biển: TRIỆU HỒI SÓNG THẦN!",
+  "message.abyssalrpg.sea_trident.cast_whirlpool": "Đinh Ba Biển: NGŨ THẦN KÍCH — 5 ĐINH BA PHÓNG MỤC TIÊU!",
+  "message.abyssalrpg.sea_trident.maelstrom_synergy": "CỘNG HƯỞNG HẢI THẦN! Đại Hồng Thủy Bùng Nổ!"
 }

@@ -171,6 +171,8 @@ public final class TogetsuClientState {
                     ClientPlayNetworking.send(new TogetsuActionC2SPayload(TogetsuActionC2SPayload.ACTION_TOGGLE_FUSE, -1));
                 } else if (player.getMainHandItem().is(ModItems.EXCALIBUR)) {
                     ExcaliburClientState.onTransformKeyPressed(player);
+                } else if (player.getMainHandItem().is(ModItems.SEA_TRIDENT)) {
+                    SeaWeaponsClientState.onWhirlpoolKeyPressed(player);
                 }
             }
         }

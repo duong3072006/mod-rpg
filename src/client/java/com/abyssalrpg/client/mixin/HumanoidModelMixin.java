@@ -3,6 +3,7 @@ package com.abyssalrpg.client.mixin;
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
 import com.abyssalrpg.client.anim.DualBladeAnimState.FullBodyPose;
 import com.abyssalrpg.client.anim.ExcaliburAnimManager;
+import com.abyssalrpg.client.anim.SeaWeaponsAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
@@ -89,7 +90,8 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
             // để animation vanilla không bao giờ ghi đè rightArm/leftArm ở khung đầu hoặc khung chuyển tiếp!
             if (DualBladeAnimManager.isDualBladeAttacking(player)
                     || TogetsuAnimManager.isHoldingTogetsuReady(player)
-                    || ExcaliburAnimManager.isHoldingExcalibur(player)) {
+                    || ExcaliburAnimManager.isHoldingExcalibur(player)
+                    || SeaWeaponsAnimManager.isHoldingSeaWeapons(player)) {
                 HumanoidModel<?> self = (HumanoidModel<?>) (Object) this;
                 this.abyssalrpg$savedAttackTime = self.attackTime;
                 self.attackTime = 0.0F;
@@ -117,6 +119,9 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
         }
         if (pose == null) {
             pose = ExcaliburAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
+        }
+        if (pose == null) {
+            pose = SeaWeaponsAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
         }
         if (pose == null) {
             return;

@@ -1,6 +1,7 @@
 package com.abyssalrpg.client.mixin;
 
 import com.abyssalrpg.client.anim.DualBladeAnimState.FullBodyPose;
+import com.abyssalrpg.client.anim.SeaWeaponsAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
 import com.abyssalrpg.client.anim.TogetsuBentArmRig;
 import com.abyssalrpg.client.anim.TogetsuBentArmRig.SkinBentArms;
@@ -124,6 +125,9 @@ public abstract class PlayerModelMixin<T extends LivingEntity> extends HumanoidM
             return;
         }
         FullBodyPose pose = TogetsuAnimManager.getLastComputedPose(player.getId());
+        if (pose == null || pose.elbowWeight <= 0.003F) {
+            pose = SeaWeaponsAnimManager.getLastComputedPose(player.getId());
+        }
         if (pose == null || pose.elbowWeight <= 0.003F) {
             return;
         }

@@ -2,6 +2,7 @@ package com.abyssalrpg.mixin;
 
 import com.abyssalrpg.combat.DualBladeCombatHandler;
 import com.abyssalrpg.combat.ExcaliburCombatHandler;
+import com.abyssalrpg.combat.SeaWeaponsCombatHandler;
 import com.abyssalrpg.combat.TogetsuCombatHandler;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -26,12 +27,16 @@ public abstract class PlayerMixin {
     @Unique
     private ExcaliburCombatHandler.ActiveHitContext abyssalrpg$activeExcaliburHit;
 
+    @Unique
+    private SeaWeaponsCombatHandler.ActiveHitContext abyssalrpg$activeSeaHit;
+
     @Inject(method = "attack", at = @At("HEAD"))
     private void abyssalrpg$beginDualBladeAttack(Entity target, CallbackInfo ci) {
         Player self = (Player) (Object) this;
         this.abyssalrpg$activeDualBladeHit = DualBladeCombatHandler.beginPlayerAttack(self, target);
         this.abyssalrpg$activeTogetsuHit = TogetsuCombatHandler.beginPlayerAttack(self, target);
         this.abyssalrpg$activeExcaliburHit = ExcaliburCombatHandler.beginPlayerAttack(self, target);
+        this.abyssalrpg$activeSeaHit = SeaWeaponsCombatHandler.beginPlayerAttack(self, target);
     }
 
     @ModifyArg(
@@ -52,6 +57,9 @@ public abstract class PlayerMixin {
         if (this.abyssalrpg$activeExcaliburHit != null) {
             return ExcaliburCombatHandler.modifyAttackDamage(amount);
         }
+        if (this.abyssalrpg$activeSeaHit != null) {
+            return SeaWeaponsCombatHandler.modifyAttackDamage(amount);
+        }
         return amount;
     }
 
@@ -71,6 +79,11 @@ public abstract class PlayerMixin {
             ExcaliburCombatHandler.ActiveHitContext ctx = this.abyssalrpg$activeExcaliburHit;
             this.abyssalrpg$activeExcaliburHit = null;
             ExcaliburCombatHandler.finishPlayerAttack(ctx);
+        }
+        if (this.abyssalrpg$activeSeaHit != null) {
+            SeaWeaponsCombatHandler.ActiveHitContext ctx = this.abyssalrpg$activeSeaHit;
+            this.abyssalrpg$activeSeaHit = null;
+            SeaWeaponsCombatHandler.finishPlayerAttack(ctx);
         }
     }
 }

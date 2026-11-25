@@ -2,6 +2,7 @@ package com.abyssalrpg.client;
 
 import com.abyssalrpg.client.hud.BossBarHudRenderer;
 import com.abyssalrpg.client.hud.ExcaliburHudRenderer;
+import com.abyssalrpg.client.hud.SeaWeaponsHudRenderer;
 import com.abyssalrpg.client.hud.TogetsuHudRenderer;
 import com.abyssalrpg.client.renderer.AltarEyeRenderer;
 import com.abyssalrpg.client.renderer.CerberusArmorRenderer;
@@ -18,11 +19,13 @@ import com.abyssalrpg.client.renderer.LeviathanGeoRenderer;
 import com.abyssalrpg.client.renderer.NightmareArmorRenderer;
 import com.abyssalrpg.client.renderer.NightmareHitboxPartRenderer;
 import com.abyssalrpg.client.renderer.NightmareKnightGeoRenderer;
+import com.abyssalrpg.client.renderer.SeaTridentGeoRenderer;
 import com.abyssalrpg.client.renderer.SpiritHydraArmorRenderer;
 import com.abyssalrpg.client.renderer.SpiritHydraGeoRenderer;
 import com.abyssalrpg.client.renderer.TogetsuGeoRenderer;
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
 import com.abyssalrpg.client.anim.ExcaliburAnimManager;
+import com.abyssalrpg.client.anim.SeaWeaponsAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
 import com.abyssalrpg.client.renderer.vfx.AbyssalOrbRenderer;
 import com.abyssalrpg.client.renderer.vfx.DualBladeTrailRenderer;
@@ -31,6 +34,7 @@ import com.abyssalrpg.client.renderer.vfx.ExcaliburVfxRenderer;
 import com.abyssalrpg.client.renderer.vfx.LaserBeamRenderer;
 import com.abyssalrpg.client.renderer.vfx.MagicCircleRenderer;
 import com.abyssalrpg.client.renderer.vfx.NightmareBoneSpikeRenderer;
+import com.abyssalrpg.client.renderer.vfx.SeaWeaponsVfxRenderer;
 import com.abyssalrpg.client.renderer.vfx.SeveredHydraHeadRenderer;
 import com.abyssalrpg.client.renderer.vfx.ShockwaveRingRenderer;
 import com.abyssalrpg.client.renderer.vfx.TogetsuVfxRenderer;
@@ -49,6 +53,7 @@ import com.abyssalrpg.item.CerberusArmorItem;
 import com.abyssalrpg.item.CinderDragonArmorItem;
 import com.abyssalrpg.item.DualBladeItem;
 import com.abyssalrpg.item.NightmareArmorItem;
+import com.abyssalrpg.item.SeaTridentItem;
 import com.abyssalrpg.item.SpiritHydraArmorItem;
 import com.abyssalrpg.item.TogetsuItem;
 import com.abyssalrpg.network.CerberusVfxPayload;
@@ -62,6 +67,7 @@ import com.abyssalrpg.network.JormungandrPathSyncPayload;
 import com.abyssalrpg.network.LeviathanVfxPayload;
 import com.abyssalrpg.network.NightmareVfxPayload;
 import com.abyssalrpg.network.ScreenShakePayload;
+import com.abyssalrpg.network.SeaWeaponsSyncPayload;
 import com.abyssalrpg.network.TogetsuSyncPayload;
 import com.abyssalrpg.registry.ModBlockEntities;
 import com.abyssalrpg.registry.ModBlocks;
@@ -147,6 +153,7 @@ public class AbyssalRpgClient implements ClientModInitializer {
         HudRenderCallback.EVENT.register(BossBarHudRenderer::render);
         HudRenderCallback.EVENT.register(TogetsuHudRenderer::render);
         HudRenderCallback.EVENT.register(ExcaliburHudRenderer::render);
+        HudRenderCallback.EVENT.register(SeaWeaponsHudRenderer::render);
         TogetsuClientState.initKeybinds();
 
         // Đăng ký GeoItemRenderer 3D fullbright qua Fabric BuiltinItemRendererRegistry
@@ -177,10 +184,21 @@ public class AbyssalRpgClient implements ClientModInitializer {
                     }
                     excaliburRendererHolder[0].renderByItem(stack, mode, matrices, vertexConsumers, light, overlay);
                 });
+
+        final SeaTridentGeoRenderer[] seaTridentRendererHolder = new SeaTridentGeoRenderer[1];
+        BuiltinItemRendererRegistry.INSTANCE.register(ModItems.SEA_TRIDENT,
+                (stack, mode, matrices, vertexConsumers, light, overlay) -> {
+                    if (seaTridentRendererHolder[0] == null) {
+                        seaTridentRendererHolder[0] = new SeaTridentGeoRenderer();
+                    }
+                    seaTridentRendererHolder[0].renderByItem(stack, mode, matrices, vertexConsumers, light, overlay);
+                });
         DualBladeItem.clientIsOffhandOccupied = () -> {
             LocalPlayer p = Minecraft.getInstance().player;
             return p != null && !p.getOffhandItem().isEmpty();
         };
+        SeaTridentItem.clientIsOffhandOccupied = DualBladeItem.clientIsOffhandOccupied;
+        SeaTridentItem.clientWhirlpoolKeyName = TogetsuClientState::getFuseKeyDisplayName;
         TogetsuItem.clientSkillKeyName = TogetsuClientState::getSkillKeyDisplayName;
         TogetsuItem.clientFuseKeyName = TogetsuClientState::getFuseKeyDisplayName;
         TogetsuItem.clientColorKeyName = TogetsuClientState::getColorKeyDisplayName;
@@ -257,6 +275,7 @@ public class AbyssalRpgClient implements ClientModInitializer {
             DualBladeTrailRenderer.renderWorld(context, DualBladeAnimManager.getClientTick());
             TogetsuVfxRenderer.renderWorld(context, TogetsuAnimManager.getClientTick());
             ExcaliburVfxRenderer.renderWorld(context, ExcaliburAnimManager.getClientTick());
+            SeaWeaponsVfxRenderer.renderWorld(context, SeaWeaponsAnimManager.getClientTick());
         });
 
         ClientPlayNetworking.registerGlobalReceiver(TogetsuSyncPayload.TYPE,
@@ -270,6 +289,13 @@ public class AbyssalRpgClient implements ClientModInitializer {
                 (payload, context) -> context.client().execute(() -> {
                     if (context.client().level != null) {
                         ExcaliburClientState.handleSyncPayload(context.client().level, payload);
+                    }
+                }));
+
+        ClientPlayNetworking.registerGlobalReceiver(SeaWeaponsSyncPayload.TYPE,
+                (payload, context) -> context.client().execute(() -> {
+                    if (context.client().level != null) {
+                        SeaWeaponsClientState.handleSyncPayload(context.client().level, payload);
                     }
                 }));
 
@@ -347,6 +373,7 @@ public class AbyssalRpgClient implements ClientModInitializer {
             DualBladeClientState.tickClient(client);
             TogetsuClientState.tickClient(client);
             ExcaliburClientState.tickClient(client);
+            SeaWeaponsClientState.tickClient(client);
 
             LocalPlayer player = client.player;
             if (player == null || client.isPaused() || client.level == null)

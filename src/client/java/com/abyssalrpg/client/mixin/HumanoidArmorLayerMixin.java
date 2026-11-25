@@ -1,6 +1,7 @@
 package com.abyssalrpg.client.mixin;
 
 import com.abyssalrpg.client.anim.DualBladeAnimState.FullBodyPose;
+import com.abyssalrpg.client.anim.SeaWeaponsAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
 import com.abyssalrpg.client.anim.TogetsuBentArmRig;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -40,6 +41,9 @@ public abstract class HumanoidArmorLayerMixin<T extends LivingEntity, M extends 
         this.abyssalrpg$bentArmorPose = null;
         if (slot == EquipmentSlot.CHEST && entity instanceof Player player) {
             FullBodyPose pose = TogetsuAnimManager.getLastComputedPose(player.getId());
+            if (pose == null || pose.elbowWeight <= 0.003F) {
+                pose = SeaWeaponsAnimManager.getLastComputedPose(player.getId());
+            }
             if (pose != null && pose.elbowWeight > 0.003F) {
                 this.abyssalrpg$bentChestActive = true;
                 this.abyssalrpg$bentArmorPose = pose;
