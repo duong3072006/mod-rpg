@@ -15,3 +15,7 @@ __pycache__/
 *.pyc
 .DS_Store
 tools/backup_*/
+tools/*_previews/
+tools/*_preview/
+tools/preview_*/
+tools/preview_*.png

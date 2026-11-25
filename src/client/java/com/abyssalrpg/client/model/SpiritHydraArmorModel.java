@@ -1,6 +1,7 @@
 package com.abyssalrpg.client.model;
 
 import com.abyssalrpg.AbyssalRpgMod;
+import com.abyssalrpg.client.anim.GeoArmorElbowSync;
 import com.abyssalrpg.item.SpiritHydraArmorItem;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -198,6 +199,9 @@ public final class SpiritHydraArmorModel extends GeoModel<SpiritHydraArmorItem> 
             AnimationState<SpiritHydraArmorItem> animationState) {
         super.setCustomAnimations(animatable, instanceId, animationState);
 
+        Entity entity = animationState.getData(DataTickets.ENTITY);
+        GeoArmorElbowSync.applyBentElbows(getAnimationProcessor(), entity);
+
         GeoBone crestL = getAnimationProcessor().getBone("hydra_crest_l");
         GeoBone crestR = getAnimationProcessor().getBone("hydra_crest_r");
         GeoBone heartCore = getAnimationProcessor().getBone("hydra_heart_core");
@@ -222,7 +226,6 @@ public final class SpiritHydraArmorModel extends GeoModel<SpiritHydraArmorItem> 
             return;
         }
 
-        Entity entity = animationState.getData(DataTickets.ENTITY);
         float partialTick = animationState.getPartialTick();
 
         float move = 0.0F;

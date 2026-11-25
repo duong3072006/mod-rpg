@@ -1,6 +1,7 @@
 package com.abyssalrpg.client.model;
 
 import com.abyssalrpg.AbyssalRpgMod;
+import com.abyssalrpg.client.anim.GeoArmorElbowSync;
 import com.abyssalrpg.item.NightmareArmorItem;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -74,6 +75,10 @@ public final class NightmareArmorModel extends GeoModel<NightmareArmorItem> {
                                     AnimationState<NightmareArmorItem> animationState) {
         super.setCustomAnimations(animatable, instanceId, animationState);
 
+        Entity entity = animationState.getData(DataTickets.ENTITY);
+        // Đồng bộ khớp khuỷu găng tay giáp 1:1 với TogetsuBentArmRig (luôn gán tuyệt đối -> 0 lệch tay!)
+        GeoArmorElbowSync.applyBentElbows(getAnimationProcessor(), entity);
+
         GeoBone capeUpper = getAnimationProcessor().getBone("cape_upper");
         GeoBone capeMid = getAnimationProcessor().getBone("cape_mid");
         GeoBone capeLower = getAnimationProcessor().getBone("cape_lower");
@@ -90,7 +95,6 @@ public final class NightmareArmorModel extends GeoModel<NightmareArmorItem> {
             return;
         }
 
-        Entity entity = animationState.getData(DataTickets.ENTITY);
         float partialTick = animationState.getPartialTick();
 
         float walkSpeed = 0.0F;
