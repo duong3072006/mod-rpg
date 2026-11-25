@@ -3,6 +3,7 @@ package com.abyssalrpg.mixin;
 import com.abyssalrpg.api.BossDefenseHolder;
 import com.abyssalrpg.api.BossHealthHolder;
 import com.abyssalrpg.combat.BossCombatEnhancer;
+import com.abyssalrpg.combat.CerberusArmorHandler;
 import com.abyssalrpg.combat.CinderDragonArmorHandler;
 import com.abyssalrpg.combat.DualBladeCombatHandler;
 import com.abyssalrpg.combat.SpiritHydraArmorHandler;
@@ -110,6 +111,7 @@ public abstract class LivingEntityMixin {
             TogetsuCombatHandler.onLivingHurtReturn(self, source, true);
             CinderDragonArmorHandler.onTargetHurtByAttacker(self, source);
             SpiritHydraArmorHandler.onTargetHurtByAttacker(self, source);
+            CerberusArmorHandler.onTargetHurtByAttacker(self, source);
             BossCombatEnhancer.onLivingHurtByBoss(self, source, amount);
         }
     }
