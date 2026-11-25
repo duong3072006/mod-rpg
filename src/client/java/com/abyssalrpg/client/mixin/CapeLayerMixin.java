@@ -32,7 +32,8 @@ public abstract class CapeLayerMixin {
         ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
         if (chest.is(ModItems.CINDER_DRAGON_CHESTPLATE)
                 || chest.is(ModItems.NIGHTMARE_CHESTPLATE)
-                || chest.is(ModItems.SPIRIT_HYDRA_CHESTPLATE)) {
+                || chest.is(ModItems.SPIRIT_HYDRA_CHESTPLATE)
+                || chest.is(ModItems.CERBERUS_CHESTPLATE)) {
             ci.cancel();
         }
     }

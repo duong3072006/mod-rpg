@@ -1,0 +1,54 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_cerberus_heart": {
+      "conditions": {
+        "items": [
+          {
+            "items": "abyssalrpg:cerberus_heart"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_cerberus_hide": {
+      "conditions": {
+        "items": [
+          {
+            "items": "abyssalrpg:cerberus_hide"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_diamond_chestplate": {
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:diamond_chestplate"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "abyssalrpg:cerberus_chestplate"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_cerberus_heart",
+      "has_cerberus_hide",
+      "has_diamond_chestplate"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "abyssalrpg:cerberus_chestplate"
+    ]
+  }
+}

@@ -1,14 +1,14 @@
-// 1.21.1	2026-11-24T22:52:43.9696891	Abyssal Spire RPG/Tags for minecraft:item
-b4892c79c853068f84232b7b5dcad480fb265c03 data\minecraft\tags\item\enchantable\equippable.json
+// 1.21.1	2026-11-25T17:37:14.5475353	Abyssal Spire RPG/Tags for minecraft:item
+cc988b6b502c8d982a6f6fe0c0568db057b673e2 data\minecraft\tags\item\enchantable\equippable.json
 fdab8ddd5529ae14b26bc1853b004131135318a4 data\abyssalrpg\tags\item\dual_knife_repair_items.json
-38937030307d8c60e197563b4ec88b88ac531ca1 data\minecraft\tags\item\enchantable\durability.json
-445faa95eb17d420e0251cbf64f1f0012dc97ccf data\minecraft\tags\item\enchantable\head_armor.json
-34717e16d11750b9b978d80632fb84200a40bcfa data\minecraft\tags\item\foot_armor.json
-88433711f01554e392fcde52c47ab00d93a279f4 data\minecraft\tags\item\enchantable\chest_armor.json
-b4892c79c853068f84232b7b5dcad480fb265c03 data\minecraft\tags\item\enchantable\armor.json
-6bac57578921b7b3ed3c0643b09de3f720b76b67 data\minecraft\tags\item\enchantable\leg_armor.json
-34717e16d11750b9b978d80632fb84200a40bcfa data\minecraft\tags\item\enchantable\foot_armor.json
-445faa95eb17d420e0251cbf64f1f0012dc97ccf data\minecraft\tags\item\head_armor.json
-88433711f01554e392fcde52c47ab00d93a279f4 data\minecraft\tags\item\chest_armor.json
-6bac57578921b7b3ed3c0643b09de3f720b76b67 data\minecraft\tags\item\leg_armor.json
-759de3827d78e27b3b91a3e01822f89ef1652517 data\abyssalrpg\tags\item\enchantable\dual_knife.json
+be54176063401cea1be8e468c840ddc3a7039681 data\minecraft\tags\item\enchantable\durability.json
+39f1dc7432c1e346578fa1b640e386cb9d24bda6 data\minecraft\tags\item\enchantable\head_armor.json
+b72754e4d77a42d26b3687f8a525bd42d77a1b14 data\minecraft\tags\item\foot_armor.json
+57ee4c7294be31b91111fb4189dd0b81293fcb66 data\minecraft\tags\item\enchantable\chest_armor.json
+cc988b6b502c8d982a6f6fe0c0568db057b673e2 data\minecraft\tags\item\enchantable\armor.json
+e755b332497f05a59ada3d51ca15afdb77d5ab85 data\minecraft\tags\item\enchantable\leg_armor.json
+b72754e4d77a42d26b3687f8a525bd42d77a1b14 data\minecraft\tags\item\enchantable\foot_armor.json
+57ee4c7294be31b91111fb4189dd0b81293fcb66 data\minecraft\tags\item\chest_armor.json
+39f1dc7432c1e346578fa1b640e386cb9d24bda6 data\minecraft\tags\item\head_armor.json
+e755b332497f05a59ada3d51ca15afdb77d5ab85 data\minecraft\tags\item\leg_armor.json
+d01852cca4a90e2977281a5c5c0af4116673599f data\abyssalrpg\tags\item\enchantable\dual_knife.json

@@ -24,9 +24,12 @@ import java.nio.file.Path;
  * 3. **Spirit Hydra Armor**: Defense 3/8/6/3 (= 20), Toughness 3.0 (= 12.0), KB Res 0.10 (= 40%),
  *    Độ bền 37x (407/592/555/481); Full Set 4/4: Hồi Phục II, Thở Dưới Nước, +4.0 Máu Tối Đa,
  *    Độc II (3s) + Hồn Lửa Xanh (3s) khi đánh trúng.
+ * 4. **Cerberus Armor**: Defense 3/8/6/3 (= 20), Toughness 3.0 (= 12.0), KB Res 0.10 (= 40%),
+ *    Độ bền 37x (407/592/555/481); Full Set 4/4: Kháng Lửa, Tốc Độ I, Sức Mạnh I, +4.0 Máu Tối Đa,
+ *    đòn đánh thiêu đốt Lửa Địa Ngục 4s.
  */
 public final class ArmorConfig {
-    public static final int CURRENT_CONFIG_VERSION = 7;
+    public static final int CURRENT_CONFIG_VERSION = 8;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path CONFIG_PATH = FabricLoader.getInstance()
@@ -127,6 +130,30 @@ public final class ArmorConfig {
     public int hydraSetBonusSoulFlameSeconds = 3;
     public int hydraSetBonusTickInterval = 20;
     public int hydraSetBonusEffectDurationTicks = 60;
+
+    // --- Chỉ số Cerberus Armor Material (chuẩn Netherite 37x, chỉnh được độc lập) ---
+    public int cerberusHelmetDefense = 3;
+    public int cerberusChestplateDefense = 8;
+    public int cerberusLeggingsDefense = 6;
+    public int cerberusBootsDefense = 3;
+    public float cerberusToughness = 3.0f;
+    public float cerberusKnockbackResistance = 0.10f;
+    public int cerberusDurabilityMultiplier = 37;
+    public int cerberusEnchantmentValue = 18;
+    /** Tỉ lệ gốc rơi Trái Tim Cerberus (`cerberus_heart`) khi hạ gục Boss Cerberus Phase 2 (mặc định 0.05 = 5%). */
+    public float cerberusHeartDropChance = 0.05f;
+
+    // --- Full Set Bonus 4/4: Cerberus Set ---
+    public boolean cerberusEnableSetBonus = true;
+    public boolean cerberusSetBonusFireResistance = true;
+    public boolean cerberusSetBonusSpeed = true;
+    public int cerberusSetBonusSpeedAmplifier = 0;
+    public boolean cerberusSetBonusStrength = true;
+    public int cerberusSetBonusStrengthAmplifier = 0;
+    public double cerberusSetBonusMaxHealth = 4.0;
+    public int cerberusSetBonusIgniteSeconds = 4;
+    public int cerberusSetBonusTickInterval = 20;
+    public int cerberusSetBonusEffectDurationTicks = 60;
 
     public static ArmorConfig get() {
         return INSTANCE;
@@ -277,6 +304,28 @@ public final class ArmorConfig {
         this.hydraSetBonusSoulFlameSeconds = Math.max(0, Math.min(20, this.hydraSetBonusSoulFlameSeconds));
         this.hydraSetBonusTickInterval = Math.max(1, Math.min(40, this.hydraSetBonusTickInterval));
         this.hydraSetBonusEffectDurationTicks = Math.max(40, Math.min(200, this.hydraSetBonusEffectDurationTicks));
+
+        this.cerberusHelmetDefense = Math.max(1, Math.min(20, this.cerberusHelmetDefense));
+        this.cerberusChestplateDefense = Math.max(1, Math.min(24, this.cerberusChestplateDefense));
+        this.cerberusLeggingsDefense = Math.max(1, Math.min(22, this.cerberusLeggingsDefense));
+        this.cerberusBootsDefense = Math.max(1, Math.min(20, this.cerberusBootsDefense));
+        this.cerberusToughness = Math.max(0.0f, Math.min(12.0f, this.cerberusToughness));
+        this.cerberusKnockbackResistance = Math.max(0.0f, Math.min(0.25f, this.cerberusKnockbackResistance));
+        this.cerberusDurabilityMultiplier = Math.max(15, Math.min(120, this.cerberusDurabilityMultiplier));
+        this.cerberusEnchantmentValue = Math.max(1, Math.min(30, this.cerberusEnchantmentValue));
+        if (!Float.isFinite(this.cerberusHeartDropChance)) {
+            this.cerberusHeartDropChance = 0.05f;
+        }
+        this.cerberusHeartDropChance = Math.max(0.0f, Math.min(1.0f, this.cerberusHeartDropChance));
+        this.cerberusSetBonusSpeedAmplifier = Math.max(0, Math.min(4, this.cerberusSetBonusSpeedAmplifier));
+        this.cerberusSetBonusStrengthAmplifier = Math.max(0, Math.min(4, this.cerberusSetBonusStrengthAmplifier));
+        if (!Double.isFinite(this.cerberusSetBonusMaxHealth)) {
+            this.cerberusSetBonusMaxHealth = 4.0;
+        }
+        this.cerberusSetBonusMaxHealth = Math.max(0.0, Math.min(40.0, this.cerberusSetBonusMaxHealth));
+        this.cerberusSetBonusIgniteSeconds = Math.max(0, Math.min(20, this.cerberusSetBonusIgniteSeconds));
+        this.cerberusSetBonusTickInterval = Math.max(1, Math.min(40, this.cerberusSetBonusTickInterval));
+        this.cerberusSetBonusEffectDurationTicks = Math.max(40, Math.min(200, this.cerberusSetBonusEffectDurationTicks));
     }
 }
 

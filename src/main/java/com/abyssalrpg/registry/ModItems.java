@@ -1,6 +1,8 @@
 package com.abyssalrpg.registry;
 
 import com.abyssalrpg.AbyssalRpgMod;
+import com.abyssalrpg.item.CerberusArmorItem;
+import com.abyssalrpg.item.CerberusHeartItem;
 import com.abyssalrpg.item.CinderDragonArmorItem;
 import com.abyssalrpg.item.CinderDragonHeartItem;
 import com.abyssalrpg.item.DualBladeItem;
@@ -55,6 +57,11 @@ public final class ModItems {
     public static final Item SPIRIT_HYDRA_SCALE = register("spirit_hydra_scale",
             new Item(new Item.Properties().rarity(Rarity.RARE).fireResistant()));
 
+    // Cerberus Boss Armor Materials (Phase 2 Drops)
+    public static final Item CERBERUS_HEART = register("cerberus_heart", new CerberusHeartItem());
+    public static final Item CERBERUS_HIDE = register("cerberus_hide",
+            new Item(new Item.Properties().rarity(Rarity.RARE).fireResistant()));
+
     // Endgame 4-Piece Nightmare Knight 3D Armor Set (GeckoLib GeoArmorRenderer)
     public static Item NIGHTMARE_HELMET;
     public static Item NIGHTMARE_CHESTPLATE;
@@ -72,6 +79,12 @@ public final class ModItems {
     public static Item SPIRIT_HYDRA_CHESTPLATE;
     public static Item SPIRIT_HYDRA_LEGGINGS;
     public static Item SPIRIT_HYDRA_BOOTS;
+
+    // Endgame 4-Piece Cerberus Netherite 3D Armor Set (GeckoLib GeoArmorRenderer + Emissive Layer)
+    public static Item CERBERUS_HELMET;
+    public static Item CERBERUS_CHESTPLATE;
+    public static Item CERBERUS_LEGGINGS;
+    public static Item CERBERUS_BOOTS;
 
     // Signature Two-Handed Weapons (`abyssalrpg:dual_knife`, `abyssalrpg:togetsu`, & `abyssalrpg:excalibur`)
     public static Item DUAL_KNIFE;
@@ -113,6 +126,11 @@ public final class ModItems {
         SPIRIT_HYDRA_CHESTPLATE = register("spirit_hydra_chestplate", new SpiritHydraArmorItem(ArmorItem.Type.CHESTPLATE));
         SPIRIT_HYDRA_LEGGINGS = register("spirit_hydra_leggings", new SpiritHydraArmorItem(ArmorItem.Type.LEGGINGS));
         SPIRIT_HYDRA_BOOTS = register("spirit_hydra_boots", new SpiritHydraArmorItem(ArmorItem.Type.BOOTS));
+
+        CERBERUS_HELMET = register("cerberus_helmet", new CerberusArmorItem(ArmorItem.Type.HELMET));
+        CERBERUS_CHESTPLATE = register("cerberus_chestplate", new CerberusArmorItem(ArmorItem.Type.CHESTPLATE));
+        CERBERUS_LEGGINGS = register("cerberus_leggings", new CerberusArmorItem(ArmorItem.Type.LEGGINGS));
+        CERBERUS_BOOTS = register("cerberus_boots", new CerberusArmorItem(ArmorItem.Type.BOOTS));
 
         DUAL_KNIFE = register("dual_knife", new DualBladeItem());
         TOGETSU = register("togetsu", new TogetsuItem());

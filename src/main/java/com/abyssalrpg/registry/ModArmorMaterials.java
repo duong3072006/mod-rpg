@@ -22,6 +22,7 @@ public final class ModArmorMaterials {
     public static Holder<ArmorMaterial> NIGHTMARE_KNIGHT;
     public static Holder<ArmorMaterial> CINDER_DRAGON;
     public static Holder<ArmorMaterial> SPIRIT_HYDRA;
+    public static Holder<ArmorMaterial> CERBERUS;
 
     public static void init() {
         ArmorConfig cfg = ArmorConfig.get();
@@ -95,6 +96,30 @@ public final class ModArmorMaterials {
                 BuiltInRegistries.ARMOR_MATERIAL,
                 AbyssalRpgMod.id("spirit_hydra"),
                 hydraMat
+        );
+
+        EnumMap<ArmorItem.Type, Integer> cerberusDef = Util.make(new EnumMap<>(ArmorItem.Type.class), map -> {
+            map.put(ArmorItem.Type.BOOTS, cfg.cerberusBootsDefense);
+            map.put(ArmorItem.Type.LEGGINGS, cfg.cerberusLeggingsDefense);
+            map.put(ArmorItem.Type.CHESTPLATE, cfg.cerberusChestplateDefense);
+            map.put(ArmorItem.Type.HELMET, cfg.cerberusHelmetDefense);
+            map.put(ArmorItem.Type.BODY, cfg.cerberusChestplateDefense + 2);
+        });
+
+        ArmorMaterial cerberusMat = new ArmorMaterial(
+                cerberusDef,
+                cfg.cerberusEnchantmentValue,
+                SoundEvents.ARMOR_EQUIP_NETHERITE,
+                () -> Ingredient.of(ModItems.CERBERUS_HIDE),
+                List.of(new ArmorMaterial.Layer(AbyssalRpgMod.id("cerberus"))),
+                cfg.cerberusToughness,
+                cfg.cerberusKnockbackResistance
+        );
+
+        CERBERUS = Registry.registerForHolder(
+                BuiltInRegistries.ARMOR_MATERIAL,
+                AbyssalRpgMod.id("cerberus"),
+                cerberusMat
         );
     }
 

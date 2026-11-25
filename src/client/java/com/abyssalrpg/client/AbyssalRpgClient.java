@@ -4,6 +4,7 @@ import com.abyssalrpg.client.hud.BossBarHudRenderer;
 import com.abyssalrpg.client.hud.ExcaliburHudRenderer;
 import com.abyssalrpg.client.hud.TogetsuHudRenderer;
 import com.abyssalrpg.client.renderer.AltarEyeRenderer;
+import com.abyssalrpg.client.renderer.CerberusArmorRenderer;
 import com.abyssalrpg.client.renderer.CerberusGeoRenderer;
 import com.abyssalrpg.client.renderer.CinderDragonArmorRenderer;
 import com.abyssalrpg.client.renderer.CinderDragonGeoRenderer;
@@ -44,6 +45,7 @@ import com.abyssalrpg.config.NightmareKnightConfig;
 import com.abyssalrpg.config.SpiritHydraConfig;
 import com.abyssalrpg.entity.mythic.JormungandrBossEntity;
 import com.abyssalrpg.entity.mythic.cerberus.CerberusForm;
+import com.abyssalrpg.item.CerberusArmorItem;
 import com.abyssalrpg.item.CinderDragonArmorItem;
 import com.abyssalrpg.item.DualBladeItem;
 import com.abyssalrpg.item.NightmareArmorItem;
@@ -228,11 +230,27 @@ public class AbyssalRpgClient implements ClientModInitializer {
             }
         };
 
-        // Hiển thị ngay mô tả % rõ ràng trên Sách Enchant, Dual Knife, Nightmare Knight, Cinder Dragon & Spirit Hydra Armor
+        // Bơm GeoArmorRenderer 3D + Emissive Layer chọn lọc cho bộ 4 món Giáp Cerberus
+        CerberusArmorItem.clientRenderProviderFactory = () -> new GeoRenderProvider() {
+            private CerberusArmorRenderer renderer;
+
+            @Override
+            public <T extends LivingEntity> HumanoidModel<?> getGeoArmorRenderer(
+                    @Nullable T livingEntity, ItemStack itemStack, @Nullable EquipmentSlot equipmentSlot,
+                    @Nullable HumanoidModel<T> original) {
+                if (this.renderer == null) {
+                    this.renderer = new CerberusArmorRenderer();
+                }
+                return this.renderer;
+            }
+        };
+
+        // Hiển thị ngay mô tả % rõ ràng trên Sách Enchant, Dual Knife, Nightmare Knight, Cinder Dragon, Spirit Hydra & Cerberus Armor
         ItemTooltipCallback.EVENT.register(DualBladeTooltipHandler::onItemTooltip);
         ItemTooltipCallback.EVENT.register(NightmareArmorTooltipHandler::onItemTooltip);
         ItemTooltipCallback.EVENT.register(CinderDragonArmorTooltipHandler::onItemTooltip);
         ItemTooltipCallback.EVENT.register(SpiritHydraArmorTooltipHandler::onItemTooltip);
+        ItemTooltipCallback.EVENT.register(CerberusArmorTooltipHandler::onItemTooltip);
 
         // Render vệt kiếm thư pháp đôi Catmull-Rom (`DualBladeTrailRenderer`), Song Nguyệt (`TogetsuVfxRenderer`) & Excalibur (`ExcaliburVfxRenderer`)
         WorldRenderEvents.AFTER_TRANSLUCENT.register(context -> {
