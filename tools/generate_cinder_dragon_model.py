@@ -400,8 +400,85 @@ def mirror_x_cube(c: dict) -> dict:
     return m
 
 
+def add_tail_scythe_fin(cubes: list, base_pos, scale: float, pitch_deg: float, is_tip: bool = False):
+    """
+    Dựng vây lưỡi liềm / rìu chiến cong ngược về sau dọc sống lưng đuôi (giống ảnh mẫu 100%):
+    - Trục chân vây vươn cao khỏi đốt đuôi -> bản lưỡi liềm loe rộng uốn cong sắc về sau + mũi trước nhọn.
+    - Nếu `is_tip=True`: tạo đại lưỡi liềm chóp đuôi khổng lồ (scythe/halberd blade) có gân lõi than hồng.
+    """
+    bx, by, bz = float(base_pos[0]), float(base_pos[1]), float(base_pos[2])
+    s = float(scale)
+    if not is_tip:
+        # Cổ vây mảnh nhưng chắc vươn lên từ đốt đuôi
+        add_curved_horn(cubes, [
+            (bx, by - 0.2 * s, bz),
+            (bx, by + 2.0 * s, bz + 0.5 * s),
+            (bx, by + 3.4 * s, bz + 1.4 * s),
+        ], [0.68 * s, 0.54 * s, 0.36 * s], "DORSAL_SHIELD", steps_per_seg=2)
+        # Mũi lưỡi rìu cong vươn ngược lên trước
+        add_curved_horn(cubes, [
+            (bx, by + 3.1 * s, bz + 1.0 * s),
+            (bx, by + 3.7 * s, bz - 1.0 * s),
+            (bx, by + 3.1 * s, bz - 2.6 * s),
+        ], [0.52 * s, 0.44 * s, 0.14 * s], "OBSIDIAN_HORN", steps_per_seg=2)
+        # Cánh lưỡi liềm chính vươn dài cong sắc về sau
+        add_curved_horn(cubes, [
+            (bx, by + 3.2 * s, bz + 1.2 * s),
+            (bx, by + 3.8 * s, bz + 3.4 * s),
+            (bx, by + 3.0 * s, bz + 5.4 * s),
+        ], [0.58 * s, 0.46 * s, 0.14 * s], "OBSIDIAN_HORN", steps_per_seg=2)
+        # Bản dẹt sắc vát giữa tạo silhouette chiếc rìu cong rõ rệt từ góc ngang!
+        cubes.append(make_centered_cube(
+            [bx, by + 3.1 * s, bz + 1.5 * s],
+            [0.62 * s, 1.55 * s, 4.4 * s],
+            "DORSAL_SHIELD", rot=[pitch_deg * 0.4 + 6.0, 0.0, 0.0]
+        ))
+    else:
+        # ĐẠI LƯỠI LIỀM CHÓP ĐUÔI KHỔNG LỒ (SCYTHE / HALBERD CREST) + LÕI THAN HỒNG RỰC CHÁY!
+        # Lõi than hồng cháy ẩn giữa khớp ngàm đá chóp đuôi
+        cubes.append(make_centered_cube([bx, by + 0.6 * s, bz + 0.4 * s], [2.4 * s, 2.2 * s, 2.6 * s], "DORSAL_SHIELD", rot=[26.0, 0, 0]))
+        cubes.append(make_centered_cube([bx, by + 1.4 * s, bz + 1.2 * s], [1.65 * s, 1.85 * s, 2.0 * s], "EMBER_CORE", rot=[24.0, 28.0, 12.0]))
+        # Thân cổ liềm uốn cao vồng lên
+        add_curved_horn(cubes, [
+            (bx, by + 0.2 * s, bz),
+            (bx, by + 2.6 * s, bz + 1.4 * s),
+            (bx, by + 5.2 * s, bz + 2.6 * s),
+        ], [1.15 * s, 0.92 * s, 0.68 * s], "OBSIDIAN_HORN", steps_per_seg=3)
+        # Mỏ liềm trước cong gắt hướng về đầu rồng
+        add_curved_horn(cubes, [
+            (bx, by + 4.8 * s, bz + 2.2 * s),
+            (bx, by + 5.8 * s, bz - 0.6 * s),
+            (bx, by + 4.9 * s, bz - 3.6 * s),
+            (bx, by + 3.4 * s, bz - 5.2 * s),
+        ], [0.85 * s, 0.72 * s, 0.46 * s, 0.16 * s], "OBSIDIAN_HORN", steps_per_seg=3)
+        # Lưỡi hái chính vươn dài vút ra sau tạo hình bóng cực bén!
+        add_curved_horn(cubes, [
+            (bx, by + 5.2 * s, bz + 2.6 * s),
+            (bx, by + 6.2 * s, bz + 6.0 * s),
+            (bx, by + 5.6 * s, bz + 9.4 * s),
+            (bx, by + 4.2 * s, bz + 12.0 * s),
+        ], [0.95 * s, 0.78 * s, 0.48 * s, 0.14 * s], "OBSIDIAN_HORN", steps_per_seg=3)
+        # Sống bản lưỡi rìu mở rộng + viền sáng cạnh đá sắc
+        cubes.append(make_centered_cube(
+            [bx, by + 5.0 * s, bz + 3.4 * s],
+            [0.82 * s, 2.4 * s, 7.6 * s],
+            "DORSAL_SHIELD", rot=[10.0, 0.0, 0.0]
+        ))
+        cubes.append(make_centered_cube(
+            [bx, by + 3.6 * s, bz + 2.2 * s],
+            [0.72 * s, 2.0 * s, 3.8 * s],
+            "EMBER_CORE", rot=[18.0, 0.0, 0.0]
+        ))
+        # Gai móc bụng chóp đuôi cân đối lực phản
+        add_curved_horn(cubes, [
+            (bx, by - 0.6 * s, bz + 0.6 * s),
+            (bx, by - 2.6 * s, bz + 0.2 * s),
+            (bx, by - 4.0 * s, bz - 1.2 * s),
+        ], [0.68 * s, 0.42 * s, 0.14 * s], "IVORY_FANG", steps_per_seg=2)
+
+
 # =============================================================================
-# 2. DỰNG HÌNH CINDER DRAGON (1.200–1.700 CUBES, 60% SILHOUETTE + 40% BIẾN TẤU)
+# 2. DỰNG HÌNH CINDER DRAGON V3 — 57 BONES ĐA KHỚP NỐI MỀM MẠI, DÁNG SĂN MỒI TRƯỜNG DÀI
 # =============================================================================
 def build_cinder_dragon_geo():
     bones = []
@@ -421,407 +498,494 @@ def build_cinder_dragon_geo():
         bones.append(b)
         return b
 
-    # Gốc — Tỉ lệ Rồng Cổ Đại (SCALE = 5.5f -> vai/đầu đứng 8.2–8.8 block, dài ~25.5 block, sải cánh ~31.2 block)
+    # -------------------------------------------------------------------------
+    # A. CHUỖI XƯƠNG SỐNG ĐA KHỚP NỐI — THÂN HÌNH "ĐÔ CON" HẦM HỐ CƠ BẮP NHƯ ẢNH MẪU!
+    #    - Lồng ngực rộng đồ sộ (`rx = 10.6`, bề ngang vai-ngực ~22 px!) + giáp cầu vai đá chồng tầng vạm vỡ!
+    #    - Eo thóp cơ bắp (`rx = 7.6..8.6`) tạo chữ V lực lưỡng (hết gầy/ốm!), hông đùi rộng (`rx = 9.0`)!
+    # -------------------------------------------------------------------------
     add_bone("root", None, [0, 0, 0])
-    add_bone("body_root", "root", [0, 17.0, 0.0])
+    add_bone("body_root", "root", [0, 15.0, 2.0])
 
-    # -------------------------------------------------------------------------
-    # A. THÂN VẠM VỠ OAI VỆ ĐỨNG CAO HƠN (`body_chest`, `body_mid`, `pelvis`)
-    # -------------------------------------------------------------------------
-    chest_cubes = []
-    # Lồng ngực vạm vỡ nâng cao trên 4 chân trụ khỏe, bọc 4 vòng vảy giáp đá 3D
-    chest_rings = [
-        ((0.0, 18.2, -3.4),  6.6, 5.5, 4.0, -5.0),
-        ((0.0, 18.8, -6.5),  7.2, 6.0, 4.2, -3.0),
-        ((0.0, 19.2, -9.6),  6.6, 5.6, 3.8,  3.0),
-        ((0.0, 19.4, -12.3), 5.3, 4.8, 3.4,  8.0),
-    ]
-    for idx, (ctr, rx, ry, dp, px) in enumerate(chest_rings):
-        add_armor_ring(chest_cubes, ctr, rx, ry, dp,
-                       mat_top="STONE_ARMOR", mat_belly="BELLY_PLATE",
-                       mat_side="CHEST_FISSURE", pitch_x=px)
-    # Ức đá hình khiên mũi tàu nhô trước ngực (nứt rực dung nham ở Phase 2!)
-    chest_cubes.append(make_centered_cube([0.0, 15.2, -10.8], [6.0, 3.9, 4.8], "CHEST_FISSURE", rot=[20.0, 0, 0]))
-    chest_cubes.append(make_centered_cube([0.0, 14.0, -7.2], [7.2, 2.8, 5.8], "BELLY_PLATE", rot=[6.0, 0, 0]))
-    # 2 giáp cầu vai đá góc cạnh gồ lên ở khớp vai trước + 2 gai vai đá nhọn
-    for side in (-1, 1):
-        chest_cubes.append(make_centered_cube([side * 6.8, 21.0, -7.8], [3.8, 3.8, 5.8],
-                                              "DORSAL_SHIELD", rot=[-8.0, side * 12.0, side * 18.0]))
-        chest_cubes.append(make_centered_cube([side * 7.8, 18.6, -8.0], [3.0, 4.2, 5.0],
-                                              "CHEST_FISSURE", rot=[6.0, side * 8.0, side * 10.0]))
-        add_curved_horn(chest_cubes, [
-            (side * 7.6, 22.4, -7.0),
-            (side * 9.4, 24.6, -5.2),
-            (side * 10.0, 26.2, -3.2),
-        ], [1.05, 0.65, 0.24], "CLAW_DARK", steps_per_seg=2)
-    # 3 tấm khiên vảy đá xếp tầng dọc sống lưng ngực
-    for zpos, w, h in ((-4.2, 3.9, 3.6), (-7.2, 4.4, 4.2), (-10.3, 4.0, 3.9)):
-        add_dorsal_shield(chest_cubes, (0.0, 24.4, zpos), w, h, 3.0, tilt_x=-20.0)
-    add_bone("body_chest", "body_root", [0.0, 18.5, -6.8], chest_cubes)
-
+    # 1) Thân giữa / Eo cơ bắp vạm vỡ (`body_mid`): dày chắc cơ bắp, chữ V săn mồi, 5 nan sườn giáp nổi!
     mid_cubes = []
     mid_rings = [
-        ((0.0, 17.0, +2.6), 5.8, 4.7, 3.8, -6.0),
-        ((0.0, 17.6, -0.6), 6.2, 5.1, 4.0, -4.0),
+        ((0.0, 15.4, +8.4), 8.6, 6.0, 4.6, -3.0),
+        ((0.0, 15.6, +4.8), 7.9, 5.5, 4.6, -1.0),
+        ((0.0, 15.7, +1.2), 7.6, 5.3, 4.6,  0.0),
+        ((0.0, 15.6, -2.2), 8.2, 5.7, 4.6,  2.0),
+        ((0.0, 15.3, -5.4), 9.2, 6.4, 4.6,  3.0),
     ]
     for ctr, rx, ry, dp, px in mid_rings:
         add_armor_ring(mid_cubes, ctr, rx, ry, dp,
                        mat_top="STONE_ARMOR", mat_belly="BELLY_PLATE",
                        mat_side="CHEST_FISSURE", pitch_x=px)
-    for zpos, w, h in ((+2.0, 3.6, 3.3), (-1.0, 3.8, 3.5)):
-        add_dorsal_shield(mid_cubes, (0.0, 22.3, zpos), w, h, 2.9, tilt_x=-18.0)
-    add_bone("body_mid", "body_root", [0.0, 17.2, +0.8], mid_cubes)
+    # 5 cặp nan sườn cơ bắp bọc giáp đá dày dọc 2 bên eo
+    for zpos, wside in ((+6.6, 7.6), (+4.0, 7.2), (+1.4, 7.0), (-1.2, 7.4), (-3.8, 8.2)):
+        for side in (-1, 1):
+            mid_cubes.append(make_centered_cube([side * wside, 14.6, zpos], [2.2, 4.6, 1.8],
+                                                "DORSAL_SHIELD", rot=[16.0, side * 12.0, side * 16.0]))
+    for zpos, ym, w, h in ((+7.8, 21.2, 4.4, 3.6), (+4.6, 21.0, 4.2, 3.5), (+1.4, 21.0, 4.1, 3.4), (-1.8, 21.2, 4.5, 3.7), (-5.0, 21.6, 5.0, 4.0)):
+        add_dorsal_shield(mid_cubes, (0.0, ym, zpos), w, h, 3.2, tilt_x=-18.0)
+    add_bone("body_mid", "body_root", [0.0, 15.3, +8.2], mid_cubes)
 
+    # 2) Lồng ngực & bờ vai "ĐÔ CON" đồ sộ (`body_chest`, CON CỦA `body_mid` — rộng tới ~22 px, tầng giáp đá dày!)
+    chest_cubes = []
+    chest_rings = [
+        ((0.0, 15.3, -8.2),   9.8, 6.7, 4.8,  2.0),
+        ((0.0, 15.2, -11.4), 10.6, 7.2, 4.9,  0.0),
+        ((0.0, 15.3, -14.6),  9.8, 6.7, 4.6, -4.0),
+        ((0.0, 15.5, -17.4),  8.2, 5.9, 4.2, -8.0),
+    ]
+    for ctr, rx, ry, dp, px in chest_rings:
+        add_armor_ring(chest_cubes, ctr, rx, ry, dp,
+                       mat_top="STONE_ARMOR", mat_belly="BELLY_PLATE",
+                       mat_side="CHEST_FISSURE", pitch_x=px)
+    # Khối cơ ngực & giáp ức mũi tàu dày nặng nứt dung nham (giống phần ngực cơ bắp cuồn cuộn trong ảnh mẫu 2!)
+    chest_cubes.append(make_centered_cube([0.0, 10.4, -15.4], [8.8, 4.8, 6.0], "CHEST_FISSURE", rot=[-16.0, 0, 0]))
+    chest_cubes.append(make_centered_cube([0.0,  9.4, -11.4], [9.8, 3.8, 7.0], "BELLY_PLATE", rot=[-4.0, 0, 0]))
+    # 2 mảng cơ ngực trước dày cuồn cuộn + 2 tầng giáp cầu vai núi lửa khổng lồ vươn cao trên vai!
+    for side in (-1, 1):
+        # Khối cơ ngực lớn phía trước
+        chest_cubes.append(make_centered_cube([side * 6.4, 13.0, -16.8], [5.4, 5.4, 4.8],
+                                              "CHEST_FISSURE", rot=[-12.0, side * 18.0, side * 10.0]))
+        # Giáp cầu vai đá tầng dưới & tầng trên ôm trọn bờ vai đô rộng
+        chest_cubes.append(make_centered_cube([side * 9.8, 17.8, -12.4], [5.4, 5.2, 7.8],
+                                              "DORSAL_SHIELD", rot=[8.0, side * 14.0, side * 18.0]))
+        chest_cubes.append(make_centered_cube([side * 10.8, 14.8, -12.6], [4.6, 5.6, 6.6],
+                                              "CHEST_FISSURE", rot=[-4.0, side * 10.0, side * 12.0]))
+        # 2 tầng sừng/tấm giáp đá dựng đứng trên cầu vai giống hàng gai đá sau gáy trong ảnh mẫu 2!
+        add_curved_horn(chest_cubes, [
+            (side * 8.4, 19.6, -13.6),
+            (side * 10.2, 23.4, -11.4),
+            (side * 10.8, 26.6, -9.0),
+        ], [1.95, 1.32, 0.34], "DORSAL_SHIELD", steps_per_seg=3)
+        add_curved_horn(chest_cubes, [
+            (side * 9.6, 18.6, -10.2),
+            (side * 11.8, 21.8, -7.8),
+            (side * 12.6, 24.4, -5.6),
+        ], [1.65, 1.05, 0.28], "OBSIDIAN_HORN", steps_per_seg=3)
+        # Gai cổ ngực móc ra phía trước 2 bên ức
+        add_curved_horn(chest_cubes, [
+            (side * 7.8, 14.6, -17.6),
+            (side * 9.4, 15.8, -19.8),
+            (side * 9.8, 17.6, -21.0),
+        ], [1.35, 0.85, 0.24], "DORSAL_SHIELD", steps_per_seg=2)
+    for zpos, ym, w, h in ((-8.2, 22.0, 5.4, 4.4), (-11.6, 22.6, 6.0, 5.0), (-15.0, 22.2, 5.6, 4.6)):
+        add_dorsal_shield(chest_cubes, (0.0, ym, zpos), w, h, 3.6, tilt_x=-20.0)
+    add_bone("body_chest", "body_mid", [0.0, 15.2, -5.6], chest_cubes)
+
+    # 3) Khối hông cơ bắp rộng khỏe (`pelvis`, `rx = 9.0` cân đối bờ vai đồ sộ!)
+    PELV_Z = +3.0
     pelvis_cubes = []
     pelvis_rings = [
-        ((0.0, 16.2, +5.8), 6.1, 4.8, 4.2, -4.0),
-        ((0.0, 15.6, +9.0), 5.3, 4.3, 4.0,  3.0),
+        ((0.0, 15.2, +8.8 + PELV_Z),  9.0, 6.3, 4.8,  2.0),
+        ((0.0, 14.8, +12.6 + PELV_Z), 8.6, 6.1, 4.8, -4.0),
+        ((0.0, 14.2, +16.2 + PELV_Z), 7.4, 5.4, 4.6, -8.0),
+        ((0.0, 13.6, +19.2 + PELV_Z), 6.4, 4.7, 4.0, -10.0),
     ]
     for ctr, rx, ry, dp, px in pelvis_rings:
         add_armor_ring(pelvis_cubes, ctr, rx, ry, dp,
                        mat_top="STONE_ARMOR", mat_belly="BELLY_PLATE",
                        mat_side="STONE_ARMOR", pitch_x=px)
     for side in (-1, 1):
-        pelvis_cubes.append(make_centered_cube([side * 6.3, 17.5, +7.2], [3.4, 3.6, 5.0],
-                                               "DORSAL_SHIELD", rot=[6.0, -side * 10.0, side * 16.0]))
+        pelvis_cubes.append(make_centered_cube([side * 8.8, 16.4, +12.2 + PELV_Z], [4.8, 5.2, 7.2],
+                                               "DORSAL_SHIELD", rot=[-8.0, -side * 10.0, side * 16.0]))
         add_curved_horn(pelvis_cubes, [
-            (side * 7.0, 19.0, +8.2),
-            (side * 8.4, 20.6, +9.8),
-            (side * 8.9, 21.6, +11.4),
-        ], [0.90, 0.56, 0.22], "CLAW_DARK", steps_per_seg=2)
-    for zpos, w, h in ((+5.2, 3.3, 3.1), (+8.4, 3.1, 2.9)):
-        add_dorsal_shield(pelvis_cubes, (0.0, 20.8, zpos), w, h, 2.8, tilt_x=-16.0)
-    add_bone("pelvis", "body_root", [0.0, 15.8, +7.4], pelvis_cubes)
+            (side * 9.4, 17.8, +13.6 + PELV_Z),
+            (side * 11.2, 20.2, +16.0 + PELV_Z),
+            (side * 12.0, 21.6, +18.0 + PELV_Z),
+        ], [1.30, 0.80, 0.24], "CLAW_DARK", steps_per_seg=2)
+    for zpos, ym, w, h in ((+9.0 + PELV_Z, 21.4, 4.6, 3.8), (+12.8 + PELV_Z, 20.8, 4.4, 3.6), (+16.4 + PELV_Z, 19.6, 3.9, 3.3)):
+        add_dorsal_shield(pelvis_cubes, (0.0, ym, zpos), w, h, 3.3, tilt_x=-16.0)
+    add_bone("pelvis", "body_root", [0.0, 14.8, +7.6 + PELV_Z], pelvis_cubes)
 
     # -------------------------------------------------------------------------
-    # B. CỔ 3 ĐỐT VƯƠN CAO OAI VỆ + KHIÊN GÁY + RÃNH MẠCH DUNG NHAM (`neck_1..3`)
+    # B. CỔ 4 ĐỐT DÀY VẠM VỠ CUỒN CUỘN (`neck_1` -> `neck_2` -> `neck_3` -> `neck_4`)
+    #    Gốc cổ to lực (`rx = 6.4 -> 4.1`) nối liền với bờ vai đô, không còn cổ gầy!
     # -------------------------------------------------------------------------
     def build_neck_segment(z0, y0, z1, y1, rx, ry, shield_w, shield_h):
         c = []
         ym, zm = 0.5 * (y0 + y1), 0.5 * (z0 + z1)
         length = math.hypot(y1 - y0, z1 - z0)
-        pitch = math.degrees(math.atan2(y1 - y0, -(z1 - z0)))
-        add_armor_ring(c, (0.0, ym, zm), rx, ry, length * 1.24,
-                       mat_top="STONE_ARMOR", mat_belly="BELLY_PLATE",
-                       mat_side="THROAT_MAGMA", pitch_x=pitch)
-        # Rãnh mạch dung nham nổi 2 bên cổ họng (sáng bừng khi nạp hơi khè lửa!)
+        # GeckoLib Rx(-rx): rot_x < 0 tilts -Z (forward) UP!
+        pitch = -math.degrees(math.atan2(y1 - y0, -(z1 - z0)))
+        for frac in (0.28, 0.72):
+            ry_p = y0 + (y1 - y0) * frac
+            rz_p = z0 + (z1 - z0) * frac
+            taper = 1.0 - 0.08 * frac
+            add_armor_ring(c, (0.0, ry_p, rz_p), rx * taper, ry * taper, length * 0.80,
+                           mat_top="STONE_ARMOR", mat_belly="BELLY_PLATE",
+                           mat_side="THROAT_MAGMA", pitch_x=pitch)
         for side in (-1, 1):
-            c.append(make_centered_cube([side * (rx * 0.92), ym - ry * 0.14, zm],
-                                        [0.58, 1.25, length * 0.98],
+            c.append(make_centered_cube([side * (rx * 0.90), ym - ry * 0.14, zm],
+                                        [0.72, 1.55, length * 1.08],
                                         "THROAT_MAGMA", rot=[pitch, 0, side * 12.0]))
-            # Vảy bảo vệ kẹp 2 bên rãnh cổ
             c.append(make_centered_cube([side * (rx * 0.86), ym + ry * 0.36, zm],
-                                        [0.95, 1.20, length * 0.90],
+                                        [1.30, 1.65, length * 0.98],
                                         "DORSAL_SHIELD", rot=[pitch, 0, side * 18.0]))
-        add_dorsal_shield(c, (0.0, ym + ry * 0.92, zm + 0.3), shield_w, shield_h, length * 0.70, tilt_x=-24.0 + pitch * 0.5)
+        for frac in (0.28, 0.76):
+            sy = y0 + (y1 - y0) * frac + ry * 0.88
+            sz = z0 + (z1 - z0) * frac + 0.3
+            add_dorsal_shield(c, (0.0, sy, sz), shield_w, shield_h, length * 0.50, tilt_x=-20.0 + pitch * 0.4)
         return c
 
-    n1_cubes = build_neck_segment(-12.0, 19.6, -16.8, 20.6, 4.1, 3.7, 3.5, 3.4)
-    add_bone("neck_1", "body_chest", [0.0, 19.6, -12.2], n1_cubes)
+    n1_cubes = build_neck_segment(-17.0, 15.6, -23.0, 16.0, 6.4, 5.2, 4.8, 4.2)
+    add_bone("neck_1", "body_chest", [0.0, 15.6, -17.2], n1_cubes)
 
-    n2_cubes = build_neck_segment(-16.4, 20.6, -21.2, 22.0, 3.6, 3.3, 3.2, 3.1)
-    add_bone("neck_2", "neck_1", [0.0, 20.6, -16.6], n2_cubes)
+    n2_cubes = build_neck_segment(-22.8, 16.0, -28.8, 17.0, 5.5, 4.5, 4.3, 3.8)
+    add_bone("neck_2", "neck_1", [0.0, 16.0, -22.9], n2_cubes)
 
-    n3_cubes = build_neck_segment(-20.8, 22.0, -25.4, 23.6, 3.3, 3.0, 2.9, 2.9)
-    add_bone("neck_3", "neck_2", [0.0, 22.0, -21.0], n3_cubes)
+    n3_cubes = build_neck_segment(-28.6, 17.0, -34.6, 18.2, 4.7, 3.9, 3.8, 3.4)
+    add_bone("neck_3", "neck_2", [0.0, 17.0, -28.7], n3_cubes)
+
+    n4_cubes = build_neck_segment(-34.4, 18.2, -40.2, 18.9, 4.1, 3.5, 3.4, 3.1)
+    add_bone("neck_4", "neck_3", [0.0, 18.2, -34.5], n4_cubes)
 
     # -------------------------------------------------------------------------
-    # C. CỤM ĐẦU + HÀM + 2 BONE SỪNG ĐỐI XỨNG TUYỆT ĐỐI (`horn_l` / `horn_r`)
+    # C. CỤM ĐẦU + HÀM RÂU ĐÁ + SỪNG LƯỠI LIỀM VẠM VỠ CÂN ĐỐI VỚI THÂN ĐÔ (`head`, `jaw`, `horn_l/r`)
     # -------------------------------------------------------------------------
+    HZ = -40.4
+    HY = 18.8
     head_cubes = []
-    # Hộp sọ đá lớn, gờ mày nhô đậm che mắt cam-vàng rực lửa
-    head_cubes.append(make_centered_cube([0.0, 24.4, -27.6], [8.0, 5.2, 6.8], "STONE_ARMOR", rot=[4.0, 0, 0]))
-    head_cubes.append(make_centered_cube([0.0, 26.8, -27.4], [6.6, 2.0, 6.2], "DORSAL_SHIELD", rot=[-5.0, 0, 0]))
-    # Gò má giáp đá vát 2 bên sọ + gai gò má đối xứng
+    # Hộp sọ đá rộng khỏe cân đối cổ vai đô con
+    head_cubes.append(make_centered_cube([0.0, HY + 0.6, HZ - 2.6], [9.2, 5.8, 7.4], "STONE_ARMOR", rot=[4.0, 0, 0]))
+    head_cubes.append(make_centered_cube([0.0, HY + 3.4, HZ - 2.4], [7.6, 2.3, 6.8], "DORSAL_SHIELD", rot=[-5.0, 0, 0]))
+    # Gò má giáp đá vát 2 bên sọ + gai má sắc vươn sau
     for side in (-1, 1):
-        head_cubes.append(make_centered_cube([side * 4.2, 23.4, -27.2], [2.0, 3.6, 5.8],
+        head_cubes.append(make_centered_cube([side * 4.8, HY - 0.3, HZ - 2.2], [2.4, 4.0, 6.4],
                                              "DORSAL_SHIELD", rot=[6.0, side * 14.0, side * 10.0]))
         add_curved_horn(head_cubes, [
-            (side * 4.5, 22.8, -25.8),
-            (side * 5.8, 22.3, -23.4),
-            (side * 6.3, 22.0, -21.0),
-        ], [0.78, 0.48, 0.18], "OBSIDIAN_HORN", steps_per_seg=2)
+            (side * 5.0, HY - 0.9, HZ - 0.8),
+            (side * 6.8, HY - 1.4, HZ + 2.0),
+            (side * 7.4, HY - 1.6, HZ + 4.8),
+        ], [1.00, 0.62, 0.20], "OBSIDIAN_HORN", steps_per_seg=2)
 
-    # Sống mõm giáp đá dài thuôn mạnh + sống mũi sắc
-    head_cubes.append(make_centered_cube([0.0, 24.0, -32.6], [6.0, 3.8, 6.0], "STONE_ARMOR", rot=[5.0, 0, 0]))
-    head_cubes.append(make_centered_cube([0.0, 23.4, -36.5], [4.5, 3.0, 3.8], "STONE_ARMOR", rot=[8.0, 0, 0]))
-    head_cubes.append(make_centered_cube([0.0, 25.8, -32.8], [3.5, 1.5, 6.6], "DORSAL_SHIELD", rot=[8.0, 0, 0]))
-    # Viền môi đá trên ôm khung miệng tạo chiều sâu 3D cho khoang họng lửa (không còn mảng cam phẳng!)
-    head_cubes.append(make_centered_cube([0.0, 22.0, -37.2], [4.4, 1.1, 1.6], "STONE_ARMOR", rot=[6.0, 0, 0]))
+    # Sống mõm giáp đá rộng chắc hơi khoằm kiểu rồng cổ đại
+    head_cubes.append(make_centered_cube([0.0, HY + 0.1, HZ - 7.8], [6.8, 4.2, 6.4], "STONE_ARMOR", rot=[6.0, 0, 0]))
+    head_cubes.append(make_centered_cube([0.0, HY - 0.6, HZ - 11.8], [5.0, 3.3, 4.2], "STONE_ARMOR", rot=[10.0, 0, 0]))
+    head_cubes.append(make_centered_cube([0.0, HY + 2.2, HZ - 8.0], [4.0, 1.8, 7.0], "DORSAL_SHIELD", rot=[9.0, 0, 0]))
+    # Viền môi trên ôm khoang họng lửa
+    head_cubes.append(make_centered_cube([0.0, HY - 2.1, HZ - 12.6], [4.8, 1.2, 1.8], "STONE_ARMOR", rot=[8.0, 0, 0]))
     for side in (-1, 1):
-        head_cubes.append(make_centered_cube([side * 2.5, 22.1, -33.0], [1.0, 1.2, 7.6],
-                                             "STONE_ARMOR", rot=[5.0, side * 4.0, 0]))
-    # Khoang vòm miệng & họng lửa giật sâu vào trong tạo hiệu ứng lò lửa 3D có chiều sâu
-    head_cubes.append(make_centered_cube([0.0, 22.3, -31.8], [4.4, 1.0, 6.2], "MAW_INFERNO", rot=[5.0, 0, 0]))
-    head_cubes.append(make_centered_cube([0.0, 22.0, -28.0], [4.2, 2.4, 3.6], "MAW_INFERNO"))
+        head_cubes.append(make_centered_cube([side * 2.8, HY - 1.9, HZ - 8.2], [1.2, 1.4, 8.2],
+                                             "STONE_ARMOR", rot=[6.0, side * 4.0, 0]))
+    # Khoang vòm miệng & họng lửa 3D
+    head_cubes.append(make_centered_cube([0.0, HY - 1.7, HZ - 7.0], [5.0, 1.2, 6.8], "MAW_INFERNO", rot=[5.0, 0, 0]))
+    head_cubes.append(make_centered_cube([0.0, HY - 1.9, HZ - 3.0], [4.8, 2.8, 4.0], "MAW_INFERNO"))
 
-    # Sừng mũi sắc (`nasal_horn`)
+    # Sừng mũi sắc trên chóp mõm
     add_curved_horn(head_cubes, [
-        (0.0, 24.9, -36.0),
-        (0.0, 27.3, -36.8),
-        (0.0, 29.4, -35.7),
-    ], [0.95, 0.56, 0.18], "OBSIDIAN_HORN", steps_per_seg=2)
+        (0.0, HY + 1.1, HZ - 11.4),
+        (0.0, HY + 3.4, HZ - 12.4),
+        (0.0, HY + 5.2, HZ - 11.4),
+    ], [0.98, 0.56, 0.18], "OBSIDIAN_HORN", steps_per_seg=2)
 
-    # 2 ĐÔI MẮT CAM-VÀNG RỰC LỬA (chỉ ánh xạ EYE_FIRE đúng mặt trước-ngoài để mỗi mắt ĐÚNG 1 con ngươi dọc sắc nét!)
+    # 2 ĐÔI MẮT CAM-VÀNG RỰC LỬA DƯỚI GỜ MÀY SÂU
     eye_dark_sides = {"up": "CLAW_DARK", "down": "CLAW_DARK", "south": "CLAW_DARK", "east": "CLAW_DARK", "west": "CLAW_DARK"}
     for side in (-1, 1):
-        # Gờ mày đá nhô đậm phía trên mắt
-        head_cubes.append(make_centered_cube([side * 3.7, 26.2, -30.2], [2.3, 1.4, 4.2],
+        head_cubes.append(make_centered_cube([side * 4.2, HY + 2.8, HZ - 5.2], [2.7, 1.6, 4.8],
                                              "DORSAL_SHIELD", rot=[12.0, side * 18.0, side * 18.0]))
-        # Hốc mắt sâu tối
-        head_cubes.append(make_centered_cube([side * 3.55, 24.7, -30.4], [1.8, 1.9, 3.0],
+        head_cubes.append(make_centered_cube([side * 4.05, HY + 1.0, HZ - 5.4], [2.1, 2.1, 3.4],
                                              "CLAW_DARK", rot=[8.0, side * 32.0, 0.0]))
-        # Nhãn cầu cam-vàng fullbright: mặt `north` hướng chếch 36° trước-ngoài, 5 mặt còn lại tối hốc mắt -> 1 con ngươi cực sắc!
-        head_cubes.append(make_centered_cube([side * 3.85, 24.65, -31.05], [2.2, 1.65, 0.85],
+        head_cubes.append(make_centered_cube([side * 4.35, HY + 0.95, HZ - 6.15], [2.5, 1.85, 0.95],
                                              "EYE_FIRE", rot=[8.0, side * 36.0, 0.0], face_mats=eye_dark_sides))
-        # Sống mũi phụ + tấm giáp má xếp tầng
-        head_cubes.append(make_centered_cube([side * 1.8, 25.0, -35.4], [1.3, 1.2, 2.3],
+        head_cubes.append(make_centered_cube([side * 2.1, HY + 1.4, HZ - 10.8], [1.5, 1.4, 2.6],
                                              "DORSAL_SHIELD", rot=[10.0, side * 14.0, 0]))
-        head_cubes.append(make_centered_cube([side * 3.2, 23.2, -31.8], [1.4, 2.0, 4.2],
+        head_cubes.append(make_centered_cube([side * 3.6, HY - 0.7, HZ - 7.0], [1.6, 2.3, 4.6],
                                              "STONE_ARMOR", rot=[6.0, side * 12.0, side * 8.0]))
-        head_cubes.append(make_centered_cube([side * 4.1, 25.0, -26.2], [1.6, 2.0, 3.6],
-                                             "STONE_ARMOR", rot=[-5.0, side * 14.0, side * 12.0]))
 
-    # 2 RĂNG NANH NGÀ LỚN LỘ NGOÀI KHÓE HÀM TRÊN + hàng răng sắc hàm trên
+    # 2 Răng nanh ngà lớn + hàng răng sắc hàm trên
     for side in (-1, 1):
         add_curved_horn(head_cubes, [
-            (side * 2.75, 22.3, -34.6),
-            (side * 2.90, 20.7, -35.0),
-            (side * 2.82, 19.4, -34.8),
-        ], [0.64, 0.40, 0.15], "IVORY_FANG", steps_per_seg=2)
-        for tz, th in ((-37.0, 1.20), (-32.4, 1.12), (-30.4, 1.00)):
-            head_cubes.append(make_centered_cube([side * 2.08, 21.5, tz], [0.56, th, 0.60],
+            (side * 3.05, HY - 1.7, HZ - 9.8),
+            (side * 3.25, HY - 3.4, HZ - 10.3),
+            (side * 3.15, HY - 4.8, HZ - 10.1),
+        ], [0.70, 0.44, 0.16], "IVORY_FANG", steps_per_seg=2)
+        for tz, th in ((-12.4, 1.30), (-7.6, 1.22), (-5.4, 1.10)):
+            head_cubes.append(make_centered_cube([side * 2.35, HY - 2.6, HZ + tz], [0.62, th, 0.66],
                                                  "IVORY_FANG", rot=[8.0, 0, side * 6.0]))
 
-    add_bone("head", "neck_3", [0.0, 24.0, -25.6], head_cubes)
+    add_bone("head", "neck_4", [0.0, HY + 0.3, HZ], head_cubes)
 
-    # 2 BONE SỪNG VƯƠNG MIỆN ĐỘC LẬP (`horn_l` bên +X và `horn_r` đối xứng gương 100% qua `mirror_x_cube`!)
+    # 2 BONE SỪNG LƯỠI LIỀM ĐẠI LONG UỐN VỀ TRƯỚC RỒI VÚT CAO DÀY KHỎE!
     horn_l_cubes = []
-    # Sừng vương miện chính trái: vươn gọn lên-ra sau-xòe chữ V oai vệ
     add_curved_horn(horn_l_cubes, [
-        (2.8, 26.8, -26.2),
-        (4.8, 30.2, -22.2),
-        (6.4, 33.4, -17.6),
-        (7.1, 36.0, -13.2),
-    ], [1.45, 1.08, 0.70, 0.24], "OBSIDIAN_HORN", steps_per_seg=5)
-    # Sừng vương miện phụ ngoài thái dương trái
+        (3.4, HY + 3.0, HZ - 1.2),
+        (6.4, HY + 4.0, HZ - 5.2),
+        (8.0, HY + 6.0, HZ - 10.6),
+        (8.4, HY + 9.6, HZ - 14.8),
+        (8.0, HY + 14.0, HZ - 16.8),
+    ], [2.10, 1.75, 1.28, 0.74, 0.22], "OBSIDIAN_HORN", steps_per_seg=4)
     add_curved_horn(horn_l_cubes, [
-        (4.0, 25.4, -25.8),
-        (6.8, 27.4, -22.4),
-        (9.0, 29.3, -18.4),
-        (9.8, 30.4, -15.2),
-    ], [1.06, 0.76, 0.46, 0.18], "OBSIDIAN_HORN", steps_per_seg=5)
-    # Mào sừng giữa sọ trái
-    horn_l_cubes.append(make_centered_cube([1.15, 27.9, -25.8], [1.0, 2.2, 2.0],
-                                           "OBSIDIAN_HORN", rot=[-28.0, 10.0, 12.0]))
-    add_bone("horn_l", "head", [2.8, 26.4, -26.0], horn_l_cubes)
-    add_bone("horn_r", "head", [-2.8, 26.4, -26.0], [mirror_x_cube(c) for c in horn_l_cubes])
+        (3.8, HY + 4.0, HZ - 1.6),
+        (6.6, HY + 5.0, HZ - 5.6),
+        (8.1, HY + 7.0, HZ - 10.8),
+        (8.3, HY + 10.6, HZ - 14.8),
+    ], [0.85, 0.66, 0.45, 0.18], "DORSAL_SHIELD", steps_per_seg=3)
+    add_curved_horn(horn_l_cubes, [
+        (4.2, HY + 2.8, HZ + 0.4),
+        (6.4, HY + 5.0, HZ + 3.8),
+        (7.4, HY + 6.8, HZ + 7.2),
+    ], [1.25, 0.80, 0.24], "OBSIDIAN_HORN", steps_per_seg=3)
+    add_bone("horn_l", "head", [3.4, HY + 2.8, HZ - 1.0], horn_l_cubes)
+    add_bone("horn_r", "head", [-3.4, HY + 2.8, HZ - 1.0], [mirror_x_cube(c) for c in horn_l_cubes])
 
-    # Hàm dưới (`jaw`): tấm giáp cằm gắn KHÍT liền khối đáy xương hàm + viền môi đá + vòm họng lửa giật sâu có chiều sâu 3D
+    # Hàm dưới (`jaw`) rộng chắc có MỎ CẰM ĐÁ GỒ MẠNH & RÂU GAI CẰM
     jaw_cubes = []
-    jaw_cubes.append(make_centered_cube([0.0, 20.6, -30.5], [5.8, 2.1, 9.2], "STONE_ARMOR", rot=[4.0, 0, 0]))
-    jaw_cubes.append(make_centered_cube([0.0, 19.9, -34.8], [4.5, 1.8, 4.4], "DORSAL_SHIELD", rot=[6.0, 0, 0]))
-    # Tấm giáp cằm vát thuôn gắn KHÍT vào đáy xương hàm dưới (không treo lơ lửng/tách rời!)
-    jaw_cubes.append(make_centered_cube([0.0, 19.3, -34.6], [3.6, 1.1, 4.2], "OBSIDIAN_HORN", rot=[7.0, 0, 0]))
-    # Gờ môi đá trước hàm dưới & 2 thành bên ôm khoang miệng để che cạnh mảng lửa từ góc chính diện
-    jaw_cubes.append(make_centered_cube([0.0, 21.0, -36.5], [4.2, 1.0, 1.3], "DORSAL_SHIELD", rot=[5.0, 0, 0]))
-    # Lòng hàm & họng lửa 2 tầng (sàn lưỡi đỏ sẫm phía trước + lõi họng rực sâu bên trong)
-    jaw_cubes.append(make_centered_cube([0.0, 21.3, -31.8], [3.6, 0.7, 6.0], "MAW_INFERNO", rot=[3.0, 0, 0]))
-    jaw_cubes.append(make_centered_cube([0.0, 21.6, -28.4], [3.8, 1.4, 3.0], "EMBER_CORE", rot=[2.0, 0, 0]))
+    jaw_cubes.append(make_centered_cube([0.0, HY - 3.6, HZ - 5.8], [6.6, 2.5, 9.8], "STONE_ARMOR", rot=[5.0, 0, 0]))
+    jaw_cubes.append(make_centered_cube([0.0, HY - 4.5, HZ - 10.2], [5.2, 2.3, 4.8], "DORSAL_SHIELD", rot=[8.0, 0, 0]))
+    add_curved_horn(jaw_cubes, [
+        (0.0, HY - 4.8, HZ - 9.2),
+        (0.0, HY - 6.2, HZ - 11.6),
+        (0.0, HY - 6.0, HZ - 14.0),
+    ], [1.45, 0.98, 0.30], "DORSAL_SHIELD", steps_per_seg=2)
+    add_curved_horn(jaw_cubes, [
+        (0.0, HY - 4.5, HZ - 6.0),
+        (0.0, HY - 6.6, HZ - 5.4),
+        (0.0, HY - 7.8, HZ - 4.4),
+    ], [1.10, 0.70, 0.24], "OBSIDIAN_HORN", steps_per_seg=2)
+    jaw_cubes.append(make_centered_cube([0.0, HY - 2.9, HZ - 7.0], [4.2, 0.8, 6.4], "MAW_INFERNO", rot=[3.0, 0, 0]))
+    jaw_cubes.append(make_centered_cube([0.0, HY - 2.6, HZ - 3.4], [4.4, 1.6, 3.4], "EMBER_CORE", rot=[2.0, 0, 0]))
     for side in (-1, 1):
-        jaw_cubes.append(make_centered_cube([side * 2.35, 20.1, -28.6], [1.3, 1.9, 5.4],
+        jaw_cubes.append(make_centered_cube([side * 2.7, HY - 4.2, HZ - 3.8], [1.5, 2.2, 5.8],
                                             "STONE_ARMOR", rot=[5.0, side * 7.0, 0]))
-        jaw_cubes.append(make_centered_cube([side * 2.05, 21.2, -33.2], [0.85, 1.0, 5.8],
+        jaw_cubes.append(make_centered_cube([side * 2.35, HY - 3.0, HZ - 8.4], [1.0, 1.2, 6.2],
                                             "STONE_ARMOR", rot=[4.0, side * 5.0, 0]))
-        for tz, th in ((-35.8, 1.10), (-33.4, 1.00), (-31.2, 0.92)):
-            jaw_cubes.append(make_centered_cube([side * 1.72, 21.8, tz], [0.48, th, 0.52],
+        for tz, th in ((-11.2, 1.22), (-8.6, 1.12), (-6.2, 1.02)):
+            jaw_cubes.append(make_centered_cube([side * 1.98, HY - 2.2, HZ + tz], [0.54, th, 0.58],
                                                 "IVORY_FANG", rot=[-6.0, 0, -side * 5.0]))
-    add_bone("jaw", "head", [0.0, 21.2, -26.2], jaw_cubes)
+    add_bone("jaw", "head", [0.0, HY - 2.9, HZ - 1.0], jaw_cubes)
 
-    # Locator `mouth_flame` đặt ngay giữa khoang họng lửa (khớp 100% với CinderDragonBossEntity.getMouthFlameWorldPos!)
-    add_bone("mouth_flame", "head", [0.0, 21.8, -32.2],
-             locators={"mouth_flame": [0.0, 21.8, -32.2]})
+    # Locator `mouth_flame` ngay giữa khoang họng lửa (đồng bộ 100% CinderDragonBossEntity.getMouthFlameWorldPos!)
+    mouth_flame_pos = [0.0, round(HY - 1.7, 3), round(HZ - 7.0, 3)]
+    add_bone("mouth_flame", "head", mouth_flame_pos, locators={"mouth_flame": mouth_flame_pos})
 
     # -------------------------------------------------------------------------
-    # D. 4 CHÂN TRỤ RỒNG CỔ ĐẠI VẠM VỠ (Đứng cao oai vệ — người chơi 1.8b ngang cổ chân/đầu gối!)
+    # D. 4 CHÂN RỒNG CƠ BẮP HẦM HỐ 4 KHỚP/CHÂN BÁM CHẮC BỜ VAI & HÔNG ĐÔ CON!
+    #    - Đẩy rộng khớp vai/hông khớp bề ngang ngực 22 px, tăng độ dày bắp tay/bắp đùi + gai khuỷu/gối cực lực!
     # -------------------------------------------------------------------------
     def build_front_leg(side: int):
         sx = float(side)
         suffix = "l" if side > 0 else "r"
-        p_sh = (sx * 7.2, 17.6, -7.8)
-        p_el = (sx * 9.2, 10.0, -5.4)
-        p_wr = (sx * 8.6, 3.0, -9.0)
+        p_scap = (sx * 9.6, 17.2, -12.8)
+        p_sh   = (sx * 11.4, 14.0, -13.0)
+        p_el   = (sx * 15.2, 6.6, -7.2)     # Khuỷu gập sâu ra sau rộng thế đứng cực lực!
+        p_wr   = (sx * 14.0, 2.6, -17.2)    # Cẳng tay vươn mạnh ra trước chống đất!
 
+        # 1) Khớp bả vai đá dày (`leg_fl_shoulder` / `leg_fr_shoulder`)
+        scap_c = []
+        scap_c.append(make_centered_cube([sx * 10.4, 15.8, -12.8], [5.2, 5.8, 7.2], "DORSAL_SHIELD", rot=[10.0, sx * 10.0, sx * 14.0]))
+        add_curved_horn(scap_c, [
+            (sx * 11.2, 16.8, -11.4),
+            (sx * 13.4, 19.2, -9.0),
+            (sx * 14.4, 21.0, -6.8),
+        ], [1.45, 0.92, 0.28], "DORSAL_SHIELD", steps_per_seg=2)
+
+        # 2) Cánh tay trên cực đô vạm vỡ + CẶP SỪNG GAI KHUỶU KHỔNG LỒ MÓC LÊN TRÊN!
         upper_c = []
-        add_segment_bar(upper_c, p_sh, p_el, 4.0, 4.2, 3.3, 3.4, steps=6, mat="STONE_ARMOR",
+        add_segment_bar(upper_c, p_sh, p_el, 6.8, 7.0, 5.6, 5.8, steps=6, mat="STONE_ARMOR",
                         armor_ridge=True, ridge_mat="CHEST_FISSURE")
-        upper_c.append(make_centered_cube(p_el, [3.7, 3.5, 3.7], "DORSAL_SHIELD"))
+        upper_c.append(make_centered_cube(p_el, [6.0, 5.8, 6.2], "DORSAL_SHIELD"))
         add_curved_horn(upper_c, [
-            (sx * 9.5, 10.4, -4.2),
-            (sx * 10.3, 11.2, -2.0),
-            (sx * 10.5, 11.9, -0.2),
-        ], [0.82, 0.50, 0.20], "CLAW_DARK", steps_per_seg=3)
+            (sx * 15.6, 7.4, -6.0),
+            (sx * 17.2, 10.8, -4.0),
+            (sx * 17.8, 14.8, -3.4),
+            (sx * 17.0, 17.8, -4.4),
+        ], [1.75, 1.25, 0.78, 0.22], "IVORY_FANG", steps_per_seg=3)
+        add_curved_horn(upper_c, [
+            (sx * 16.2, 6.4, -7.4),
+            (sx * 18.2, 9.2, -6.8),
+            (sx * 18.8, 12.0, -7.8),
+        ], [1.25, 0.78, 0.22], "DORSAL_SHIELD", steps_per_seg=2)
 
+        # 3) Cẳng tay trước đô chắc vươn dài về trước + gai cẳng tay
         lower_c = []
-        add_segment_bar(lower_c, p_el, p_wr, 3.2, 3.3, 2.7, 2.8, steps=6, mat="STONE_ARMOR",
+        add_segment_bar(lower_c, p_el, p_wr, 5.4, 5.6, 4.8, 4.6, steps=6, mat="STONE_ARMOR",
                         armor_ridge=True, ridge_mat="DORSAL_SHIELD")
-        for t in (0.38, 0.70):
+        for t in (0.32, 0.64):
             gp = np.array(p_el) * (1 - t) + np.array(p_wr) * t
-            lower_c.append(make_centered_cube([gp[0] + sx * 1.35, gp[1] + 0.35, gp[2] + 0.65],
-                                              [1.05, 1.30, 1.75], "CLAW_DARK", rot=[-24.0, sx * 16.0, sx * 22.0]))
+            lower_c.append(make_centered_cube([gp[0] + sx * 2.15, gp[1] + 0.70, gp[2] + 0.7],
+                                              [1.60, 1.95, 2.75], "CLAW_DARK", rot=[-24.0, sx * 18.0, sx * 22.0]))
 
+        # 4) Bàn chân trước xòe rộng đồ sộ + 4 ngón móng vuốt sắc
         foot_c = []
-        foot_c.append(make_centered_cube([sx * 8.6, 1.65, -9.7], [4.2, 2.5, 4.1], "STONE_ARMOR"))
+        foot_c.append(make_centered_cube([sx * 14.0, 1.85, -18.2], [6.8, 3.4, 6.4], "STONE_ARMOR"))
+        foot_c.append(make_centered_cube([sx * 14.0, 3.05, -17.4], [5.8, 2.0, 5.2], "DORSAL_SHIELD", rot=[10.0, 0, 0]))
         toe_specs = [
-            (-26.0 * sx, 4.0, -1.0),
-            (  0.0,      4.5, -1.0),
-            (+26.0 * sx, 4.0, -1.0),
-            (+150.0 * sx, 2.9, -1.0),
+            (-32.0 * sx, 6.6),
+            (  0.0,      7.6),
+            (+32.0 * sx, 6.6),
+            (+152.0 * sx, 4.4),
         ]
-        for ang_deg, tlen, _ in toe_specs:
+        for ang_deg, tlen in toe_specs:
             rad = math.radians(ang_deg)
             dx = math.sin(rad)
             dz = -math.cos(rad)
-            p_base = (sx * 8.6 + dx * 1.2, 1.15, -9.7 + dz * 1.2)
-            p_mid = (sx * 8.6 + dx * (1.2 + tlen * 0.58), 0.92, -9.7 + dz * (1.2 + tlen * 0.58))
-            p_tip = (sx * 8.6 + dx * (1.2 + tlen), 0.28, -9.7 + dz * (1.2 + tlen))
-            add_segment_bar(foot_c, p_base, p_mid, 1.30, 1.25, 1.05, 1.05, steps=2, mat="STONE_ARMOR")
-            add_curved_horn(foot_c, [p_mid, (p_tip[0], 0.68, p_tip[2]), p_tip], [0.60, 0.40, 0.16], "IVORY_FANG", steps_per_seg=2)
+            p_base = (sx * 14.0 + dx * 2.0, 1.45, -18.2 + dz * 2.0)
+            p_mid  = (sx * 14.0 + dx * (2.0 + tlen * 0.56), 1.20, -18.2 + dz * (2.0 + tlen * 0.56))
+            p_tip  = (sx * 14.0 + dx * (2.0 + tlen), 0.28, -18.2 + dz * (2.0 + tlen))
+            add_segment_bar(foot_c, p_base, p_mid, 2.05, 1.90, 1.65, 1.55, steps=2, mat="STONE_ARMOR")
+            add_curved_horn(foot_c, [p_mid, (p_tip[0], 1.00, p_tip[2]), p_tip], [0.94, 0.62, 0.20], "IVORY_FANG", steps_per_seg=2)
 
-        add_bone(f"leg_f{suffix}", "body_chest", p_sh, upper_c)
+        add_bone(f"leg_f{suffix}_shoulder", "body_chest", p_scap, scap_c)
+        add_bone(f"leg_f{suffix}", f"leg_f{suffix}_shoulder", p_sh, upper_c)
         add_bone(f"leg_f{suffix}_lower", f"leg_f{suffix}", p_el, lower_c)
         add_bone(f"leg_f{suffix}_foot", f"leg_f{suffix}_lower", p_wr, foot_c)
 
     def build_back_leg(side: int):
         sx = float(side)
         suffix = "l" if side > 0 else "r"
-        p_hip = (sx * 6.8, 16.0, +7.2)
-        p_kn = (sx * 8.8, 9.8, +4.4)
-        p_hk = (sx * 8.5, 5.4, +9.2)
-        p_ft = (sx * 8.3, 2.4, +6.8)
+        p_hip = (sx * 9.8, 14.8, +12.2 + PELV_Z)
+        p_kn  = (sx * 14.4, 8.2, +6.0 + PELV_Z)     # Gối cúi mạnh ra trước + cặp gai gối khổng lồ!
+        p_hk  = (sx * 13.2, 4.6, +15.2 + PELV_Z)    # Cổ chân sau gập sâu đầy lực bật!
+        p_ft  = (sx * 12.6, 2.2, +10.2 + PELV_Z)    # Khớp bàn chân sau!
 
+        # 1) Đùi sau cực vạm vỡ + CẶP SỪNG GAI GỐI KHỔNG LỒ MÓC CAO!
         upper_c = []
-        add_segment_bar(upper_c, p_hip, p_kn, 4.5, 4.8, 3.6, 3.7, steps=6, mat="STONE_ARMOR",
+        add_segment_bar(upper_c, p_hip, p_kn, 7.2, 7.6, 5.6, 5.8, steps=6, mat="STONE_ARMOR",
                         armor_ridge=True, ridge_mat="CHEST_FISSURE")
-        upper_c.append(make_centered_cube(p_kn, [3.7, 3.6, 3.8], "DORSAL_SHIELD"))
+        upper_c.append(make_centered_cube(p_kn, [5.8, 5.6, 5.8], "DORSAL_SHIELD"))
         add_curved_horn(upper_c, [
-            (sx * 9.0, 10.2, +3.2),
-            (sx * 9.6, 10.8, +1.4),
-        ], [0.82, 0.22], "CLAW_DARK", steps_per_seg=3)
+            (sx * 14.8, 8.8, +5.0 + PELV_Z),
+            (sx * 16.6, 12.6, +3.8 + PELV_Z),
+            (sx * 16.8, 16.6, +4.6 + PELV_Z),
+        ], [1.65, 1.12, 0.22], "IVORY_FANG", steps_per_seg=3)
+        add_curved_horn(upper_c, [
+            (sx * 15.2, 9.2, +7.6 + PELV_Z),
+            (sx * 17.0, 12.2, +8.6 + PELV_Z),
+            (sx * 17.4, 14.6, +9.8 + PELV_Z),
+        ], [1.15, 0.72, 0.20], "DORSAL_SHIELD", steps_per_seg=2)
 
+        # 2) Cẳng chân sau dày khỏe (`leg_bl_lower` / `leg_br_lower`) + gai gót sắc
         lower_c = []
-        add_segment_bar(lower_c, p_kn, p_hk, 3.4, 3.4, 2.8, 2.9, steps=5, mat="STONE_ARMOR",
+        add_segment_bar(lower_c, p_kn, p_hk, 5.2, 5.4, 4.2, 4.3, steps=5, mat="STONE_ARMOR",
                         armor_ridge=True, ridge_mat="DORSAL_SHIELD")
-        add_segment_bar(lower_c, p_hk, p_ft, 2.7, 2.7, 2.5, 2.5, steps=4, mat="STONE_ARMOR")
+        lower_c.append(make_centered_cube(p_hk, [4.4, 4.2, 4.6], "DORSAL_SHIELD"))
         add_curved_horn(lower_c, [
-            (sx * 8.6, 5.6, +10.0),
-            (sx * 9.0, 6.4, +12.2),
-            (sx * 9.0, 7.0, +13.6),
-        ], [0.78, 0.48, 0.20], "CLAW_DARK", steps_per_seg=2)
+            (sx * 13.2, 4.8, +16.4 + PELV_Z),
+            (sx * 13.6, 5.8, +19.2 + PELV_Z),
+            (sx * 13.6, 6.4, +21.6 + PELV_Z),
+        ], [1.10, 0.66, 0.20], "IVORY_FANG", steps_per_seg=2)
 
+        # 3) Khớp cổ chân sau riêng biệt (`leg_bl_ankle` / `leg_br_ankle`)
+        ankle_c = []
+        add_segment_bar(ankle_c, p_hk, p_ft, 4.0, 4.0, 3.8, 3.7, steps=4, mat="STONE_ARMOR",
+                        armor_ridge=True, ridge_mat="DORSAL_SHIELD")
+
+        # 4) Bàn chân sau xòe rộng chắc nịch + vuốt sắc
         foot_c = []
-        foot_c.append(make_centered_cube([sx * 8.3, 1.55, +6.1], [4.2, 2.3, 4.1], "STONE_ARMOR"))
+        foot_c.append(make_centered_cube([sx * 12.6, 1.75, +9.2 + PELV_Z], [6.4, 3.2, 6.2], "STONE_ARMOR"))
         toe_specs = [
-            (-24.0 * sx, 3.9),
-            (  0.0,      4.4),
-            (+24.0 * sx, 3.9),
-            (+155.0 * sx, 2.8),
+            (-28.0 * sx, 6.2),
+            (  0.0,      7.2),
+            (+28.0 * sx, 6.2),
+            (+156.0 * sx, 4.2),
         ]
         for ang_deg, tlen in toe_specs:
             rad = math.radians(ang_deg)
             dx = math.sin(rad)
             dz = -math.cos(rad)
-            p_base = (sx * 8.3 + dx * 1.2, 1.1, +6.1 + dz * 1.2)
-            p_mid = (sx * 8.3 + dx * (1.2 + tlen * 0.58), 0.88, +6.1 + dz * (1.2 + tlen * 0.58))
-            p_tip = (sx * 8.3 + dx * (1.2 + tlen), 0.28, +6.1 + dz * (1.2 + tlen))
-            add_segment_bar(foot_c, p_base, p_mid, 1.28, 1.24, 1.02, 1.02, steps=2, mat="STONE_ARMOR")
-            add_curved_horn(foot_c, [p_mid, (p_tip[0], 0.65, p_tip[2]), p_tip], [0.58, 0.38, 0.16], "IVORY_FANG", steps_per_seg=2)
+            p_base = (sx * 12.6 + dx * 1.9, 1.38, +9.2 + PELV_Z + dz * 1.9)
+            p_mid  = (sx * 12.6 + dx * (1.9 + tlen * 0.56), 1.15, +9.2 + PELV_Z + dz * (1.9 + tlen * 0.56))
+            p_tip  = (sx * 12.6 + dx * (1.9 + tlen), 0.28, +9.2 + PELV_Z + dz * (1.9 + tlen))
+            add_segment_bar(foot_c, p_base, p_mid, 1.92, 1.82, 1.54, 1.46, steps=2, mat="STONE_ARMOR")
+            add_curved_horn(foot_c, [p_mid, (p_tip[0], 0.92, p_tip[2]), p_tip], [0.90, 0.58, 0.20], "IVORY_FANG", steps_per_seg=2)
 
         add_bone(f"leg_b{suffix}", "pelvis", p_hip, upper_c)
         add_bone(f"leg_b{suffix}_lower", f"leg_b{suffix}", p_kn, lower_c)
-        add_bone(f"leg_b{suffix}_foot", f"leg_b{suffix}_lower", p_ft, foot_c)
+        add_bone(f"leg_b{suffix}_ankle", f"leg_b{suffix}_lower", p_hk, ankle_c)
+        add_bone(f"leg_b{suffix}_foot", f"leg_b{suffix}_ankle", p_ft, foot_c)
 
     for s in (1, -1):
         build_front_leg(s)
         build_back_leg(s)
 
     # -------------------------------------------------------------------------
-    # E. ĐÔI CÁNH ĐỎ SẪM VỒNG CAO OAI VỆ (sải ~90.5 px = 31.1 block tại SCALE 5.5f, màng đỏ găm kín 100% nan xương!)
+    # E. ĐÔI CÁNH ĐỎ HUYẾT KHỔNG LỒ x1.3 GÀI SÁT MÉP NGOÀI BỜ VAI ĐÔ (TÁCH BIỆT >18 px — 0 TRÙNG/DÍNH!)
     # -------------------------------------------------------------------------
     def build_wing_left():
-        p_sh  = np.array([ 6.2, 22.0, -7.2])   # Khớp vai cánh nâng cao
-        p_el  = np.array([16.4, 27.6, -3.4])   # Khuỷu cánh vồng cao
-        p_wr  = np.array([28.8, 33.4, -8.8])   # Cổ cánh vươn đỉnh cao + móng vuốt cong sắc!
+        p_sh  = np.array([10.4, 20.2, -12.4])   # Khớp vai cánh đặt sát mép ngoài cầu vai đô (cách nhau 20.8 px!)
+        p_el  = np.array([25.6, 30.4,  -5.6])   # Khuỷu cánh x1.3 vồng cao & vươn rộng ra ngoài (+X)
+        p_wr  = np.array([44.0, 41.4, -13.6])   # Cổ cánh (`wing_wrist`) x1.3 vươn đỉnh cực uy lực!
 
-        # 5 nan xương cánh xòe quạt rộng — nâng cao mép sau để không bao giờ quét sát mặt đất
-        p_tip = np.array([44.2, 30.8, -4.4])   # Nan đầu mép trước (sải ~90.6 px = 31.1 block!)
-        p_f1  = np.array([39.6, 24.4, +4.4])   # Nan 1
-        p_f2  = np.array([31.2, 19.6, +11.4])  # Nan 2
-        p_f3  = np.array([21.8, 17.6, +14.2])  # Nan 3
-        p_f4  = np.array([13.2, 18.2, +11.8])  # Nan 4 nối kín về hông/sườn!
+        # 5 nan xương cánh x1.3 xòe quạt rộng (~146 px tổng sải cánh!), tách hẳn ra ngoài sườn (p_f4.x = +27.8!)
+        p_tip = np.array([69.0, 38.2,  -6.2])   # Nan đầu mép trước (+ vuốt chóp tới X = 73.0!)
+        p_f1  = np.array([63.4, 29.4,  +7.8])   # Nan 1
+        p_f2  = np.array([52.6, 22.8, +19.2])   # Nan 2
+        p_f3  = np.array([40.0, 19.8, +24.8])   # Nan 3
+        p_f4  = np.array([27.8, 19.4, +22.0])   # Nan 4 tách rộng khỏi lưng đô (2 cánh cách nhau 55.6 px!)
 
-        p_flank_front = np.array([5.6, 19.8, -2.8])
-        p_flank_rear  = np.array([5.2, 16.8, +8.2])
+        # Gốc màng cánh gài kín vào mép sườn LƯNG TRÊN của thân đô (X = +9.2..+8.6), tuyệt đối không chọc bụng/lưng!
+        p_flank_front = np.array([9.4, 19.6, -6.2])
+        p_flank_rear  = np.array([8.6, 18.4, +7.0])
 
         arm_c = []
-        arm_c.append(make_centered_cube(p_sh, [3.8, 3.6, 4.0], "WING_BONE"))
-        add_segment_bar(arm_c, p_sh, p_el, 2.9, 3.1, 2.5, 2.7, steps=5, mat="WING_BONE",
+        arm_c.append(make_centered_cube(p_sh, [4.6, 4.4, 4.8], "WING_BONE"))
+        add_segment_bar(arm_c, p_sh, p_el, 3.8, 4.0, 3.2, 3.5, steps=6, mat="WING_BONE",
                         armor_ridge=True, ridge_mat="DORSAL_SHIELD")
-        for t in (0.28, 0.56, 0.82):
+        for t in (0.28, 0.58, 0.85):
             gp = p_sh * (1 - t) + p_el * t
-            arm_c.append(make_centered_cube(gp + np.array([0, 1.7, -0.35]), [0.95, 1.65, 1.25],
+            arm_c.append(make_centered_cube(gp + np.array([0, 2.2, -0.40]), [1.25, 2.15, 1.65],
                                             "CLAW_DARK", rot=[-18.0, 0, -14.0]))
-        add_quad_membrane(arm_c, p_sh, p_el, p_f4, p_flank_rear, rows=6, cols=5, scallop_depth=0.13)
-        add_quad_membrane(arm_c, p_sh, p_flank_front, p_flank_rear, p_sh + np.array([-0.5, -2.2, 4.0]),
+        add_quad_membrane(arm_c, p_sh, p_el, p_f4, p_flank_rear, rows=7, cols=6, scallop_depth=0.13)
+        add_quad_membrane(arm_c, p_sh, p_flank_front, p_flank_rear, p_sh + np.array([-0.2, -0.9, 4.8]),
                           rows=3, cols=3, scallop_depth=0.04)
 
         mid_c = []
-        mid_c.append(make_centered_cube(p_el, [3.3, 3.3, 3.5], "WING_BONE"))
-        add_segment_bar(mid_c, p_el, p_wr, 2.5, 2.7, 2.2, 2.4, steps=7, mat="WING_BONE",
+        mid_c.append(make_centered_cube(p_el, [4.2, 4.0, 4.4], "WING_BONE"))
+        add_segment_bar(mid_c, p_el, p_wr, 3.4, 3.6, 3.0, 3.2, steps=8, mat="WING_BONE",
                         armor_ridge=True, ridge_mat="DORSAL_SHIELD")
-        for t in (0.22, 0.46, 0.70, 0.90):
+        for t in (0.22, 0.48, 0.74):
             gp = p_el * (1 - t) + p_wr * t
-            mid_c.append(make_centered_cube(gp + np.array([0.15, 1.60, -0.40]), [0.88, 1.60, 1.20],
+            mid_c.append(make_centered_cube(gp + np.array([0.2, 2.1, -0.50]), [1.15, 2.10, 1.55],
                                             "CLAW_DARK", rot=[-14.0, 12.0, -12.0]))
-        mid_c.append(make_centered_cube(p_wr, [3.6, 3.4, 3.8], "WING_BONE"))
-        add_curved_horn(mid_c, [
-            p_wr + np.array([ 0.2, 0.85, -1.0]),
-            p_wr + np.array([ 1.0, 2.2,  -4.2]),
-            p_wr + np.array([ 1.5, 1.5,  -7.0]),
-            p_wr + np.array([ 1.1, -0.2, -8.2]),
-        ], [1.12, 0.80, 0.48, 0.18], "CLAW_DARK", steps_per_seg=4)
-        add_curved_horn(mid_c, [
-            p_wr + np.array([-0.8, 0.5, -0.8]),
-            p_wr + np.array([-1.3, 1.5, -3.4]),
-            p_wr + np.array([-1.1, 0.6, -5.0]),
-        ], [0.72, 0.44, 0.16], "CLAW_DARK", steps_per_seg=3)
+        add_membrane_panel(mid_c, p_el, p_wr, p_f4, rows=8, cols=7, scallop_depth=0.13)
 
-        add_membrane_panel(mid_c, p_el, p_wr, p_f4, rows=7, cols=6, scallop_depth=0.13)
+        # Khớp cổ cánh (`wing_wrist_l`) mang 3 ĐẠI MÓNG VUỐT MÓC KHỔNG LỒ x1.3!
+        wrist_c = []
+        wrist_c.append(make_centered_cube(p_wr, [5.0, 4.8, 5.2], "WING_BONE"))
+        add_curved_horn(wrist_c, [
+            p_wr + np.array([ 0.3,  1.2, -1.5]),
+            p_wr + np.array([ 1.5,  2.8, -6.8]),
+            p_wr + np.array([ 2.1,  0.8, -11.8]),
+            p_wr + np.array([ 1.6, -2.6, -14.2]),
+        ], [1.80, 1.32, 0.78, 0.22], "CLAW_DARK", steps_per_seg=3)
+        add_curved_horn(wrist_c, [
+            p_wr + np.array([-0.8, -0.5, -1.5]),
+            p_wr + np.array([ 0.0, -0.2, -6.2]),
+            p_wr + np.array([ 0.3, -2.6, -10.2]),
+            p_wr + np.array([-0.2, -5.2, -12.0]),
+        ], [1.45, 1.04, 0.60, 0.20], "CLAW_DARK", steps_per_seg=3)
+        add_curved_horn(wrist_c, [
+            p_wr + np.array([-1.2,  1.5, -0.8]),
+            p_wr + np.array([-2.2,  4.0, -4.2]),
+            p_wr + np.array([-2.0,  3.8, -7.2]),
+        ], [1.15, 0.74, 0.22], "CLAW_DARK", steps_per_seg=2)
 
         tip_c = []
-        add_segment_bar(tip_c, p_wr, p_tip, 1.9, 2.0, 0.75, 0.85, steps=8, mat="WING_BONE",
+        add_segment_bar(tip_c, p_wr, p_tip, 2.7, 2.8, 1.00, 1.10, steps=9, mat="WING_BONE",
                         armor_ridge=True, ridge_mat="CLAW_DARK")
-        add_curved_horn(tip_c, [p_tip, p_tip + np.array([2.6, -0.3, 0.8])], [0.64, 0.16], "CLAW_DARK", steps_per_seg=2)
-        add_membrane_panel(tip_c, p_wr, p_tip, p_f1, rows=8, cols=6, scallop_depth=0.14)
+        add_curved_horn(tip_c, [p_tip, p_tip + np.array([4.0, -0.5, 1.2])], [0.92, 0.20], "CLAW_DARK", steps_per_seg=2)
+        add_membrane_panel(tip_c, p_wr, p_tip, p_f1, rows=9, cols=7, scallop_depth=0.14)
 
         f1_c = []
-        add_segment_bar(f1_c, p_wr, p_f1, 1.45, 1.45, 0.60, 0.60, steps=7, mat="WING_BONE")
-        add_membrane_panel(f1_c, p_wr, p_f1, p_f2, rows=8, cols=6, scallop_depth=0.15)
+        add_segment_bar(f1_c, p_wr, p_f1, 1.90, 1.90, 0.78, 0.78, steps=8, mat="WING_BONE")
+        add_membrane_panel(f1_c, p_wr, p_f1, p_f2, rows=9, cols=7, scallop_depth=0.15)
 
         f2_c = []
-        add_segment_bar(f2_c, p_wr, p_f2, 1.32, 1.32, 0.56, 0.56, steps=7, mat="WING_BONE")
-        add_membrane_panel(f2_c, p_wr, p_f2, p_f3, rows=7, cols=6, scallop_depth=0.15)
+        add_segment_bar(f2_c, p_wr, p_f2, 1.72, 1.72, 0.72, 0.72, steps=8, mat="WING_BONE")
+        add_membrane_panel(f2_c, p_wr, p_f2, p_f3, rows=8, cols=7, scallop_depth=0.15)
 
         f3_c = []
-        add_segment_bar(f3_c, p_wr, p_f3, 1.24, 1.24, 0.52, 0.52, steps=6, mat="WING_BONE")
-        add_membrane_panel(f3_c, p_wr, p_f3, p_f4, rows=7, cols=6, scallop_depth=0.14)
+        add_segment_bar(f3_c, p_wr, p_f3, 1.60, 1.60, 0.66, 0.66, steps=7, mat="WING_BONE")
+        add_membrane_panel(f3_c, p_wr, p_f3, p_f4, rows=8, cols=7, scallop_depth=0.14)
 
         f4_c = []
-        add_segment_bar(f4_c, p_wr, p_f4, 1.20, 1.20, 0.52, 0.52, steps=6, mat="WING_BONE")
+        add_segment_bar(f4_c, p_wr, p_f4, 1.52, 1.52, 0.64, 0.64, steps=7, mat="WING_BONE")
 
         return {
             "sh": p_sh, "el": p_el, "wr": p_wr,
-            "arm": arm_c, "mid": mid_c, "tip": tip_c,
+            "arm": arm_c, "mid": mid_c, "wrist": wrist_c, "tip": tip_c,
             "f1": f1_c, "f2": f2_c, "f3": f3_c, "f4": f4_c,
         }
 
@@ -829,10 +993,11 @@ def build_cinder_dragon_geo():
     add_bone("wing_l", "body_chest", wl["sh"])
     add_bone("wing_arm_l", "wing_l", wl["sh"], wl["arm"])
     add_bone("wing_mid_l", "wing_arm_l", wl["el"], wl["mid"])
-    add_bone("wing_tip_l", "wing_mid_l", wl["wr"], wl["tip"])
-    add_bone("wing_finger_1_l", "wing_mid_l", wl["wr"], wl["f1"])
-    add_bone("wing_finger_2_l", "wing_mid_l", wl["wr"], wl["f2"])
-    add_bone("wing_finger_3_l", "wing_mid_l", wl["wr"], wl["f3"])
+    add_bone("wing_wrist_l", "wing_mid_l", wl["wr"], wl["wrist"])
+    add_bone("wing_tip_l", "wing_wrist_l", wl["wr"], wl["tip"])
+    add_bone("wing_finger_1_l", "wing_wrist_l", wl["wr"], wl["f1"])
+    add_bone("wing_finger_2_l", "wing_wrist_l", wl["wr"], wl["f2"])
+    add_bone("wing_finger_3_l", "wing_wrist_l", wl["wr"], wl["f3"])
     add_bone("wing_finger_4_l", "wing_mid_l", wl["wr"], wl["f4"])
 
     def mp(pt):
@@ -841,79 +1006,76 @@ def build_cinder_dragon_geo():
     add_bone("wing_r", "body_chest", mp(wl["sh"]))
     add_bone("wing_arm_r", "wing_r", mp(wl["sh"]), [mirror_x_cube(c) for c in wl["arm"]])
     add_bone("wing_mid_r", "wing_arm_r", mp(wl["el"]), [mirror_x_cube(c) for c in wl["mid"]])
-    add_bone("wing_tip_r", "wing_mid_r", mp(wl["wr"]), [mirror_x_cube(c) for c in wl["tip"]])
-    add_bone("wing_finger_1_r", "wing_mid_r", mp(wl["wr"]), [mirror_x_cube(c) for c in wl["f1"]])
-    add_bone("wing_finger_2_r", "wing_mid_r", mp(wl["wr"]), [mirror_x_cube(c) for c in wl["f2"]])
-    add_bone("wing_finger_3_r", "wing_mid_r", mp(wl["wr"]), [mirror_x_cube(c) for c in wl["f3"]])
+    add_bone("wing_wrist_r", "wing_mid_r", mp(wl["wr"]), [mirror_x_cube(c) for c in wl["wrist"]])
+    add_bone("wing_tip_r", "wing_wrist_r", mp(wl["wr"]), [mirror_x_cube(c) for c in wl["tip"]])
+    add_bone("wing_finger_1_r", "wing_wrist_r", mp(wl["wr"]), [mirror_x_cube(c) for c in wl["f1"]])
+    add_bone("wing_finger_2_r", "wing_wrist_r", mp(wl["wr"]), [mirror_x_cube(c) for c in wl["f2"]])
+    add_bone("wing_finger_3_r", "wing_wrist_r", mp(wl["wr"]), [mirror_x_cube(c) for c in wl["f3"]])
     add_bone("wing_finger_4_r", "wing_mid_r", mp(wl["wr"]), [mirror_x_cube(c) for c in wl["f4"]])
 
     # -------------------------------------------------------------------------
-    # F. 7 ĐỐT ĐUÔI GIÁP LỒNG KHÍT GIA CỐ KHỚP TRƯỚC CHÙY + CHÙY LƯỠI LIỀM ĐÔI ÔM LÕI THAN HỒNG
+    # F. ĐUÔI 9 ĐỐT ĐA KHỚP UỐN LƯỢN SÁT ĐẤT RỒI VÚT CONG LƯỠI LIỀM (GIỐNG ẢNH MẪU 1 & 2!)
+    #    - Chiều dài đuôi 58 px (+19.2 -> +78.8), vây rìu cong tăng dần kích thước ở đốt 4..8
+    #      và kết thúc bằng ĐẠI LƯỠI LIỀM KHỔNG LỒ + LÕI THAN HỒNG ở `tail_9`!
     # -------------------------------------------------------------------------
     tail_nodes = [
-        (0.0, 15.2, +10.2, 4.3, 3.7, 2.8, 2.8),
-        (0.0, 14.3, +13.9, 3.8, 3.3, 2.5, 2.6),
-        (0.0, 13.8, +17.5, 3.4, 2.9, 2.3, 2.4),
-        (0.0, 13.9, +21.0, 3.0, 2.6, 2.1, 2.2),
-        (0.0, 14.9, +24.4, 2.75, 2.40, 1.9, 2.0),  # Gia cố dày chắc tail_5..7 nối liền chùy lớn!
-        (0.0, 16.5, +27.5, 2.55, 2.25, 1.75, 1.85),
-        (0.0, 18.7, +30.2, 2.35, 2.10, 1.60, 1.70),
+        # (x, y, z, rx, ry, sw, sh, scythe_scale) — gốc đuôi dày khỏe nối mượt với khối hông đô (`rx = 6.0 -> 1.7`)!
+        (0.0, 13.5, +19.2 + PELV_Z, 6.00, 4.70, 3.60, 3.30, 0.00),  # tail_1
+        (0.0, 12.0, +26.0 + PELV_Z, 5.10, 4.05, 3.20, 2.95, 0.00),  # tail_2
+        (0.0, 10.6, +32.8 + PELV_Z, 4.30, 3.45, 2.80, 2.65, 0.00),  # tail_3
+        (0.0,  9.5, +39.4 + PELV_Z, 3.60, 2.95, 2.40, 2.30, 0.96),  # tail_4: vây rìu cong #1
+        (0.0,  9.0, +46.0 + PELV_Z, 3.05, 2.55, 2.15, 2.05, 1.18),  # tail_5: vây rìu cong #2
+        (0.0,  9.6, +52.4 + PELV_Z, 2.60, 2.20, 1.90, 1.85, 1.38),  # tail_6: vây rìu cong #3
+        (0.0, 11.0, +58.6 + PELV_Z, 2.25, 1.92, 1.70, 1.65, 1.56),  # tail_7: vây rìu cong #4 lớn!
+        (0.0, 13.4, +64.4 + PELV_Z, 1.95, 1.70, 1.50, 1.50, 0.00),  # tail_8: cổ uốn vút lên chóp đuôi
+        (0.0, 16.8, +69.6 + PELV_Z, 1.72, 1.52, 1.35, 1.35, 1.60),  # tail_9: ĐẠI LƯỠI LIỀM CHÓP ĐUÔI!
     ]
     prev_tail = "pelvis"
-    for i, (tx, ty, tz, rx, ry, sw, sh) in enumerate(tail_nodes):
+    for i, (tx, ty, tz, rx, ry, sw, sh, scy) in enumerate(tail_nodes):
         if i < len(tail_nodes) - 1:
             nx, ny, nz = tail_nodes[i + 1][:3]
         else:
-            nx, ny, nz = 0.0, 20.6, +32.4
+            nx, ny, nz = 0.0, 19.6, +73.6 + PELV_Z
         seg_c = []
         ym, zm = 0.5 * (ty + ny), 0.5 * (tz + nz)
         seg_len = math.hypot(ny - ty, nz - tz)
-        pitch = -math.degrees(math.atan2(ny - ty, nz - tz))
-        # Phủ chồng 45% (đặc biệt dày chắc ở tail_5..7) -> tuyệt đối không bị thắt cổ chai hay hở khớp!
-        overlap_f = 1.46 if i >= 4 else 1.38
-        add_armor_ring(seg_c, (0.0, ym, zm), rx, ry, seg_len * overlap_f,
-                       mat_top="STONE_ARMOR", mat_belly="BELLY_PLATE",
-                       mat_side="CHEST_FISSURE" if i < 5 else "STONE_ARMOR", pitch_x=pitch)
-        add_dorsal_shield(seg_c, (0.0, ym + ry * 0.90, zm), sw, sh, seg_len * 0.78, tilt_x=-14.0 + pitch * 0.5)
-        if i in (1, 3, 5):
-            for side in (-1, 1):
-                seg_c.append(make_centered_cube([side * (rx * 0.95), ym, zm + 0.3],
-                                                [1.10, 1.00, 1.85], "CLAW_DARK", rot=[pitch, side * 24.0, 0]))
-
-        # CHÓP ĐUÔI `tail_7`: VÒNG NGÀM GIÁP DÀY + CHÙY LƯỠI LIỀM ĐÔI ĐÁ OBSIDIAN ÔM LÕI THAN HỒNG PHÁT SÁNG
-        if i == 6:
-            core_c = np.array([0.0, 21.0, +33.0])
-            # Cổ ngàm giáp kép nối chặt từ tail_6/tail_7 vào khối chùy (bỏ hoàn toàn đoạn thắt mảnh!)
-            seg_c.append(make_centered_cube([0.0, 19.3, +30.6], [4.2, 3.6, 3.6], "DORSAL_SHIELD", rot=[-24.0, 0, 0]))
-            seg_c.append(make_centered_cube([0.0, 20.2, +31.8], [3.8, 3.2, 3.4], "OBSIDIAN_HORN", rot=[-26.0, 0, 0]))
-            # Lõi than hồng đa diện phát sáng fullbright ở trung tâm
-            seg_c.append(make_centered_cube(core_c, [2.5, 2.5, 2.8], "EMBER_CORE", rot=[20.0, 35.0, 15.0]))
-            seg_c.append(make_centered_cube(core_c, [2.0, 3.0, 2.0], "EMBER_CORE", rot=[-15.0, 10.0, 40.0]))
-            # 2 lưỡi liềm obsidian cong đối xứng hai bên ôm trọn lõi than hồng!
-            for side in (-1, 1):
-                add_curved_horn(seg_c, [
-                    (side * 1.1, 19.6, +31.4),
-                    (side * 3.6, 20.4, +32.8),
-                    (side * 4.5, 21.8, +35.2),
-                    (side * 3.1, 23.0, +37.6),
-                    (side * 1.0, 23.6, +38.8),
-                ], [0.98, 1.06, 0.90, 0.62, 0.22], "OBSIDIAN_HORN", steps_per_seg=4)
-                add_curved_horn(seg_c, [
-                    (side * 3.9, 20.6, +33.1),
-                    (side * 5.2, 22.1, +35.5),
-                    (side * 3.7, 23.3, +37.9),
-                ], [0.46, 0.38, 0.14], "CLAW_DARK", steps_per_seg=3)
+        # GeckoLib Rx(-rx): rot_x > 0 tilts +Z (backward tail) UP!
+        pitch = +math.degrees(math.atan2(ny - ty, nz - tz))
+        for frac in (0.28, 0.72):
+            ry_p = ty + (ny - ty) * frac
+            rz_p = tz + (nz - tz) * frac
+            taper = 1.0 - 0.08 * frac
+            add_armor_ring(seg_c, (0.0, ry_p, rz_p), rx * taper, ry * taper, seg_len * 0.80,
+                           mat_top="STONE_ARMOR", mat_belly="BELLY_PLATE",
+                           mat_side="CHEST_FISSURE" if i < 6 else "STONE_ARMOR", pitch_x=pitch)
+        if i < 3 or i == 7:
+            for frac in (0.28, 0.76):
+                sy = ty + (ny - ty) * frac + ry * 0.86
+                sz = tz + (nz - tz) * frac
+                add_dorsal_shield(seg_c, (0.0, sy, sz), sw, sh, seg_len * 0.46, tilt_x=-14.0 + pitch * 0.4)
+        # Vây rìu lưỡi liềm cong lưng đuôi + gai móc bụng đối trọng (giống ảnh mẫu 1 & 2!)
+        if scy > 0.0 and i < 8:
+            add_tail_scythe_fin(seg_c, (0.0, ym + ry * 0.85, zm), scy, pitch, is_tip=False)
+            # Gai móc ngược dưới bụng đoạn đuôi cong
             add_curved_horn(seg_c, [
-                (0.0, 21.8, +34.4),
-                (0.0, 23.4, +36.8),
-            ], [0.72, 0.20], "OBSIDIAN_HORN", steps_per_seg=2)
+                (0.0, ym - ry * 0.85, zm),
+                (0.0, ym - ry * 0.85 - 1.6 * scy, zm - 0.8 * scy),
+                (0.0, ym - ry * 0.85 - 2.6 * scy, zm - 2.0 * scy),
+            ], [0.58 * scy, 0.36 * scy, 0.12 * scy], "IVORY_FANG", steps_per_seg=2)
+        if i in (0, 2, 4, 6):
+            for side in (-1, 1):
+                seg_c.append(make_centered_cube([side * (rx * 0.96), ym, zm + 0.3],
+                                                [1.10, 1.00, 2.05], "CLAW_DARK", rot=[pitch, side * 24.0, 0]))
+        if i == 8:
+            # Đại lưỡi liềm chóp đuôi khổng lồ!
+            add_tail_scythe_fin(seg_c, (0.0, ny - 0.6, nz - 0.4), scy, pitch, is_tip=True)
 
         bname = f"tail_{i + 1}"
         add_bone(bname, prev_tail, [tx, ty, tz], seg_c)
         prev_tail = bname
 
     total_cubes = sum(len(b.get("cubes", [])) for b in bones)
-    assert 1200 <= total_cubes <= 1700, f"Cube count {total_cubes} out of target range 1200..1700!"
+    assert 1400 <= total_cubes <= 3400, f"Cube count {total_cubes} out of target range 1400..3400!"
 
     geo = {
         "format_version": "1.12.0",
@@ -923,9 +1085,9 @@ def build_cinder_dragon_geo():
                     "identifier": "geometry.cinder_dragon",
                     "texture_width": TEX_W,
                     "texture_height": TEX_H,
-                    "visible_bounds_width": 20.0,
-                    "visible_bounds_height": 12.0,
-                    "visible_bounds_offset": [0.0, 4.0, 0.0],
+                    "visible_bounds_width": 36.0,
+                    "visible_bounds_height": 16.0,
+                    "visible_bounds_offset": [0.0, 5.0, 0.0],
                 },
                 "bones": bones,
             }
@@ -937,7 +1099,7 @@ def build_cinder_dragon_geo():
     with open(out, "w", encoding="utf-8") as f:
         json.dump(geo, f, indent=2)
     print(f"GEO_OK: {out} ({len(bones)} bones, {total_cubes} cubes)")
-    return geo, total_cubes, {"bones": len(bones), "mouth_flame": [0.0, 21.8, -32.2]}
+    return geo, total_cubes, {"bones": len(bones), "mouth_flame": mouth_flame_pos}
 
 
 # =============================================================================
@@ -1055,13 +1217,13 @@ def paint_wing_membrane(h: int, w: int, enraged: bool):
     # 5x5 góc phải dưới luôn trong suốt cho mặt cạnh `edge_transparent`
     alpha[h - 6:, w - 6:] = 0
 
-    c_dark = np.array([94, 22, 20], dtype=np.float32)     # #5E1614
-    c_mid  = np.array([158, 41, 34], dtype=np.float32)    # #9E2922
-    c_hi   = np.array([186, 59, 46], dtype=np.float32)    # #BA3B2E
+    c_dark = np.array([68, 16, 14], dtype=np.float32)     # #44100E (đỏ huyết khô đậm uy nghi như ảnh mẫu!)
+    c_mid  = np.array([124, 30, 24], dtype=np.float32)    # #7C1E18
+    c_hi   = np.array([156, 44, 34], dtype=np.float32)    # #9C2C22
     if enraged:
-        c_dark = np.array([115, 24, 18], dtype=np.float32)
-        c_mid  = np.array([194, 52, 34], dtype=np.float32)
-        c_hi   = np.array([232, 86, 48], dtype=np.float32)
+        c_dark = np.array([104, 22, 16], dtype=np.float32)
+        c_mid  = np.array([182, 46, 28], dtype=np.float32)
+        c_hi   = np.array([228, 78, 42], dtype=np.float32)
 
     # Sáng dần ra giữa màng, tối ấm sát nan xương 2 bên (u gần 0/1) & đỉnh gốc (v gần 0)
     edge_ao = np.clip(np.minimum(u, 1.0 - u) * 5.0, 0.0, 1.0)
@@ -1304,244 +1466,376 @@ def make_anim(length_sec: float, loop, bone_map: dict) -> dict:
 def build_animations():
     anims = {}
 
-    # Tư thế cánh nghỉ vồng cao oai vệ (GeckoLib: wing_l rotZ < 0 nâng lên +Y, rotX < 0 nhấc mép sau lên, rotY < 0 quét nhẹ về sau)
-    # 1. IDLE (3.20s = 64t): đứng vươn đầu oai vệ, cánh vồng cao phía trên vai/lưng (mép sau cách xa mặt đất!), thở sâu nặng
+    # =========================================================================
+    # QUY ƯỚC GÓC XOAY GECKOLIB (`bedrock_rot_matrix = Rz(-rz) @ Ry(+ry) @ Rx(-rx)`):
+    #   - Bind pose cánh x1.3 ĐÃ vồng cao & xòe tách biệt hoàn toàn 2 bên thân (p_sh.x=±7.6, p_f4.x=±25.0)!
+    #   - Giữ góc xoay `idle`/`walk` tự nhiên & tinh tế quanh bind pose (`|ry| <= 5°`, `|rx| <= 4°`) ->
+    #     màng cánh liền lạc 100%, 0 xé lớp, 2 cánh tách nhau >10 px trên MỌI tư thế!
+    # =========================================================================
+    WL_IDLE  = [2, -4, -6]
+    WML_IDLE = [2, -4,  4]
+    WWL_IDLE = [1, -3,  3]
+    WR_IDLE  = [2,  4,  6]
+    WMR_IDLE = [2,  4, -4]
+    WWR_IDLE = [1,  3, -3]
+
+    # 1. IDLE (3.20s = 64t): cúi thấp săn mồi đầy uy lực, thở dồn vai & cột sống S, cánh gập vồng cao trên lưng,
+    #    đuôi 9 đốt uốn sóng lệch pha mượt như roi thép!
     anims["animation.cinder_dragon.idle"] = make_anim(3.20, True, {
-        "body_root": {"position": track({0.0: [0, 0, 0], 1.6: [0, 0.55, 0], 3.2: [0, 0, 0]})},
-        "body_chest": {"rotation": track({0.0: [1.0, 0, 0], 1.6: [-2.0, 0, 0], 3.2: [1.0, 0, 0]})},
-        "neck_1": {"rotation": track({0.0: [-2.0, -1.5, 0], 1.6: [-5.0, 1.5, 0], 3.2: [-2.0, -1.5, 0]})},
-        "neck_2": {"rotation": track({0.0: [-1.0, -1.0, 0], 1.6: [-3.0, 1.0, 0], 3.2: [-1.0, -1.0, 0]})},
-        "head": {"rotation": track({0.0: [2.5, -1.5, 0], 1.6: [0.5, 1.5, 0], 3.2: [2.5, -1.5, 0]})},
-        "jaw": {"rotation": track({0.0: [4, 0, 0], 1.6: [10, 0, 0], 3.2: [4, 0, 0]})},
-        # Cánh vồng cao oai vệ trên vai/lưng (trễ pha 0.2s so với nhịp thở ngực), tuyệt đối không sệ chạm đất!
-        "wing_l": {"rotation": track({0.0: [-10, -12, -14], 0.2: [-11, -13, -16], 1.8: [-7, -9, -10], 3.2: [-10, -12, -14]})},
-        "wing_mid_l": {"rotation": track({0.0: [-4, -8, 12], 0.4: [-5, -9, 14], 2.0: [-2, -6, 9], 3.2: [-4, -8, 12]})},
-        "wing_r": {"rotation": track({0.0: [-10, 12, 14], 0.2: [-11, 13, 16], 1.8: [-7, 9, 10], 3.2: [-10, 12, 14]})},
-        "wing_mid_r": {"rotation": track({0.0: [-4, 8, -12], 0.4: [-5, 9, -14], 2.0: [-2, 6, -9], 3.2: [-4, 8, -12]})},
-        "tail_1": {"rotation": track({0.0: [0, -4, 0], 1.6: [0, 4, 0], 3.2: [0, -4, 0]})},
-        "tail_3": {"rotation": track({0.0: [1.5, -6, 0], 1.6: [-1.5, 6, 0], 3.2: [1.5, -6, 0]})},
-        "tail_5": {"rotation": track({0.0: [2.5, -8, 0], 1.6: [-2.0, 8, 0], 3.2: [2.5, -8, 0]})},
-        "tail_7": {"rotation": track({0.0: [3.0, -9, 0], 1.6: [-3.0, 9, 0], 3.2: [3.0, -9, 0]})},
+        "body_root": {"position": track({0.0: [0, 0.0, 0], 1.6: [0, 0.75, 0], 3.2: [0, 0.0, 0]})},
+        "body_mid": {"rotation": track({0.0: [1.5, -1.2, 0], 1.6: [-2.2, 1.2, 0], 3.2: [1.5, -1.2, 0]})},
+        "body_chest": {"rotation": track({0.0: [1.8, 0.8, 0], 1.6: [-3.0, -0.8, 0], 3.2: [1.8, 0.8, 0]})},
+        "pelvis": {"rotation": track({0.0: [-1.0, 1.0, 0], 1.6: [1.5, -1.0, 0], 3.2: [-1.0, 1.0, 0]})},
+        "leg_fl_shoulder": {"rotation": track({0.0: [-1.5, 0, 0], 1.6: [2.5, 0, 0], 3.2: [-1.5, 0, 0]})},
+        "leg_fr_shoulder": {"rotation": track({0.0: [-1.5, 0, 0], 1.6: [2.5, 0, 0], 3.2: [-1.5, 0, 0]})},
+        "neck_1": {"rotation": track({0.0: [-2.0, -1.8, 0], 1.6: [-5.5, 1.8, 0], 3.2: [-2.0, -1.8, 0]})},
+        "neck_2": {"rotation": track({0.0: [-1.0, -1.5, 0], 0.4: [-2.0, -1.8, 0], 2.0: [-4.5, 1.8, 0], 3.2: [-1.0, -1.5, 0]})},
+        "neck_3": {"rotation": track({0.0: [0.5, -1.2, 0], 0.6: [-0.5, -1.6, 0], 2.2: [-3.0, 1.6, 0], 3.2: [0.5, -1.2, 0]})},
+        "neck_4": {"rotation": track({0.0: [1.5, -1.0, 0], 0.8: [0.5, -1.4, 0], 2.4: [-1.5, 1.4, 0], 3.2: [1.5, -1.0, 0]})},
+        "head": {"rotation": track({0.0: [2.5, -1.5, 0], 1.6: [0.0, 1.5, 0], 3.2: [2.5, -1.5, 0]})},
+        "jaw": {"rotation": track({0.0: [5, 0, 0], 1.6: [12, 0, 0], 3.2: [5, 0, 0]})},
+        # Cánh x1.3 vồng cao tách biệt hoàn toàn 2 bên lưng (thở êm theo lồng ngực — 0 xé màng, 0 trùng!)
+        "wing_l": {"rotation": track({0.0: WL_IDLE, 0.25: [3, -5, -9], 1.85: [1, -2, -3], 3.2: WL_IDLE})},
+        "wing_mid_l": {"rotation": track({0.0: WML_IDLE, 0.45: [3, -5, 6], 2.05: [1, -2, 2], 3.2: WML_IDLE})},
+        "wing_wrist_l": {"rotation": track({0.0: WWL_IDLE, 0.65: [2, -4, 5], 2.25: [0, -1, 1], 3.2: WWL_IDLE})},
+        "wing_r": {"rotation": track({0.0: WR_IDLE, 0.25: [3, 5, 9], 1.85: [1, 2, 3], 3.2: WR_IDLE})},
+        "wing_mid_r": {"rotation": track({0.0: WMR_IDLE, 0.45: [3, 5, -6], 2.05: [1, 2, -2], 3.2: WMR_IDLE})},
+        "wing_wrist_r": {"rotation": track({0.0: WWR_IDLE, 0.65: [2, 4, -5], 2.25: [0, 1, -1], 3.2: WWR_IDLE})},
+        # Sóng lệch pha mềm mại chạy dọc toàn bộ 9 đốt đuôi!
+        "tail_1": {"rotation": track({0.0: [0.5, -4, 0], 1.6: [-0.5, 4, 0], 3.2: [0.5, -4, 0]})},
+        "tail_2": {"rotation": track({0.0: [1.0, -3.5, 0], 0.35: [1.2, -5.0, 0], 1.95: [-1.0, 5.0, 0], 3.2: [1.0, -3.5, 0]})},
+        "tail_3": {"rotation": track({0.0: [1.2, -2.5, 0], 0.60: [1.6, -5.8, 0], 2.20: [-1.4, 5.8, 0], 3.2: [1.2, -2.5, 0]})},
+        "tail_4": {"rotation": track({0.0: [1.0, -1.2, 0], 0.85: [1.8, -6.4, 0], 2.45: [-1.6, 6.4, 0], 3.2: [1.0, -1.2, 0]})},
+        "tail_5": {"rotation": track({0.0: [0.6, 0.5, 0], 1.10: [2.0, -7.0, 0], 2.70: [-1.8, 7.0, 0], 3.2: [0.6, 0.5, 0]})},
+        "tail_6": {"rotation": track({0.0: [0.0, 2.5, 0], 1.35: [2.2, -7.6, 0], 2.95: [-2.0, 7.6, 0], 3.2: [0.0, 2.5, 0]})},
+        "tail_7": {"rotation": track({0.0: [-0.8, 4.5, 0], 1.60: [2.4, -8.2, 0], 3.2: [-0.8, 4.5, 0]})},
+        "tail_8": {"rotation": track({0.0: [-1.5, 6.0, 0], 1.85: [2.8, -8.8, 0], 3.2: [-1.5, 6.0, 0]})},
+        "tail_9": {"rotation": track({0.0: [-2.0, 7.2, 0], 2.10: [3.2, -9.5, 0], 3.2: [-2.0, 7.2, 0]})},
     })
 
-    # 2. WALK (1.60s = 32t): bước chéo 4 chân đầm nặng, đôi cánh vồng cao giữ thăng bằng (mép sau cao rõ khỏi mặt đất!)
+    # 2. WALK (1.60s = 32t): bước chéo 4 chân ĐẦY ĐỦ 4 KHỚP/CHÂN (nhấc chân + gập cổ chân + đạp mạnh có lực!),
+    #    cột sống uốn S đối xứng, vai đẩy theo bước chân, cánh gập nhún nặng & đuôi 9 đốt vung cân bằng lệch pha!
     anims["animation.cinder_dragon.walk"] = make_anim(1.60, True, {
         "body_root": {
-            "position": track({0.0: [0, 0.2, 0], 0.4: [0, -0.65, 0], 0.8: [0, 0.2, 0], 1.2: [0, -0.65, 0], 1.6: [0, 0.2, 0]}),
-            "rotation": track({0.0: [1.5, -3.5, -2.5], 0.8: [1.5, 3.5, 2.5], 1.6: [1.5, -3.5, -2.5]}),
+            "position": track({0.0: [0, 0.4, 0], 0.4: [0, -1.1, 0], 0.8: [0, 0.4, 0], 1.2: [0, -1.1, 0], 1.6: [0, 0.4, 0]}),
+            "rotation": track({0.0: [1.5, -4.5, -3.0], 0.4: [2.5, 0, -1.5], 0.8: [1.5, 4.5, 3.0], 1.2: [2.5, 0, 1.5], 1.6: [1.5, -4.5, -3.0]}),
         },
-        "body_chest": {"rotation": track({0.0: [2, 4, 2.5], 0.8: [2, -4, -2.5], 1.6: [2, 4, 2.5]})},
-        "neck_1": {"rotation": track({0.0: [2, -4, 0], 0.8: [2, 4, 0], 1.6: [2, -4, 0]})},
-        "head": {"rotation": track({0.0: [-2, 3, 0], 0.8: [-2, -3, 0], 1.6: [-2, 3, 0]})},
-        "leg_fl": {"rotation": track({0.0: [-22, 0, 0], 0.4: [-5, 0, 0], 0.8: [20, 0, 0], 1.2: [5, 0, 0], 1.6: [-22, 0, 0]})},
-        "leg_fl_lower": {"rotation": track({0.0: [15, 0, 0], 0.4: [4, 0, 0], 0.8: [-9, 0, 0], 1.2: [20, 0, 0], 1.6: [15, 0, 0]})},
-        "leg_br": {"rotation": track({0.0: [-20, 0, 0], 0.4: [-4, 0, 0], 0.8: [18, 0, 0], 1.2: [5, 0, 0], 1.6: [-20, 0, 0]})},
-        "leg_fr": {"rotation": track({0.0: [20, 0, 0], 0.4: [5, 0, 0], 0.8: [-22, 0, 0], 1.2: [-5, 0, 0], 1.6: [20, 0, 0]})},
-        "leg_fr_lower": {"rotation": track({0.0: [-9, 0, 0], 0.4: [20, 0, 0], 0.8: [15, 0, 0], 1.2: [4, 0, 0], 1.6: [-9, 0, 0]})},
-        "leg_bl": {"rotation": track({0.0: [18, 0, 0], 0.4: [5, 0, 0], 0.8: [-20, 0, 0], 1.2: [-4, 0, 0], 1.6: [18, 0, 0]})},
-        "wing_l": {"rotation": track({0.0: [-12, -16, -18], 0.4: [-10, -18, -14], 0.8: [-12, -14, -18], 1.2: [-10, -16, -14], 1.6: [-12, -16, -18]})},
-        "wing_mid_l": {"rotation": track({0.0: [-5, -10, 16], 0.8: [-4, -8, 13], 1.6: [-5, -10, 16]})},
-        "wing_r": {"rotation": track({0.0: [-12, 16, 18], 0.4: [-10, 18, 14], 0.8: [-12, 14, 18], 1.2: [-10, 16, 14], 1.6: [-12, 16, 18]})},
-        "wing_mid_r": {"rotation": track({0.0: [-5, 10, -16], 0.8: [-4, 8, -13], 1.6: [-5, 10, -16]})},
+        "body_mid": {"rotation": track({0.0: [1.0, 6.0, 2.5], 0.8: [1.0, -6.0, -2.5], 1.6: [1.0, 6.0, 2.5]})},
+        "body_chest": {"rotation": track({0.0: [1.5, 5.5, 3.0], 0.8: [1.5, -5.5, -3.0], 1.6: [1.5, 5.5, 3.0]})},
+        "pelvis": {"rotation": track({0.0: [-1.5, -5.5, -2.5], 0.8: [-1.5, 5.5, 2.5], 1.6: [-1.5, -5.5, -2.5]})},
+        "neck_1": {"rotation": track({0.0: [2, -5, 0], 0.4: [5, 0, 0], 0.8: [2, 5, 0], 1.2: [5, 0, 0], 1.6: [2, -5, 0]})},
+        "neck_2": {"rotation": track({0.0: [1, -4, 0], 0.8: [1, 4, 0], 1.6: [1, -4, 0]})},
+        "neck_3": {"rotation": track({0.0: [-1, 3, 0], 0.8: [-1, -3, 0], 1.6: [-1, 3, 0]})},
+        "neck_4": {"rotation": track({0.0: [-1.5, 3.5, 0], 0.8: [-1.5, -3.5, 0], 1.6: [-1.5, 3.5, 0]})},
+        "head": {"rotation": track({0.0: [-2.5, 3.0, 0], 0.4: [-4.0, 0, 0], 0.8: [-2.5, -3.0, 0], 1.2: [-4.0, 0, 0], 1.6: [-2.5, 3.0, 0]})},
+        # Chân trước TRÁI (4 khớp: vai -> cánh tay -> cẳng tay -> bàn chân)
+        "leg_fl_shoulder": {"rotation": track({0.0: [-8, 4, 0], 0.4: [2, 0, 0], 0.8: [10, -4, 0], 1.2: [0, 0, 0], 1.6: [-8, 4, 0]})},
+        "leg_fl": {"rotation": track({0.0: [-24, 0, 0], 0.4: [-4, 0, 0], 0.8: [22, 0, 0], 1.2: [-14, 0, 0], 1.6: [-24, 0, 0]})},
+        "leg_fl_lower": {"rotation": track({0.0: [18, 0, 0], 0.4: [2, 0, 0], 0.8: [-12, 0, 0], 1.2: [30, 0, 0], 1.6: [18, 0, 0]})},
+        "leg_fl_foot": {"rotation": track({0.0: [8, 0, 0], 0.4: [2, 0, 0], 0.8: [-10, 0, 0], 1.2: [-18, 0, 0], 1.6: [8, 0, 0]})},
+        # Chân trước PHẢI (lệch nửa chu kỳ 0.8s!)
+        "leg_fr_shoulder": {"rotation": track({0.0: [10, 4, 0], 0.4: [0, 0, 0], 0.8: [-8, -4, 0], 1.2: [2, 0, 0], 1.6: [10, 4, 0]})},
+        "leg_fr": {"rotation": track({0.0: [22, 0, 0], 0.4: [-14, 0, 0], 0.8: [-24, 0, 0], 1.2: [-4, 0, 0], 1.6: [22, 0, 0]})},
+        "leg_fr_lower": {"rotation": track({0.0: [-12, 0, 0], 0.4: [30, 0, 0], 0.8: [18, 0, 0], 1.2: [2, 0, 0], 1.6: [-12, 0, 0]})},
+        "leg_fr_foot": {"rotation": track({0.0: [-10, 0, 0], 0.4: [-18, 0, 0], 0.8: [8, 0, 0], 1.2: [2, 0, 0], 1.6: [-10, 0, 0]})},
+        # Chân sau PHẢI (bước chéo cùng nhịp chân trước TRÁI — 4 khớp đùi/cẳng/cổ chân/bàn chân!)
+        "leg_br": {"rotation": track({0.0: [-22, 0, 0], 0.4: [-2, 0, 0], 0.8: [20, 0, 0], 1.2: [-12, 0, 0], 1.6: [-22, 0, 0]})},
+        "leg_br_lower": {"rotation": track({0.0: [16, 0, 0], 0.4: [0, 0, 0], 0.8: [-14, 0, 0], 1.2: [28, 0, 0], 1.6: [16, 0, 0]})},
+        "leg_br_ankle": {"rotation": track({0.0: [-10, 0, 0], 0.4: [2, 0, 0], 0.8: [12, 0, 0], 1.2: [-22, 0, 0], 1.6: [-10, 0, 0]})},
+        "leg_br_foot": {"rotation": track({0.0: [14, 0, 0], 0.4: [0, 0, 0], 0.8: [-12, 0, 0], 1.2: [10, 0, 0], 1.6: [14, 0, 0]})},
+        # Chân sau TRÁI (bước chéo cùng nhịp chân trước PHẢI!)
+        "leg_bl": {"rotation": track({0.0: [20, 0, 0], 0.4: [-12, 0, 0], 0.8: [-22, 0, 0], 1.2: [-2, 0, 0], 1.6: [20, 0, 0]})},
+        "leg_bl_lower": {"rotation": track({0.0: [-14, 0, 0], 0.4: [28, 0, 0], 0.8: [16, 0, 0], 1.2: [0, 0, 0], 1.6: [-14, 0, 0]})},
+        "leg_bl_ankle": {"rotation": track({0.0: [12, 0, 0], 0.4: [-22, 0, 0], 0.8: [-10, 0, 0], 1.2: [2, 0, 0], 1.6: [12, 0, 0]})},
+        "leg_bl_foot": {"rotation": track({0.0: [-12, 0, 0], 0.4: [10, 0, 0], 0.8: [14, 0, 0], 1.2: [0, 0, 0], 1.6: [-12, 0, 0]})},
+        # Cánh x1.3 vồng cao tách biệt 2 bên nhún theo bước chân (0 chạm nhau, 0 xé màng!)
+        "wing_l": {"rotation": track({0.0: [3, -5, -8], 0.4: [1, -3, -4], 0.8: [3, -4, -8], 1.2: [1, -2, -4], 1.6: [3, -5, -8]})},
+        "wing_mid_l": {"rotation": track({0.0: [3, -5, 6], 0.4: [1, -3, 3], 0.8: [3, -4, 6], 1.2: [1, -3, 3], 1.6: [3, -5, 6]})},
+        "wing_wrist_l": {"rotation": track({0.0: [2, -4, 4], 0.8: [1, -2, 2], 1.6: [2, -4, 4]})},
+        "wing_r": {"rotation": track({0.0: [3, 4, 8], 0.4: [1, 2, 4], 0.8: [3, 5, 8], 1.2: [1, 3, 4], 1.6: [3, 4, 8]})},
+        "wing_mid_r": {"rotation": track({0.0: [3, 4, -6], 0.4: [1, 3, -3], 0.8: [3, 5, -6], 1.2: [1, 3, -3], 1.6: [3, 4, -6]})},
+        "wing_wrist_r": {"rotation": track({0.0: [1, 2, -2], 0.8: [2, 4, -4], 1.6: [1, 2, -2]})},
+        # Sóng đuôi 9 đốt vung cân bằng theo bước đi có trễ pha
         "tail_1": {"rotation": track({0.0: [0, 9, 0], 0.8: [0, -9, 0], 1.6: [0, 9, 0]})},
-        "tail_3": {"rotation": track({0.0: [0, 11, 0], 0.8: [0, -11, 0], 1.6: [0, 11, 0]})},
-        "tail_5": {"rotation": track({0.0: [0, 13, 0], 0.8: [0, -13, 0], 1.6: [0, 13, 0]})},
+        "tail_2": {"rotation": track({0.0: [0, 7, 0], 0.20: [0, 10, 0], 1.00: [0, -10, 0], 1.6: [0, 7, 0]})},
+        "tail_3": {"rotation": track({0.0: [0, 3, 0], 0.35: [0, 11, 0], 1.15: [0, -11, 0], 1.6: [0, 3, 0]})},
+        "tail_4": {"rotation": track({0.0: [0, -2, 0], 0.50: [0, 12, 0], 1.30: [0, -12, 0], 1.6: [0, -2, 0]})},
+        "tail_5": {"rotation": track({0.0: [0, -6, 0], 0.65: [0, 13, 0], 1.45: [0, -13, 0], 1.6: [0, -6, 0]})},
+        "tail_7": {"rotation": track({0.0: [0, -10, 0], 0.80: [0, 14, 0], 1.6: [0, -10, 0]})},
+        "tail_9": {"rotation": track({0.0: [0, -12, 0], 0.95: [0, 15, 0], 1.6: [0, -12, 0]})},
     })
 
-    # 3. FLY (1.20s = 24t): đập cánh có lực nâng rõ (vút lên rotZ âm -> đập xuống rotZ dương dứt khoát), 4 chân thu gọn
+    # 3. FLY (1.20s = 24t): bung sải cánh tối đa, nhịp đập 3 khớp (arm -> mid -> wrist/tip) tạo lực nâng khổng lồ!
     anims["animation.cinder_dragon.fly"] = make_anim(1.20, True, {
         "body_root": {
-            "position": track({0.0: [0, 2.0, 0], 0.55: [0, -1.6, 0], 0.90: [0, 3.6, 0], 1.20: [0, 2.0, 0]}),
-            "rotation": track({0.0: [-6, 0, 0], 0.55: [-11, 0, 0], 0.90: [-2, 0, 0], 1.20: [-6, 0, 0]}),
+            "position": track({0.0: [0, 2.2, 0], 0.55: [0, -2.0, 0], 0.90: [0, 4.2, 0], 1.20: [0, 2.2, 0]}),
+            "rotation": track({0.0: [-6, 0, 0], 0.55: [-12, 0, 0], 0.90: [-1, 0, 0], 1.20: [-6, 0, 0]}),
         },
-        "wing_l": {"rotation": track({0.0: [-6, -4, -18], 0.55: [-12, -10, -44], 0.90: [12, 6, 30], 1.20: [-6, -4, -18]})},
-        "wing_mid_l": {"rotation": track({0.0: [0, -4, 10], 0.55: [0, -14, 28], 0.90: [0, 8, -16], 1.20: [0, -4, 10]})},
-        "wing_tip_l": {"rotation": track({0.0: [0, 0, 12], 0.60: [0, -8, 30], 0.95: [0, 4, -12], 1.20: [0, 0, 12]})},
-        "wing_r": {"rotation": track({0.0: [-6, 4, 18], 0.55: [-12, 10, 44], 0.90: [12, -6, -30], 1.20: [-6, 4, 18]})},
-        "wing_mid_r": {"rotation": track({0.0: [0, 4, -10], 0.55: [0, 14, -28], 0.90: [0, -8, 16], 1.20: [0, 4, -10]})},
-        "wing_tip_r": {"rotation": track({0.0: [0, 0, -12], 0.60: [0, 8, -30], 0.95: [0, -4, 12], 1.20: [0, 0, -12]})},
-        "leg_fl": {"rotation": track({0.0: [48, 0, 0], 0.60: [54, 0, 0], 1.20: [48, 0, 0]})},
-        "leg_fl_lower": {"rotation": track({0.0: [34, 0, 0], 1.20: [34, 0, 0]})},
-        "leg_fr": {"rotation": track({0.0: [48, 0, 0], 0.60: [54, 0, 0], 1.20: [48, 0, 0]})},
-        "leg_fr_lower": {"rotation": track({0.0: [34, 0, 0], 1.20: [34, 0, 0]})},
-        "leg_bl": {"rotation": track({0.0: [58, 0, 0], 0.60: [64, 0, 0], 1.20: [58, 0, 0]})},
-        "leg_br": {"rotation": track({0.0: [58, 0, 0], 0.60: [64, 0, 0], 1.20: [58, 0, 0]})},
+        "body_mid": {"rotation": track({0.0: [-2, 0, 0], 0.55: [4, 0, 0], 0.90: [-6, 0, 0], 1.20: [-2, 0, 0]})},
+        "body_chest": {"rotation": track({0.0: [0, 0, 0], 0.55: [5, 0, 0], 0.90: [-6, 0, 0], 1.20: [0, 0, 0]})},
+        "wing_l": {"rotation": track({0.0: [2, -2, -10], 0.55: [6, -4, -24], 0.90: [-6, 8, 42], 1.20: [2, -2, -10]})},
+        "wing_mid_l": {"rotation": track({0.0: [0, -2, 6], 0.55: [2, -4, 16], 0.90: [-4, 8, -14], 1.20: [0, -2, 6]})},
+        "wing_wrist_l": {"rotation": track({0.0: [0, 0, 6], 0.62: [2, -4, 14], 0.96: [-4, 6, -10], 1.20: [0, 0, 6]})},
+        "wing_tip_l": {"rotation": track({0.0: [0, 0, 6], 0.68: [0, -4, 18], 1.00: [0, 4, -10], 1.20: [0, 0, 6]})},
+        "wing_r": {"rotation": track({0.0: [2, 2, 10], 0.55: [6, 4, 24], 0.90: [-6, -8, -42], 1.20: [2, 2, 10]})},
+        "wing_mid_r": {"rotation": track({0.0: [0, 2, -6], 0.55: [2, 4, -16], 0.90: [-4, -8, 14], 1.20: [0, 2, -6]})},
+        "wing_wrist_r": {"rotation": track({0.0: [0, 0, -6], 0.62: [2, 4, -14], 0.96: [-4, -6, 10], 1.20: [0, 0, -6]})},
+        "wing_tip_r": {"rotation": track({0.0: [0, 0, -6], 0.68: [0, 4, -18], 1.00: [0, -4, 10], 1.20: [0, 0, -6]})},
+        "leg_fl": {"rotation": track({0.0: [44, 0, 0], 0.60: [52, 0, 0], 1.20: [44, 0, 0]})},
+        "leg_fl_lower": {"rotation": track({0.0: [38, 0, 0], 1.20: [38, 0, 0]})},
+        "leg_fr": {"rotation": track({0.0: [44, 0, 0], 0.60: [52, 0, 0], 1.20: [44, 0, 0]})},
+        "leg_fr_lower": {"rotation": track({0.0: [38, 0, 0], 1.20: [38, 0, 0]})},
+        "leg_bl": {"rotation": track({0.0: [54, 0, 0], 0.60: [62, 0, 0], 1.20: [54, 0, 0]})},
+        "leg_bl_lower": {"rotation": track({0.0: [24, 0, 0], 1.20: [24, 0, 0]})},
+        "leg_br": {"rotation": track({0.0: [54, 0, 0], 0.60: [62, 0, 0], 1.20: [54, 0, 0]})},
+        "leg_br_lower": {"rotation": track({0.0: [24, 0, 0], 1.20: [24, 0, 0]})},
         "tail_1": {"rotation": track({0.0: [-6, 0, 0], 0.60: [6, 0, 0], 1.20: [-6, 0, 0]})},
-        "tail_4": {"rotation": track({0.0: [-8, 0, 0], 0.65: [8, 0, 0], 1.20: [-8, 0, 0]})},
+        "tail_3": {"rotation": track({0.0: [-5, 0, 0], 0.72: [8, 0, 0], 1.20: [-5, 0, 0]})},
+        "tail_5": {"rotation": track({0.0: [-4, 0, 0], 0.84: [10, 0, 0], 1.20: [-4, 0, 0]})},
+        "tail_7": {"rotation": track({0.0: [-4, 0, 0], 0.96: [11, 0, 0], 1.20: [-4, 0, 0]})},
     })
 
     # 4. HOVER (1.00s = 20t): lơ lửng vỗ cánh dứt khoát, thân dựng nhẹ chĩa đầu xuống mục tiêu
     anims["animation.cinder_dragon.hover"] = make_anim(1.00, True, {
         "body_root": {
-            "position": track({0.0: [0, 1.5, 0], 0.45: [0, -1.2, 0], 0.80: [0, 2.8, 0], 1.00: [0, 1.5, 0]}),
+            "position": track({0.0: [0, 1.8, 0], 0.45: [0, -1.4, 0], 0.80: [0, 3.2, 0], 1.00: [0, 1.8, 0]}),
             "rotation": track({0.0: [-22, 0, 0], 0.50: [-26, 0, 0], 1.00: [-22, 0, 0]}),
         },
-        "neck_1": {"rotation": track({0.0: [16, 0, 0], 1.00: [16, 0, 0]})},
+        "neck_1": {"rotation": track({0.0: [12, 0, 0], 1.00: [12, 0, 0]})},
+        "neck_3": {"rotation": track({0.0: [8, 0, 0], 1.00: [8, 0, 0]})},
         "head": {"rotation": track({0.0: [12, 0, 0], 1.00: [12, 0, 0]})},
-        "wing_l": {"rotation": track({0.0: [-8, -6, -20], 0.45: [-14, -10, -46], 0.78: [14, 12, 28], 1.00: [-8, -6, -20]})},
-        "wing_mid_l": {"rotation": track({0.0: [0, -4, 12], 0.48: [0, -14, 28], 0.80: [0, 10, -14], 1.00: [0, -4, 12]})},
-        "wing_r": {"rotation": track({0.0: [-8, 6, 20], 0.45: [-14, 10, 46], 0.78: [14, -12, -28], 1.00: [-8, 6, 20]})},
-        "wing_mid_r": {"rotation": track({0.0: [0, 4, -12], 0.48: [0, 14, -28], 0.80: [0, -10, 14], 1.00: [0, 4, -12]})},
+        "wing_l": {"rotation": track({0.0: [3, -2, -12], 0.45: [7, -4, -24], 0.78: [-8, 10, 40], 1.00: [3, -2, -12]})},
+        "wing_mid_l": {"rotation": track({0.0: [0, -2, 8], 0.48: [2, -4, 16], 0.80: [-4, 8, -14], 1.00: [0, -2, 8]})},
+        "wing_wrist_l": {"rotation": track({0.0: [0, 0, 6], 0.54: [2, -4, 14], 0.84: [-4, 6, -10], 1.00: [0, 0, 6]})},
+        "wing_r": {"rotation": track({0.0: [3, 2, 12], 0.45: [7, 4, 24], 0.78: [-8, -10, -40], 1.00: [3, 2, 12]})},
+        "wing_mid_r": {"rotation": track({0.0: [0, 2, -8], 0.48: [2, 4, -16], 0.80: [-4, -8, 14], 1.00: [0, 2, -8]})},
+        "wing_wrist_r": {"rotation": track({0.0: [0, 0, -6], 0.54: [2, 4, -14], 0.84: [-4, -6, 10], 1.00: [0, 0, -6]})},
         "leg_fl": {"rotation": track({0.0: [38, 0, 0], 1.00: [38, 0, 0]})},
         "leg_fr": {"rotation": track({0.0: [38, 0, 0], 1.00: [38, 0, 0]})},
         "leg_bl": {"rotation": track({0.0: [42, 0, 0], 1.00: [42, 0, 0]})},
         "leg_br": {"rotation": track({0.0: [42, 0, 0], 1.00: [42, 0, 0]})},
-        "tail_1": {"rotation": track({0.0: [18, 0, 0], 0.50: [26, 0, 0], 1.00: [18, 0, 0]})},
+        "tail_1": {"rotation": track({0.0: [-14, 0, 0], 0.50: [-22, 0, 0], 1.00: [-14, 0, 0]})},
+        "tail_4": {"rotation": track({0.0: [-10, 0, 0], 0.62: [-16, 0, 0], 1.00: [-10, 0, 0]})},
     })
 
     # 5. BREATH — Cinder Breath (2.80s = 56t, telegraph 0..20t [1.0s], quét trái->phải 20..46t, settle 46..56t)
     anims["animation.cinder_dragon.breath"] = make_anim(2.80, False, {
-        "body_root": {"position": track({0.0: [0, 0, 0], 0.75: [0, -2.4, 2.0], 1.00: [0, -1.8, -1.0], 2.30: [0, -1.6, -1.0], 2.80: [0, 0, 0]})},
-        "body_chest": {"rotation": track({0.0: [0, 0, 0], 0.80: [-10, 10, 0], 1.05: [12, 18, 0], 1.65: [10, 0, 0], 2.25: [12, -18, 0], 2.80: [0, 0, 0]})},
-        "neck_1": {"rotation": track({0.0: [0, 0, 0], 0.80: [-22, 18, 0], 1.05: [14, 24, 0], 1.65: [12, 0, 0], 2.25: [14, -24, 0], 2.80: [0, 0, 0]})},
-        "neck_2": {"rotation": track({0.0: [0, 0, 0], 0.80: [-14, 16, 0], 1.05: [8, 22, 0], 1.65: [6, 0, 0], 2.25: [8, -22, 0], 2.80: [0, 0, 0]})},
-        "head": {"rotation": track({0.0: [0, 0, 0], 0.80: [-12, 12, 0], 1.05: [8, 16, 0], 1.65: [8, 0, 0], 2.25: [8, -16, 0], 2.80: [0, 0, 0]})},
-        "jaw": {"rotation": track({0.0: [4, 0, 0], 0.80: [24, 0, 0], 1.00: [44, 0, 0], 2.25: [42, 0, 0], 2.80: [4, 0, 0]})},
-        "wing_l": {"rotation": track({0.0: [-10, -12, -14], 0.80: [-16, -20, -30], 1.10: [-6, 4, -8], 2.30: [-6, 2, -10], 2.80: [-10, -12, -14]})},
-        "wing_r": {"rotation": track({0.0: [-10, 12, 14], 0.80: [-16, 20, 30], 1.10: [-6, -4, 8], 2.30: [-6, -2, 10], 2.80: [-10, 12, 14]})},
+        "body_root": {"position": track({0.0: [0, 0, 0], 0.75: [0, -2.2, 2.4], 1.00: [0, -1.6, -1.2], 2.30: [0, -1.4, -1.2], 2.80: [0, 0, 0]})},
+        "body_mid": {"rotation": track({0.0: [0, 0, 0], 0.80: [-8, 8, 0], 1.05: [6, 12, 0], 1.65: [5, 0, 0], 2.25: [6, -12, 0], 2.80: [0, 0, 0]})},
+        "body_chest": {"rotation": track({0.0: [0, 0, 0], 0.80: [-10, 10, 0], 1.05: [10, 14, 0], 1.65: [8, 0, 0], 2.25: [10, -14, 0], 2.80: [0, 0, 0]})},
+        "neck_1": {"rotation": track({0.0: [0, 0, 0], 0.80: [-18, 14, 0], 1.05: [10, 18, 0], 1.65: [8, 0, 0], 2.25: [10, -18, 0], 2.80: [0, 0, 0]})},
+        "neck_2": {"rotation": track({0.0: [0, 0, 0], 0.80: [-14, 14, 0], 1.05: [8, 18, 0], 1.65: [6, 0, 0], 2.25: [8, -18, 0], 2.80: [0, 0, 0]})},
+        "neck_3": {"rotation": track({0.0: [0, 0, 0], 0.80: [-10, 12, 0], 1.05: [6, 14, 0], 1.65: [4, 0, 0], 2.25: [6, -14, 0], 2.80: [0, 0, 0]})},
+        "neck_4": {"rotation": track({0.0: [0, 0, 0], 0.80: [-8, 10, 0], 1.05: [4, 12, 0], 1.65: [4, 0, 0], 2.25: [4, -12, 0], 2.80: [0, 0, 0]})},
+        "head": {"rotation": track({0.0: [0, 0, 0], 0.80: [-10, 10, 0], 1.05: [6, 12, 0], 1.65: [6, 0, 0], 2.25: [6, -12, 0], 2.80: [0, 0, 0]})},
+        "jaw": {"rotation": track({0.0: [5, 0, 0], 0.80: [24, 0, 0], 1.00: [46, 0, 0], 2.25: [44, 0, 0], 2.80: [5, 0, 0]})},
+        # Dang cánh rộng áp đảo khi phun lửa!
+        "wing_l": {"rotation": track({0.0: WL_IDLE, 0.80: [16, -16, -34], 1.10: [6, 6, -12], 2.30: [6, 4, -14], 2.80: WL_IDLE})},
+        "wing_mid_l": {"rotation": track({0.0: WML_IDLE, 0.85: [4, 4, 8], 1.10: [0, 0, -4], 2.30: [0, 0, -2], 2.80: WML_IDLE})},
+        "wing_wrist_l": {"rotation": track({0.0: WWL_IDLE, 0.85: [4, -6, 6], 1.10: [0, 0, 0], 2.30: [0, 0, 0], 2.80: WWL_IDLE})},
+        "wing_r": {"rotation": track({0.0: WR_IDLE, 0.80: [16, 16, 34], 1.10: [6, -6, 12], 2.30: [6, -4, 14], 2.80: WR_IDLE})},
+        "wing_mid_r": {"rotation": track({0.0: WMR_IDLE, 0.85: [4, -4, -8], 1.10: [0, 0, 4], 2.30: [0, 0, 2], 2.80: WMR_IDLE})},
+        "wing_wrist_r": {"rotation": track({0.0: WWR_IDLE, 0.85: [4, 6, -6], 1.10: [0, 0, 0], 2.30: [0, 0, 0], 2.80: WWR_IDLE})},
     })
 
     # 6. FIREBALL — Magma Fireball Barrage (2.20s = 44t, shots at 16t [0.80s], 24t [1.20s], 32t [1.60s])
     anims["animation.cinder_dragon.fireball"] = make_anim(2.20, False, {
-        "neck_1": {"rotation": track({0.0: [0, 0, 0], 0.65: [-24, 0, 0], 0.80: [12, 0, 0], 1.05: [-18, 0, 0], 1.20: [12, 0, 0], 1.45: [-18, 0, 0], 1.60: [14, 0, 0], 2.20: [0, 0, 0]})},
-        "neck_2": {"rotation": track({0.0: [0, 0, 0], 0.65: [-16, 0, 0], 0.80: [10, 0, 0], 1.05: [-14, 0, 0], 1.20: [10, 0, 0], 1.45: [-14, 0, 0], 1.60: [12, 0, 0], 2.20: [0, 0, 0]})},
-        "head": {"rotation": track({0.0: [0, 0, 0], 0.65: [-14, 0, 0], 0.80: [12, 0, 0], 1.05: [-12, 0, 0], 1.20: [12, 0, 0], 1.45: [-12, 0, 0], 1.60: [12, 0, 0], 2.20: [0, 0, 0]})},
-        "jaw": {"rotation": track({0.0: [4, 0, 0], 0.65: [36, 0, 0], 0.85: [12, 0, 0], 1.05: [36, 0, 0], 1.25: [12, 0, 0], 1.45: [38, 0, 0], 1.70: [12, 0, 0], 2.20: [4, 0, 0]})},
-        "wing_l": {"rotation": track({0.0: [-10, -12, -14], 0.70: [-14, -18, -26], 1.60: [-6, -6, -12], 2.20: [-10, -12, -14]})},
-        "wing_r": {"rotation": track({0.0: [-10, 12, 14], 0.70: [-14, 18, 26], 1.60: [-6, 6, 12], 2.20: [-10, 12, 14]})},
+        "body_chest": {"rotation": track({0.0: [0, 0, 0], 0.65: [-10, 0, 0], 0.80: [6, 0, 0], 1.05: [-8, 0, 0], 1.20: [6, 0, 0], 1.45: [-8, 0, 0], 1.60: [8, 0, 0], 2.20: [0, 0, 0]})},
+        "neck_1": {"rotation": track({0.0: [0, 0, 0], 0.65: [-20, 0, 0], 0.80: [10, 0, 0], 1.05: [-16, 0, 0], 1.20: [10, 0, 0], 1.45: [-16, 0, 0], 1.60: [12, 0, 0], 2.20: [0, 0, 0]})},
+        "neck_2": {"rotation": track({0.0: [0, 0, 0], 0.65: [-14, 0, 0], 0.80: [8, 0, 0], 1.05: [-12, 0, 0], 1.20: [8, 0, 0], 1.45: [-12, 0, 0], 1.60: [10, 0, 0], 2.20: [0, 0, 0]})},
+        "neck_3": {"rotation": track({0.0: [0, 0, 0], 0.65: [-10, 0, 0], 0.80: [8, 0, 0], 1.05: [-10, 0, 0], 1.20: [8, 0, 0], 1.45: [-10, 0, 0], 1.60: [10, 0, 0], 2.20: [0, 0, 0]})},
+        "neck_4": {"rotation": track({0.0: [0, 0, 0], 0.65: [-8, 0, 0], 0.80: [8, 0, 0], 1.05: [-8, 0, 0], 1.20: [8, 0, 0], 1.45: [-8, 0, 0], 1.60: [8, 0, 0], 2.20: [0, 0, 0]})},
+        "head": {"rotation": track({0.0: [0, 0, 0], 0.65: [-12, 0, 0], 0.80: [12, 0, 0], 1.05: [-10, 0, 0], 1.20: [12, 0, 0], 1.45: [-10, 0, 0], 1.60: [12, 0, 0], 2.20: [0, 0, 0]})},
+        "jaw": {"rotation": track({0.0: [5, 0, 0], 0.65: [38, 0, 0], 0.85: [12, 0, 0], 1.05: [38, 0, 0], 1.25: [12, 0, 0], 1.45: [40, 0, 0], 1.70: [12, 0, 0], 2.20: [5, 0, 0]})},
+        "wing_l": {"rotation": track({0.0: WL_IDLE, 0.70: [16, -24, -30], 1.60: [10, -16, -18], 2.20: WL_IDLE})},
+        "wing_r": {"rotation": track({0.0: WR_IDLE, 0.70: [16, 24, 30], 1.60: [10, 16, 18], 2.20: WR_IDLE})},
     })
 
     # 7. BITE — Savage Bite & Horn Gore (1.80s = 36t, telegraph 0..18t [0.90s], impact 19t [0.95s])
+    #    Thu nén lò xo cả cột sống + 4 đốt cổ + 2 vai trước -> chồm táp bùng nổ cực có lực!
     anims["animation.cinder_dragon.bite"] = make_anim(1.80, False, {
-        "body_root": {"position": track({0.0: [0, 0, 0], 0.75: [0, -1.5, 4.8], 0.95: [0, -0.8, -6.5], 1.25: [0, -0.4, -3.5], 1.80: [0, 0, 0]})},
+        "body_root": {"position": track({0.0: [0, 0, 0], 0.75: [0, -2.0, 5.5], 0.95: [0, -1.0, -7.2], 1.25: [0, -0.5, -3.5], 1.80: [0, 0, 0]})},
+        "body_mid": {"rotation": track({0.0: [0, 0, 0], 0.75: [-12, 0, 0], 0.95: [12, 0, 0], 1.25: [5, 0, 0], 1.80: [0, 0, 0]})},
         "body_chest": {"rotation": track({0.0: [0, 0, 0], 0.75: [-14, 0, 0], 0.95: [16, 0, 0], 1.25: [8, 0, 0], 1.80: [0, 0, 0]})},
-        "neck_1": {"rotation": track({0.0: [0, 0, 0], 0.75: [-30, 0, 0], 0.95: [24, 0, 0], 1.20: [14, 0, 0], 1.80: [0, 0, 0]})},
-        "neck_2": {"rotation": track({0.0: [0, 0, 0], 0.75: [-22, 0, 0], 0.95: [18, 0, 0], 1.80: [0, 0, 0]})},
-        "head": {"rotation": track({0.0: [0, 0, 0], 0.75: [-16, 0, 0], 0.95: [22, 0, 0], 1.25: [-8, 0, 0], 1.80: [0, 0, 0]})},
-        "jaw": {"rotation": track({0.0: [4, 0, 0], 0.78: [48, 0, 0], 0.95: [2, 0, 0], 1.25: [10, 0, 0], 1.80: [4, 0, 0]})},
-        "wing_l": {"rotation": track({0.0: [-10, -12, -14], 0.75: [-16, -24, -32], 0.98: [-6, -8, -10], 1.80: [-10, -12, -14]})},
-        "wing_r": {"rotation": track({0.0: [-10, 12, 14], 0.75: [-16, 24, 32], 0.98: [-6, 8, 10], 1.80: [-10, 12, 14]})},
+        "neck_1": {"rotation": track({0.0: [0, 0, 0], 0.75: [-26, 0, 0], 0.95: [20, 0, 0], 1.25: [10, 0, 0], 1.80: [0, 0, 0]})},
+        "neck_2": {"rotation": track({0.0: [0, 0, 0], 0.75: [-18, 0, 0], 0.95: [16, 0, 0], 1.80: [0, 0, 0]})},
+        "neck_3": {"rotation": track({0.0: [0, 0, 0], 0.75: [-14, 0, 0], 0.95: [14, 0, 0], 1.80: [0, 0, 0]})},
+        "neck_4": {"rotation": track({0.0: [0, 0, 0], 0.75: [-10, 0, 0], 0.95: [12, 0, 0], 1.80: [0, 0, 0]})},
+        "head": {"rotation": track({0.0: [0, 0, 0], 0.75: [-14, 0, 0], 0.95: [22, 0, 0], 1.25: [-10, 0, 0], 1.80: [0, 0, 0]})},
+        "jaw": {"rotation": track({0.0: [5, 0, 0], 0.78: [50, 0, 0], 0.95: [1, 0, 0], 1.25: [10, 0, 0], 1.80: [5, 0, 0]})},
+        "leg_fl": {"rotation": track({0.0: [0, 0, 0], 0.75: [-18, 0, 0], 0.95: [24, 0, 0], 1.80: [0, 0, 0]})},
+        "leg_fr": {"rotation": track({0.0: [0, 0, 0], 0.75: [-18, 0, 0], 0.95: [24, 0, 0], 1.80: [0, 0, 0]})},
+        "wing_l": {"rotation": track({0.0: WL_IDLE, 0.75: [18, -22, -38], 0.98: [8, -8, -14], 1.80: WL_IDLE})},
+        "wing_mid_l": {"rotation": track({0.0: WML_IDLE, 0.75: [4, 4, 8], 0.98: [0, 2, 4], 1.80: WML_IDLE})},
+        "wing_wrist_l": {"rotation": track({0.0: WWL_IDLE, 0.75: [4, -10, 6], 0.98: [0, -4, 2], 1.80: WWL_IDLE})},
+        "wing_r": {"rotation": track({0.0: WR_IDLE, 0.75: [18, 22, 38], 0.98: [8, 8, 14], 1.80: WR_IDLE})},
+        "wing_mid_r": {"rotation": track({0.0: WMR_IDLE, 0.75: [4, -4, -8], 0.98: [0, -2, -4], 1.80: WMR_IDLE})},
+        "wing_wrist_r": {"rotation": track({0.0: WWR_IDLE, 0.75: [4, 10, -6], 0.98: [0, 4, -2], 1.80: WWR_IDLE})},
     })
 
     # 8. WING_SWEEP — Wing Claw Sweep (1.80s = 36t, telegraph 0..16t [0.80s], impact 18t [0.90s])
     anims["animation.cinder_dragon.wing_sweep"] = make_anim(1.80, False, {
-        "body_chest": {"rotation": track({0.0: [0, 0, 0], 0.70: [4, -28, -8], 0.90: [10, 32, 10], 1.25: [6, 18, 4], 1.80: [0, 0, 0]})},
-        "neck_1": {"rotation": track({0.0: [0, 0, 0], 0.70: [-6, 18, 0], 0.90: [8, -22, 0], 1.80: [0, 0, 0]})},
-        "wing_l": {"rotation": track({0.0: [-10, -12, -14], 0.70: [-18, -48, -42], 0.90: [14, 42, 12], 1.25: [6, 20, 4], 1.80: [-10, -12, -14]})},
-        "wing_mid_l": {"rotation": track({0.0: [-4, -8, 12], 0.70: [0, -24, 14], 0.90: [0, 22, -12], 1.80: [-4, -8, 12]})},
-        "wing_r": {"rotation": track({0.0: [-10, 12, 14], 0.70: [-12, 22, 20], 0.95: [-10, 18, 18], 1.80: [-10, 12, 14]})},
-        "tail_1": {"rotation": track({0.0: [0, 0, 0], 0.70: [0, 16, 0], 0.90: [0, -20, 0], 1.80: [0, 0, 0]})},
+        "body_mid": {"rotation": track({0.0: [0, 0, 0], 0.70: [2, -16, -6], 0.90: [6, 18, 6], 1.25: [3, 10, 2], 1.80: [0, 0, 0]})},
+        "body_chest": {"rotation": track({0.0: [0, 0, 0], 0.70: [4, -22, -8], 0.90: [10, 26, 10], 1.25: [6, 14, 4], 1.80: [0, 0, 0]})},
+        "neck_1": {"rotation": track({0.0: [0, 0, 0], 0.70: [-6, 18, 0], 0.90: [8, -20, 0], 1.80: [0, 0, 0]})},
+        "wing_l": {"rotation": track({0.0: WL_IDLE, 0.70: [18, -50, -44], 0.90: [-10, 44, 16], 1.25: [2, 20, 6], 1.80: WL_IDLE})},
+        "wing_mid_l": {"rotation": track({0.0: WML_IDLE, 0.70: [4, -20, 14], 0.90: [-4, 24, -14], 1.80: WML_IDLE})},
+        "wing_wrist_l": {"rotation": track({0.0: WWL_IDLE, 0.70: [4, -16, 10], 0.90: [-4, 18, -10], 1.80: WWL_IDLE})},
+        "wing_r": {"rotation": track({0.0: WR_IDLE, 0.70: [14, 24, 22], 0.95: [12, 20, 18], 1.80: WR_IDLE})},
+        "tail_1": {"rotation": track({0.0: [0, 0, 0], 0.70: [0, 14, 0], 0.90: [0, -18, 0], 1.80: [0, 0, 0]})},
+        "tail_4": {"rotation": track({0.0: [0, 0, 0], 0.80: [0, 18, 0], 1.05: [0, -22, 0], 1.80: [0, 0, 0]})},
     })
 
     # 9. TAIL_SLAM — Tail Crescent Slam (2.00s = 40t, telegraph 0..18t [0.90s], impact 20t [1.00s])
+    #    Xoắn hông + làn sóng roi thép lệch pha qua cả 9 đốt đuôi -> quất đại lưỡi liềm sấm sét!
     anims["animation.cinder_dragon.tail_slam"] = make_anim(2.00, False, {
-        "body_root": {"rotation": track({0.0: [0, 0, 0], 0.80: [4, -24, 0], 1.00: [-4, 28, 0], 1.35: [0, 14, 0], 2.00: [0, 0, 0]})},
-        "pelvis": {"rotation": track({0.0: [0, 0, 0], 0.80: [-12, -28, 8], 1.00: [10, 36, -8], 1.40: [4, 18, 0], 2.00: [0, 0, 0]})},
-        "tail_1": {"rotation": track({0.0: [0, 0, 0], 0.80: [24, -36, 0], 1.00: [-12, 42, 0], 1.35: [-6, 26, 0], 2.00: [0, 0, 0]})},
-        "tail_2": {"rotation": track({0.0: [0, 0, 0], 0.80: [18, -32, 0], 1.00: [-8, 38, 0], 2.00: [0, 0, 0]})},
-        "tail_4": {"rotation": track({0.0: [0, 0, 0], 0.80: [16, -28, 0], 1.00: [-10, 34, 0], 2.00: [0, 0, 0]})},
-        "tail_6": {"rotation": track({0.0: [0, 0, 0], 0.80: [14, -24, 0], 1.00: [-10, 28, 0], 2.00: [0, 0, 0]})},
-        "wing_l": {"rotation": track({0.0: [-10, -12, -14], 0.85: [-14, -6, -34], 1.05: [-6, -16, -12], 2.00: [-10, -12, -14]})},
-        "wing_r": {"rotation": track({0.0: [-10, 12, 14], 0.85: [-14, 6, 34], 1.05: [-6, 16, 12], 2.00: [-10, 12, 14]})},
+        "body_root": {"rotation": track({0.0: [0, 0, 0], 0.80: [4, -22, 0], 1.00: [-4, 26, 0], 1.35: [0, 12, 0], 2.00: [0, 0, 0]})},
+        "body_mid": {"rotation": track({0.0: [0, 0, 0], 0.80: [2, 16, 0], 1.00: [-2, -18, 0], 2.00: [0, 0, 0]})},
+        "pelvis": {"rotation": track({0.0: [0, 0, 0], 0.80: [10, -26, 8], 1.00: [-8, 34, -8], 1.40: [-4, 16, 0], 2.00: [0, 0, 0]})},
+        "tail_1": {"rotation": track({0.0: [0, 0, 0], 0.78: [16, -28, 0], 0.96: [-8, 34, 0], 1.35: [-4, 18, 0], 2.00: [0, 0, 0]})},
+        "tail_2": {"rotation": track({0.0: [0, 0, 0], 0.82: [14, -26, 0], 0.99: [-6, 32, 0], 1.38: [-4, 18, 0], 2.00: [0, 0, 0]})},
+        "tail_3": {"rotation": track({0.0: [0, 0, 0], 0.85: [12, -24, 0], 1.02: [-6, 30, 0], 1.42: [-3, 16, 0], 2.00: [0, 0, 0]})},
+        "tail_4": {"rotation": track({0.0: [0, 0, 0], 0.88: [12, -22, 0], 1.05: [-6, 28, 0], 1.45: [-3, 15, 0], 2.00: [0, 0, 0]})},
+        "tail_5": {"rotation": track({0.0: [0, 0, 0], 0.90: [10, -20, 0], 1.08: [-6, 26, 0], 1.48: [-2, 14, 0], 2.00: [0, 0, 0]})},
+        "tail_6": {"rotation": track({0.0: [0, 0, 0], 0.92: [10, -18, 0], 1.11: [-6, 24, 0], 1.52: [-2, 12, 0], 2.00: [0, 0, 0]})},
+        "tail_7": {"rotation": track({0.0: [0, 0, 0], 0.94: [10, -16, 0], 1.14: [-6, 22, 0], 1.55: [-2, 10, 0], 2.00: [0, 0, 0]})},
+        "tail_8": {"rotation": track({0.0: [0, 0, 0], 0.96: [10, -14, 0], 1.17: [-6, 20, 0], 1.58: [-2, 8, 0], 2.00: [0, 0, 0]})},
+        "tail_9": {"rotation": track({0.0: [0, 0, 0], 0.98: [12, -14, 0], 1.20: [-8, 22, 0], 1.62: [-2, 8, 0], 2.00: [0, 0, 0]})},
+        "wing_l": {"rotation": track({0.0: WL_IDLE, 0.85: [18, -12, -38], 1.05: [8, -20, -16], 2.00: WL_IDLE})},
+        "wing_r": {"rotation": track({0.0: WR_IDLE, 0.85: [18, 12, 38], 1.05: [8, 20, 16], 2.00: WR_IDLE})},
     })
 
     # 10. STOMP — Winged Stomp (2.10s = 42t, hop 0..18t [0.90s], slam impact 21t [1.05s])
     anims["animation.cinder_dragon.stomp"] = make_anim(2.10, False, {
         "body_root": {
-            "position": track({0.0: [0, 0, 0], 0.80: [0, 8.5, 0], 1.05: [0, -2.6, 0], 1.35: [0, -1.0, 0], 2.10: [0, 0, 0]}),
-            "rotation": track({0.0: [0, 0, 0], 0.80: [-26, 0, 0], 1.05: [12, 0, 0], 1.40: [4, 0, 0], 2.10: [0, 0, 0]}),
+            "position": track({0.0: [0, 0, 0], 0.80: [0, 9.0, 0], 1.05: [0, -2.6, 0], 1.35: [0, -1.0, 0], 2.10: [0, 0, 0]}),
+            "rotation": track({0.0: [0, 0, 0], 0.80: [-28, 0, 0], 1.05: [14, 0, 0], 1.40: [4, 0, 0], 2.10: [0, 0, 0]}),
         },
-        "leg_fl": {"rotation": track({0.0: [0, 0, 0], 0.80: [-42, 0, -10], 1.05: [18, 0, 4], 2.10: [0, 0, 0]})},
-        "leg_fr": {"rotation": track({0.0: [0, 0, 0], 0.80: [-42, 0, 10], 1.05: [18, 0, -4], 2.10: [0, 0, 0]})},
-        "wing_l": {"rotation": track({0.0: [-10, -12, -14], 0.45: [-14, -10, -48], 0.85: [14, 8, 24], 1.08: [-6, -4, -18], 2.10: [-10, -12, -14]})},
-        "wing_r": {"rotation": track({0.0: [-10, 12, 14], 0.45: [-14, 10, 48], 0.85: [14, -8, -24], 1.08: [-6, 4, 18], 2.10: [-10, 12, 14]})},
+        "body_mid": {"rotation": track({0.0: [0, 0, 0], 0.80: [-14, 0, 0], 1.05: [10, 0, 0], 2.10: [0, 0, 0]})},
+        "leg_fl": {"rotation": track({0.0: [0, 0, 0], 0.80: [-46, 0, -10], 1.05: [22, 0, 4], 2.10: [0, 0, 0]})},
+        "leg_fl_lower": {"rotation": track({0.0: [0, 0, 0], 0.80: [38, 0, 0], 1.05: [-14, 0, 0], 2.10: [0, 0, 0]})},
+        "leg_fr": {"rotation": track({0.0: [0, 0, 0], 0.80: [-46, 0, 10], 1.05: [22, 0, -4], 2.10: [0, 0, 0]})},
+        "leg_fr_lower": {"rotation": track({0.0: [0, 0, 0], 0.80: [38, 0, 0], 1.05: [-14, 0, 0], 2.10: [0, 0, 0]})},
+        "wing_l": {"rotation": track({0.0: WL_IDLE, 0.45: [16, -10, -50], 0.85: [-12, 10, 26], 1.08: [10, -12, -20], 2.10: WL_IDLE})},
+        "wing_mid_l": {"rotation": track({0.0: WML_IDLE, 0.45: [4, -10, 20], 0.85: [-4, 10, -12], 2.10: WML_IDLE})},
+        "wing_wrist_l": {"rotation": track({0.0: WWL_IDLE, 0.45: [4, -8, 16], 0.85: [-4, 6, -8], 2.10: WWL_IDLE})},
+        "wing_r": {"rotation": track({0.0: WR_IDLE, 0.45: [16, 10, 50], 0.85: [-12, -10, -26], 1.08: [10, 12, 20], 2.10: WR_IDLE})},
+        "wing_mid_r": {"rotation": track({0.0: WMR_IDLE, 0.45: [4, 10, -20], 0.85: [-4, -10, 12], 2.10: WMR_IDLE})},
+        "wing_wrist_r": {"rotation": track({0.0: WWR_IDLE, 0.45: [4, 8, -16], 0.85: [-4, -6, 8], 2.10: WWR_IDLE})},
         "neck_1": {"rotation": track({0.0: [0, 0, 0], 0.80: [-18, 0, 0], 1.05: [18, 0, 0], 2.10: [0, 0, 0]})},
-        "jaw": {"rotation": track({0.0: [4, 0, 0], 0.80: [38, 0, 0], 1.15: [24, 0, 0], 2.10: [4, 0, 0]})},
+        "neck_3": {"rotation": track({0.0: [0, 0, 0], 0.80: [-12, 0, 0], 1.05: [14, 0, 0], 2.10: [0, 0, 0]})},
+        "jaw": {"rotation": track({0.0: [5, 0, 0], 0.80: [40, 0, 0], 1.15: [24, 0, 0], 2.10: [5, 0, 0]})},
     })
 
-    # 11. SKYFALL_INFERNO (Phase 2 exclusive — 4.60s = 92t: takeoff 0..20t, aerial fire strafe 20..72t, heavy landing 72..92t)
+    # 11. SKYFALL_INFERNO (Phase 2 exclusive — 4.60s = 92t)
     anims["animation.cinder_dragon.skyfall_inferno"] = make_anim(4.60, False, {
         "body_root": {"rotation": track({0.0: [0, 0, 0], 0.60: [-28, 0, 0], 1.20: [8, 0, 0], 3.40: [10, 0, 0], 4.00: [16, 0, 0], 4.60: [0, 0, 0]})},
-        "neck_1": {"rotation": track({0.0: [0, 0, 0], 1.20: [24, -12, 0], 2.30: [28, 12, 0], 3.40: [24, -8, 0], 4.60: [0, 0, 0]})},
-        "head": {"rotation": track({0.0: [0, 0, 0], 1.20: [22, -10, 0], 2.30: [24, 10, 0], 3.40: [20, -6, 0], 4.60: [0, 0, 0]})},
-        "jaw": {"rotation": track({0.0: [4, 0, 0], 1.20: [46, 0, 0], 3.40: [46, 0, 0], 4.00: [18, 0, 0], 4.60: [4, 0, 0]})},
-        "wing_l": {"rotation": track({0.0: [-10, -12, -14], 0.50: [-14, -8, -48], 1.00: [14, 8, 28], 1.60: [-12, -10, -44], 2.20: [14, 8, 28], 2.80: [-12, -10, -44], 3.40: [14, 8, 28], 4.00: [-8, -10, -22], 4.60: [-10, -12, -14]})},
-        "wing_r": {"rotation": track({0.0: [-10, 12, 14], 0.50: [-14, 8, 48], 1.00: [14, -8, -28], 1.60: [-12, 10, 44], 2.20: [14, -8, -28], 2.80: [-12, 10, 44], 3.40: [14, -8, -28], 4.00: [-8, 10, 22], 4.60: [-10, 12, 14]})},
+        "neck_1": {"rotation": track({0.0: [0, 0, 0], 1.20: [18, -10, 0], 2.30: [22, 10, 0], 3.40: [18, -8, 0], 4.60: [0, 0, 0]})},
+        "neck_3": {"rotation": track({0.0: [0, 0, 0], 1.20: [14, -8, 0], 2.30: [16, 8, 0], 3.40: [14, -6, 0], 4.60: [0, 0, 0]})},
+        "head": {"rotation": track({0.0: [0, 0, 0], 1.20: [18, -8, 0], 2.30: [20, 8, 0], 3.40: [16, -6, 0], 4.60: [0, 0, 0]})},
+        "jaw": {"rotation": track({0.0: [5, 0, 0], 1.20: [48, 0, 0], 3.40: [48, 0, 0], 4.00: [18, 0, 0], 4.60: [5, 0, 0]})},
+        "wing_l": {"rotation": track({0.0: WL_IDLE, 0.50: [14, -8, -48], 1.00: [-10, 8, 30], 1.60: [12, -10, -44], 2.20: [-10, 8, 30], 2.80: [12, -10, -44], 3.40: [-10, 8, 30], 4.00: [10, -14, -22], 4.60: WL_IDLE})},
+        "wing_mid_l": {"rotation": track({0.0: WML_IDLE, 0.55: [4, -10, 26], 1.05: [-4, 8, -14], 2.20: [-4, 8, -14], 3.40: [-4, 8, -14], 4.60: WML_IDLE})},
+        "wing_wrist_l": {"rotation": track({0.0: WWL_IDLE, 0.60: [4, -8, 28], 1.10: [-4, 6, -12], 3.40: [-4, 6, -12], 4.60: WWL_IDLE})},
+        "wing_r": {"rotation": track({0.0: WR_IDLE, 0.50: [14, 8, 48], 1.00: [-10, -8, -30], 1.60: [12, 10, 44], 2.20: [-10, -8, -30], 2.80: [12, 10, 44], 3.40: [-10, -8, -30], 4.00: [10, 14, 22], 4.60: WR_IDLE})},
+        "wing_mid_r": {"rotation": track({0.0: WMR_IDLE, 0.55: [4, 10, -26], 1.05: [-4, -8, 14], 2.20: [-4, -8, 14], 3.40: [-4, -8, 14], 4.60: WMR_IDLE})},
+        "wing_wrist_r": {"rotation": track({0.0: WWR_IDLE, 0.60: [4, 8, -28], 1.10: [-4, -6, 12], 3.40: [-4, -6, 12], 4.60: WWR_IDLE})},
         "leg_fl": {"rotation": track({0.0: [0, 0, 0], 0.80: [48, 0, 0], 3.60: [42, 0, 0], 4.05: [-12, 0, 0], 4.60: [0, 0, 0]})},
         "leg_fr": {"rotation": track({0.0: [0, 0, 0], 0.80: [48, 0, 0], 3.60: [42, 0, 0], 4.05: [-12, 0, 0], 4.60: [0, 0, 0]})},
         "leg_bl": {"rotation": track({0.0: [0, 0, 0], 0.80: [54, 0, 0], 3.60: [48, 0, 0], 4.05: [0, 0, 0], 4.60: [0, 0, 0]})},
         "leg_br": {"rotation": track({0.0: [0, 0, 0], 0.80: [54, 0, 0], 3.60: [48, 0, 0], 4.05: [0, 0, 0], 4.60: [0, 0, 0]})},
     })
 
-    # 12. BEAM — Scorched Earth Beam (Phase 2 exclusive — 3.20s = 64t, charge 0..26t [1.30s], laser fire 26..48t, cool 48..64t)
+    # 12. BEAM — Scorched Earth Beam (Phase 2 exclusive — 3.20s = 64t)
     anims["animation.cinder_dragon.beam"] = make_anim(3.20, False, {
-        "body_root": {"position": track({0.0: [0, 0, 0], 1.15: [0, -2.8, 3.6], 1.35: [0, -1.6, 5.2], 2.40: [0, -1.8, 4.6], 3.20: [0, 0, 0]})},
-        "body_chest": {"rotation": track({0.0: [0, 0, 0], 1.15: [-18, 0, 0], 1.35: [8, 0, 0], 2.40: [6, 0, 0], 3.20: [0, 0, 0]})},
-        "neck_1": {"rotation": track({0.0: [0, 0, 0], 1.15: [-32, 0, 0], 1.35: [14, 0, 0], 2.40: [12, 0, 0], 3.20: [0, 0, 0]})},
-        "neck_2": {"rotation": track({0.0: [0, 0, 0], 1.15: [-24, 0, 0], 1.35: [8, 0, 0], 2.40: [8, 0, 0], 3.20: [0, 0, 0]})},
-        "head": {"rotation": track({0.0: [0, 0, 0], 1.15: [-16, 0, 0], 1.35: [4, 0, 0], 2.40: [4, 0, 0], 3.20: [0, 0, 0]})},
-        "jaw": {"rotation": track({0.0: [4, 0, 0], 1.15: [32, 0, 0], 1.30: [52, 0, 0], 2.45: [50, 0, 0], 3.20: [4, 0, 0]})},
-        "wing_l": {"rotation": track({0.0: [-10, -12, -14], 1.15: [-16, -28, -36], 1.35: [-6, 10, -8], 2.45: [-6, 8, -10], 3.20: [-10, -12, -14]})},
-        "wing_r": {"rotation": track({0.0: [-10, 12, 14], 1.15: [-16, 28, 36], 1.35: [-6, -10, 8], 2.45: [-6, -8, 10], 3.20: [-10, 12, 14]})},
+        "body_root": {"position": track({0.0: [0, 0, 0], 1.15: [0, -2.6, 3.8], 1.35: [0, -1.6, 5.4], 2.40: [0, -1.8, 4.8], 3.20: [0, 0, 0]})},
+        "body_mid": {"rotation": track({0.0: [0, 0, 0], 1.15: [-12, 0, 0], 1.35: [6, 0, 0], 2.40: [5, 0, 0], 3.20: [0, 0, 0]})},
+        "body_chest": {"rotation": track({0.0: [0, 0, 0], 1.15: [-16, 0, 0], 1.35: [8, 0, 0], 2.40: [6, 0, 0], 3.20: [0, 0, 0]})},
+        "neck_1": {"rotation": track({0.0: [0, 0, 0], 1.15: [-24, 0, 0], 1.35: [12, 0, 0], 2.40: [10, 0, 0], 3.20: [0, 0, 0]})},
+        "neck_2": {"rotation": track({0.0: [0, 0, 0], 1.15: [-18, 0, 0], 1.35: [8, 0, 0], 2.40: [8, 0, 0], 3.20: [0, 0, 0]})},
+        "neck_3": {"rotation": track({0.0: [0, 0, 0], 1.15: [-12, 0, 0], 1.35: [6, 0, 0], 2.40: [6, 0, 0], 3.20: [0, 0, 0]})},
+        "neck_4": {"rotation": track({0.0: [0, 0, 0], 1.15: [-10, 0, 0], 1.35: [4, 0, 0], 2.40: [4, 0, 0], 3.20: [0, 0, 0]})},
+        "head": {"rotation": track({0.0: [0, 0, 0], 1.15: [-14, 0, 0], 1.35: [4, 0, 0], 2.40: [4, 0, 0], 3.20: [0, 0, 0]})},
+        "jaw": {"rotation": track({0.0: [5, 0, 0], 1.15: [34, 0, 0], 1.30: [54, 0, 0], 2.45: [52, 0, 0], 3.20: [5, 0, 0]})},
+        "wing_l": {"rotation": track({0.0: WL_IDLE, 1.15: [18, -28, -38], 1.35: [6, 12, -10], 2.45: [6, 10, -12], 3.20: WL_IDLE})},
+        "wing_mid_l": {"rotation": track({0.0: WML_IDLE, 1.15: [4, 0, 8], 1.35: [0, 0, -4], 2.45: [0, 0, -4], 3.20: WML_IDLE})},
+        "wing_wrist_l": {"rotation": track({0.0: WWL_IDLE, 1.35: [0, 0, 0], 2.45: [0, 0, 0], 3.20: WWL_IDLE})},
+        "wing_r": {"rotation": track({0.0: WR_IDLE, 1.15: [18, 28, 38], 1.35: [6, -12, 10], 2.45: [6, -10, 12], 3.20: WR_IDLE})},
+        "wing_mid_r": {"rotation": track({0.0: WMR_IDLE, 1.15: [4, 0, -8], 1.35: [0, 0, 4], 2.45: [0, 0, 4], 3.20: WMR_IDLE})},
+        "wing_wrist_r": {"rotation": track({0.0: WWR_IDLE, 1.35: [0, 0, 0], 2.45: [0, 0, 0], 3.20: WWR_IDLE})},
     })
 
-    # 13. DIVE — Cataclysm Wing Dive (Phase 2 exclusive — 3.80s = 76t: leap 0..22t, hover-tuck 22..46t [1.20s lock], dive impact 52t [2.60s])
+    # 13. DIVE — Cataclysm Wing Dive (Phase 2 exclusive — 3.80s = 76t)
     anims["animation.cinder_dragon.dive"] = make_anim(3.80, False, {
         "body_root": {"rotation": track({0.0: [0, 0, 0], 0.90: [-34, 0, 0], 1.80: [24, 0, 0], 2.45: [46, 0, 0], 2.65: [14, 0, 0], 3.80: [0, 0, 0]})},
-        "wing_l": {"rotation": track({0.0: [-10, -12, -14], 0.55: [-14, -10, -48], 1.10: [16, 10, 28], 1.90: [-10, -46, -42], 2.55: [-10, -50, -44], 2.80: [-12, 12, -14], 3.80: [-10, -12, -14]})},
-        "wing_mid_l": {"rotation": track({0.0: [-4, -8, 12], 1.90: [0, -36, 40], 2.55: [0, -38, 42], 2.85: [0, 8, -8], 3.80: [-4, -8, 12]})},
-        "wing_r": {"rotation": track({0.0: [-10, 12, 14], 0.55: [-14, 10, 48], 1.10: [16, -10, -28], 1.90: [-10, 46, 42], 2.55: [-10, 50, 44], 2.80: [-12, -12, 14], 3.80: [-10, 12, 14]})},
-        "wing_mid_r": {"rotation": track({0.0: [-4, 8, -12], 1.90: [0, 36, -40], 2.55: [0, 38, -42], 2.85: [0, -8, 8], 3.80: [-4, 8, -12]})},
+        "wing_l": {"rotation": track({0.0: WL_IDLE, 0.55: [14, -10, -48], 1.10: [-12, 10, 30], 1.90: [12, -48, -42], 2.55: [12, -52, -44], 2.80: [12, 12, -16], 3.80: WL_IDLE})},
+        "wing_mid_l": {"rotation": track({0.0: WML_IDLE, 1.90: [4, -34, 38], 2.55: [4, -36, 40], 2.85: [0, 8, -8], 3.80: WML_IDLE})},
+        "wing_wrist_l": {"rotation": track({0.0: WWL_IDLE, 1.90: [4, -30, 32], 2.55: [4, -32, 34], 2.85: [0, 6, -6], 3.80: WWL_IDLE})},
+        "wing_r": {"rotation": track({0.0: WR_IDLE, 0.55: [14, 10, 48], 1.10: [-12, -10, -30], 1.90: [12, 48, 42], 2.55: [12, 52, 44], 2.80: [12, -12, 16], 3.80: WR_IDLE})},
+        "wing_mid_r": {"rotation": track({0.0: WMR_IDLE, 1.90: [4, 34, -38], 2.55: [4, 36, -40], 2.85: [0, -8, 8], 3.80: WMR_IDLE})},
+        "wing_wrist_r": {"rotation": track({0.0: WWR_IDLE, 1.90: [4, 30, -32], 2.55: [4, 32, -34], 2.85: [0, -6, 6], 3.80: WWR_IDLE})},
         "neck_1": {"rotation": track({0.0: [0, 0, 0], 1.90: [16, 0, 0], 2.55: [22, 0, 0], 2.85: [-18, 0, 0], 3.80: [0, 0, 0]})},
-        "jaw": {"rotation": track({0.0: [4, 0, 0], 2.00: [38, 0, 0], 2.85: [46, 0, 0], 3.80: [4, 0, 0]})},
+        "jaw": {"rotation": track({0.0: [5, 0, 0], 2.00: [38, 0, 0], 2.85: [46, 0, 0], 3.80: [5, 0, 0]})},
     })
 
-    # 14. SUPERNOVA — Ultimate "Ashen Supernova" (Phase 2 <25% HP — 4.40s = 88t: charge 0..44t [2.20s], burst 46t [2.30s])
+    # 14. SUPERNOVA — Ultimate "Ashen Supernova" (Phase 2 <25% HP — 4.40s = 88t)
     anims["animation.cinder_dragon.supernova"] = make_anim(4.40, False, {
-        "body_root": {"position": track({0.0: [0, 0, 0], 1.20: [0, -4.2, 0], 2.15: [0, -5.0, 0], 2.35: [0, 2.2, 0], 3.10: [0, 0.8, 0], 4.40: [0, 0, 0]})},
-        "body_chest": {"rotation": track({0.0: [0, 0, 0], 1.20: [18, 0, 0], 2.15: [22, 0, 0], 2.35: [-26, 0, 0], 3.20: [-14, 0, 0], 4.40: [0, 0, 0]})},
-        "neck_1": {"rotation": track({0.0: [0, 0, 0], 1.20: [24, 0, 0], 2.15: [28, 0, 0], 2.35: [-36, 0, 0], 3.20: [-22, 0, 0], 4.40: [0, 0, 0]})},
-        "neck_2": {"rotation": track({0.0: [0, 0, 0], 2.15: [22, 0, 0], 2.35: [-28, 0, 0], 4.40: [0, 0, 0]})},
-        "head": {"rotation": track({0.0: [0, 0, 0], 2.15: [16, 0, 0], 2.35: [-24, 0, 0], 4.40: [0, 0, 0]})},
-        "jaw": {"rotation": track({0.0: [4, 0, 0], 1.50: [14, 0, 0], 2.30: [56, 0, 0], 3.30: [48, 0, 0], 4.40: [4, 0, 0]})},
-        # Gập cánh ôm ngực nén năng lượng 2.2s -> dang bùng toàn sải 360°!
-        "wing_l": {"rotation": track({0.0: [-10, -12, -14], 1.10: [18, 44, 22], 2.15: [22, 50, 26], 2.35: [-16, -22, -46], 3.25: [-12, -16, -34], 4.40: [-10, -12, -14]})},
-        "wing_mid_l": {"rotation": track({0.0: [-4, -8, 12], 1.10: [0, 32, 40], 2.15: [0, 38, 44], 2.35: [0, -8, -10], 4.40: [-4, -8, 12]})},
-        "wing_r": {"rotation": track({0.0: [-10, 12, 14], 1.10: [18, -44, -22], 2.15: [22, -50, -26], 2.35: [-16, 22, 46], 3.25: [-12, 16, 34], 4.40: [-10, 12, 14]})},
-        "wing_mid_r": {"rotation": track({0.0: [-4, 8, -12], 1.10: [0, -32, -40], 2.15: [0, -38, -44], 2.35: [0, 8, 10], 4.40: [-4, 8, -12]})},
-        "tail_1": {"rotation": track({0.0: [0, 0, 0], 2.15: [16, 0, 0], 2.40: [-18, 0, 0], 4.40: [0, 0, 0]})},
+        "body_root": {"position": track({0.0: [0, 0, 0], 1.20: [0, -3.6, 0], 2.15: [0, -4.4, 0], 2.35: [0, 2.4, 0], 3.10: [0, 1.0, 0], 4.40: [0, 0, 0]})},
+        "body_mid": {"rotation": track({0.0: [0, 0, 0], 1.20: [14, 0, 0], 2.15: [18, 0, 0], 2.35: [-18, 0, 0], 3.20: [-10, 0, 0], 4.40: [0, 0, 0]})},
+        "body_chest": {"rotation": track({0.0: [0, 0, 0], 1.20: [16, 0, 0], 2.15: [20, 0, 0], 2.35: [-24, 0, 0], 3.20: [-14, 0, 0], 4.40: [0, 0, 0]})},
+        "neck_1": {"rotation": track({0.0: [0, 0, 0], 2.15: [22, 0, 0], 2.35: [-28, 0, 0], 3.20: [-18, 0, 0], 4.40: [0, 0, 0]})},
+        "neck_2": {"rotation": track({0.0: [0, 0, 0], 2.15: [18, 0, 0], 2.35: [-22, 0, 0], 4.40: [0, 0, 0]})},
+        "neck_3": {"rotation": track({0.0: [0, 0, 0], 2.15: [14, 0, 0], 2.35: [-18, 0, 0], 4.40: [0, 0, 0]})},
+        "head": {"rotation": track({0.0: [0, 0, 0], 2.15: [14, 0, 0], 2.35: [-24, 0, 0], 4.40: [0, 0, 0]})},
+        "jaw": {"rotation": track({0.0: [5, 0, 0], 1.50: [14, 0, 0], 2.30: [56, 0, 0], 3.30: [48, 0, 0], 4.40: [5, 0, 0]})},
+        "wing_l": {"rotation": track({0.0: WL_IDLE, 1.10: [-14, 44, 24], 2.15: [-18, 50, 28], 2.35: [16, -16, -46], 3.25: [12, -12, -34], 4.40: WL_IDLE})},
+        "wing_mid_l": {"rotation": track({0.0: WML_IDLE, 1.10: [0, 32, 40], 2.15: [0, 38, 44], 2.35: [0, -8, -12], 4.40: WML_IDLE})},
+        "wing_wrist_l": {"rotation": track({0.0: WWL_IDLE, 2.15: [0, 24, 34], 2.35: [0, -4, -6], 4.40: WWL_IDLE})},
+        "wing_r": {"rotation": track({0.0: WR_IDLE, 1.10: [-14, -44, -24], 2.15: [-18, -50, -28], 2.35: [16, 16, 46], 3.25: [12, 12, 34], 4.40: WR_IDLE})},
+        "wing_mid_r": {"rotation": track({0.0: WMR_IDLE, 1.10: [0, -32, -40], 2.15: [0, -38, -44], 2.35: [0, 8, 12], 4.40: WMR_IDLE})},
+        "wing_wrist_r": {"rotation": track({0.0: WWR_IDLE, 2.15: [0, -24, -34], 2.35: [0, 4, 6], 4.40: WWR_IDLE})},
+        "tail_1": {"rotation": track({0.0: [0, 0, 0], 2.15: [-14, 0, 0], 2.40: [18, 0, 0], 4.40: [0, 0, 0]})},
+        "tail_5": {"rotation": track({0.0: [0, 0, 0], 2.15: [-12, 0, 0], 2.50: [20, 0, 0], 4.40: [0, 0, 0]})},
     })
 
-    # 15. PHASE_CHANGE — "Vô Form" (5.50s = 110t: bám đất co cánh nén -> bật ngửa cổ dang cánh gầm vang trời)
+    # 15. PHASE_CHANGE — "Vô Form" (5.50s = 110t: nén ôm cánh -> bật ngửa gầm bùng toàn sải cánh!)
     anims["animation.cinder_dragon.phase_change"] = make_anim(5.50, False, {
-        "body_root": {"position": track({0.0: [0, 0, 0], 1.40: [0, -4.6, 0], 2.70: [0, -5.2, 0], 3.10: [0, 1.8, 0], 4.40: [0, 1.0, 0], 5.50: [0, 0, 0]})},
-        "body_chest": {"rotation": track({0.0: [0, 0, 0], 1.40: [20, 0, 0], 2.70: [24, 0, 0], 3.10: [-28, 0, 0], 4.40: [-20, 0, 0], 5.50: [0, 0, 0]})},
-        "neck_1": {"rotation": track({0.0: [0, 0, 0], 1.40: [22, 0, 0], 2.70: [26, 0, 0], 3.10: [-38, 0, 0], 4.40: [-30, 0, 0], 5.50: [0, 0, 0]})},
-        "neck_2": {"rotation": track({0.0: [0, 0, 0], 2.70: [18, 0, 0], 3.10: [-28, 0, 0], 4.40: [-20, 0, 0], 5.50: [0, 0, 0]})},
-        "head": {"rotation": track({0.0: [0, 0, 0], 2.70: [14, 0, 0], 3.10: [-26, 0, 0], 4.40: [-18, 0, 0], 5.50: [0, 0, 0]})},
-        "jaw": {"rotation": track({0.0: [4, 0, 0], 2.60: [12, 0, 0], 3.05: [58, 0, 0], 4.50: [52, 0, 0], 5.50: [8, 0, 0]})},
-        "wing_l": {"rotation": track({0.0: [-10, -12, -14], 1.40: [18, 44, 20], 2.70: [22, 50, 24], 3.15: [-18, -24, -48], 4.45: [-12, -18, -36], 5.50: [-10, -12, -14]})},
-        "wing_mid_l": {"rotation": track({0.0: [-4, -8, 12], 2.70: [0, 36, 42], 3.15: [0, -10, -12], 5.50: [-4, -8, 12]})},
-        "wing_r": {"rotation": track({0.0: [-10, 12, 14], 1.40: [18, -44, -20], 2.70: [22, -50, -24], 3.15: [-18, 24, 48], 4.45: [-12, 18, 36], 5.50: [-10, 12, 14]})},
-        "wing_mid_r": {"rotation": track({0.0: [-4, 8, -12], 2.70: [0, -36, -42], 3.15: [0, 10, 12], 5.50: [-4, 8, -12]})},
-        "tail_1": {"rotation": track({0.0: [0, 0, 0], 2.70: [14, 0, 0], 3.15: [-22, 0, 0], 5.50: [0, 0, 0]})},
+        "body_root": {"position": track({0.0: [0, 0, 0], 1.40: [0, -4.0, 0], 2.70: [0, -4.6, 0], 3.10: [0, 2.0, 0], 4.40: [0, 1.2, 0], 5.50: [0, 0, 0]})},
+        "body_mid": {"rotation": track({0.0: [0, 0, 0], 2.70: [16, 0, 0], 3.10: [-20, 0, 0], 4.40: [-14, 0, 0], 5.50: [0, 0, 0]})},
+        "body_chest": {"rotation": track({0.0: [0, 0, 0], 1.40: [18, 0, 0], 2.70: [22, 0, 0], 3.10: [-26, 0, 0], 4.40: [-18, 0, 0], 5.50: [0, 0, 0]})},
+        "neck_1": {"rotation": track({0.0: [0, 0, 0], 2.70: [20, 0, 0], 3.10: [-28, 0, 0], 4.40: [-22, 0, 0], 5.50: [0, 0, 0]})},
+        "neck_2": {"rotation": track({0.0: [0, 0, 0], 2.70: [16, 0, 0], 3.10: [-22, 0, 0], 4.40: [-16, 0, 0], 5.50: [0, 0, 0]})},
+        "neck_3": {"rotation": track({0.0: [0, 0, 0], 2.70: [12, 0, 0], 3.10: [-18, 0, 0], 4.40: [-12, 0, 0], 5.50: [0, 0, 0]})},
+        "head": {"rotation": track({0.0: [0, 0, 0], 2.70: [14, 0, 0], 3.10: [-24, 0, 0], 4.40: [-18, 0, 0], 5.50: [0, 0, 0]})},
+        "jaw": {"rotation": track({0.0: [5, 0, 0], 2.60: [12, 0, 0], 3.05: [58, 0, 0], 4.50: [52, 0, 0], 5.50: [8, 0, 0]})},
+        "wing_l": {"rotation": track({0.0: WL_IDLE, 1.40: [-14, 44, 22], 2.70: [-18, 50, 26], 3.15: [18, -18, -48], 4.45: [12, -14, -36], 5.50: WL_IDLE})},
+        "wing_mid_l": {"rotation": track({0.0: WML_IDLE, 2.70: [0, 36, 42], 3.15: [0, -10, -14], 5.50: WML_IDLE})},
+        "wing_wrist_l": {"rotation": track({0.0: WWL_IDLE, 2.70: [0, 24, 34], 3.15: [0, -6, -8], 5.50: WWL_IDLE})},
+        "wing_r": {"rotation": track({0.0: WR_IDLE, 1.40: [-14, -44, -22], 2.70: [-18, -50, -26], 3.15: [18, 18, 48], 4.45: [12, 14, 36], 5.50: WR_IDLE})},
+        "wing_mid_r": {"rotation": track({0.0: WMR_IDLE, 2.70: [0, -36, -42], 3.15: [0, 10, 14], 5.50: WMR_IDLE})},
+        "wing_wrist_r": {"rotation": track({0.0: WWR_IDLE, 2.70: [0, -24, -34], 3.15: [0, 6, 8], 5.50: WWR_IDLE})},
+        "tail_1": {"rotation": track({0.0: [0, 0, 0], 2.70: [-12, 0, 0], 3.15: [20, 0, 0], 5.50: [0, 0, 0]})},
+        "tail_6": {"rotation": track({0.0: [0, 0, 0], 2.70: [-10, 0, 0], 3.25: [22, 0, 0], 5.50: [0, 0, 0]})},
     })
 
     # 16. DEATH (3.20s = 64t, hold_on_last_frame)
     anims["animation.cinder_dragon.death"] = make_anim(3.20, "hold", {
         "body_root": {
-            "position": track({0.0: [0, 0, 0], 0.80: [0, 1.5, 2.0], 1.90: [0, -9.5, 4.0], 3.20: [0, -11.5, 4.5]}),
+            "position": track({0.0: [0, 0, 0], 0.80: [0, 1.5, 2.0], 1.90: [0, -7.8, 4.0], 3.20: [0, -9.2, 4.5]}),
             "rotation": track({0.0: [0, 0, 0], 0.80: [-14, 0, 8], 1.90: [6, 0, 22], 3.20: [8, 0, 26]}),
         },
-        "neck_1": {"rotation": track({0.0: [0, 0, 0], 0.80: [-22, 0, 0], 2.20: [26, 12, 10], 3.20: [30, 16, 12]})},
-        "head": {"rotation": track({0.0: [0, 0, 0], 0.80: [-18, 0, 0], 2.40: [24, 14, 14], 3.20: [28, 16, 16]})},
-        "jaw": {"rotation": track({0.0: [4, 0, 0], 0.80: [42, 0, 0], 3.20: [28, 0, 0]})},
-        "wing_l": {"rotation": track({0.0: [-10, -12, -14], 1.20: [-14, -18, -32], 2.40: [20, -24, 18], 3.20: [24, -26, 22]})},
-        "wing_r": {"rotation": track({0.0: [-10, 12, 14], 1.20: [-14, 18, 32], 2.40: [20, 24, -18], 3.20: [24, 26, -22]})},
-        "tail_1": {"rotation": track({0.0: [0, 0, 0], 2.50: [-14, -16, 0], 3.20: [-16, -20, 0]})},
+        "body_mid": {"rotation": track({0.0: [0, 0, 0], 2.40: [8, 10, 8], 3.20: [10, 14, 10]})},
+        "neck_1": {"rotation": track({0.0: [0, 0, 0], 0.80: [-20, 0, 0], 2.20: [20, 10, 8], 3.20: [24, 14, 10]})},
+        "neck_3": {"rotation": track({0.0: [0, 0, 0], 2.30: [16, 12, 8], 3.20: [20, 14, 10]})},
+        "head": {"rotation": track({0.0: [0, 0, 0], 0.80: [-16, 0, 0], 2.40: [22, 14, 14], 3.20: [26, 16, 16]})},
+        "jaw": {"rotation": track({0.0: [5, 0, 0], 0.80: [42, 0, 0], 3.20: [28, 0, 0]})},
+        "wing_l": {"rotation": track({0.0: WL_IDLE, 1.20: [14, -18, -32], 2.40: [-16, -24, 18], 3.20: [-20, -26, 22]})},
+        "wing_r": {"rotation": track({0.0: WR_IDLE, 1.20: [14, 18, 32], 2.40: [-16, 24, -18], 3.20: [-20, 26, -22]})},
+        "tail_1": {"rotation": track({0.0: [0, 0, 0], 2.50: [-10, -14, 0], 3.20: [-12, -18, 0]})},
+        "tail_5": {"rotation": track({0.0: [0, 0, 0], 2.70: [-10, -18, 0], 3.20: [-12, -22, 0]})},
     })
 
-    # Kiểm tra an toàn: không có góc xoay vượt 170° (chống lỗi xoay đầu / gimbal flip)
+    # Kiểm tra an toàn: không có góc xoay vượt 170° + ĐẢM BẢO 2 CÁNH KHÔNG BAO GIỜ TRÙNG/DÍNH QUA X = 0!
     max_rot = 0.0
     for name, anim in anims.items():
         for bname, ch in anim["bones"].items():
@@ -1575,16 +1869,34 @@ def rot_about_pivot(pivot, rot_deg):
     return transform_affine(R, p - R @ p)
 
 
-def collect_world_geometry(geo: dict):
+def collect_world_geometry(geo: dict, anim_bones: dict = None):
     bones_list = geo["minecraft:geometry"][0]["bones"]
     by_name = {b["name"]: b for b in bones_list}
     world_M = {}
+
+    def get_anim_vec(bname: str, channel: str):
+        if not anim_bones or bname not in anim_bones:
+            return [0.0, 0.0, 0.0]
+        ch = anim_bones[bname].get(channel)
+        if not ch:
+            return [0.0, 0.0, 0.0]
+        entry = ch.get("0.00") or next(iter(ch.values()))
+        vec = entry.get("post", entry.get("vector")) if isinstance(entry, dict) else entry
+        return [float(vec[0]), float(vec[1]), float(vec[2])]
 
     def get_bone_M(name):
         if name in world_M:
             return world_M[name]
         b = by_name[name]
-        local = rot_about_pivot(b.get("pivot", [0, 0, 0]), b.get("rotation", [0, 0, 0]))
+        base_rot = b.get("rotation", [0, 0, 0])
+        arot = get_anim_vec(name, "rotation")
+        apos = get_anim_vec(name, "position")
+        rot = [base_rot[0] + arot[0], base_rot[1] + arot[1], base_rot[2] + arot[2]]
+        local = rot_about_pivot(b.get("pivot", [0, 0, 0]), rot)
+        if any(abs(v) > 1e-4 for v in apos):
+            T = np.eye(4, dtype=np.float64)
+            T[:3, 3] = np.array([-apos[0], apos[1], apos[2]], dtype=np.float64)
+            local = T @ local
         parent = b.get("parent")
         M = (get_bone_M(parent) @ local) if parent else local
         world_M[name] = M
@@ -1692,7 +2004,7 @@ def rasterize_alpha_cutout(faces, diff_img, glow_img, view_mat, width, height, s
     return Image.fromarray(fb.astype(np.uint8), "RGB")
 
 
-def render_previews(geo: dict) -> None:
+def render_previews(geo: dict, anims: dict = None) -> None:
     tex_dir = ASSETS / "textures" / "entity"
     d_norm = np.array(Image.open(tex_dir / "cinder_dragon.png").convert("RGBA"), dtype=np.float32)
     g_norm = np.array(Image.open(tex_dir / "cinder_dragon_glowmask.png").convert("RGBA"), dtype=np.float32)
@@ -1702,6 +2014,11 @@ def render_previews(geo: dict) -> None:
     faces, bmin, bmax = collect_world_geometry(geo)
     center = (bmin + bmax) * 0.5
     span = float(np.max(bmax - bmin))
+
+    idle_bones = anims["animation.cinder_dragon.idle"]["bones"] if anims and "animation.cinder_dragon.idle" in anims else None
+    faces_idle, bmin_i, bmax_i = collect_world_geometry(geo, idle_bones)
+    center_idle = (bmin_i + bmax_i) * 0.5
+    span_idle = float(np.max(bmax_i - bmin_i))
 
     def cam_mat(yaw_deg, pitch_deg):
         y, p = math.radians(yaw_deg), math.radians(pitch_deg)
@@ -1714,18 +2031,20 @@ def render_previews(geo: dict) -> None:
     PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
     pw, ph = 640, 480
     sc = (min(pw, ph) * 0.90) / max(1.0, span)
+    sc_i = (min(pw, ph) * 0.90) / max(1.0, span_idle)
 
+    # Kiểm tra toán học CHỐNG DÍNH/TRÙNG CÁNH (cả 2 cánh phải tách biệt rõ qua X = 0 ở BIND, IDLE, WALK, FLY!)
     specs = [
-        ("preview_front.png",          180,  8, sc * 1.12, center, d_norm, g_norm, "FRONT (FIRE EYES, CROWN HORNS, FANGS, WIDE RED WINGS)"),
-        ("preview_34_hero.png",        148, 14, sc * 1.18, center, d_norm, g_norm, "3/4 HERO (STONE SCALES, WING CLAWS, THROAT MAGMA)"),
-        ("preview_side_left.png",      -90,  6, sc * 1.10, center, d_norm, g_norm, "SIDE (CROUCH STANCE, 7-SEG TAIL, CRESCENT MACE)"),
-        ("preview_rear.png",             0, 10, sc * 1.12, center, d_norm, g_norm, "REAR (SCALLOPED RED MEMBRANES, OBSIDIAN TAIL MACE)"),
-        ("preview_top_down.png",       180, 82, sc * 1.05, center, d_norm, g_norm, "TOP-DOWN (WINGSPAN > BODY LENGTH, ZERO MEMBRANE GAPS)"),
-        ("preview_phase2_enraged.png", 148, 14, sc * 1.18, center, d_enr,  g_enr,  "PHASE 2 VO FORM (MOLTEN CRACKS, BLAZING WING RIMS & CORE)"),
+        ("preview_front.png",          180,  8, sc_i * 1.15, center_idle, faces_idle, d_norm, g_norm, "FRONT IDLE (1.3x SEPARATED WINGS, FORWARD HORNS)"),
+        ("preview_34_hero.png",        146, 12, sc_i * 1.20, center_idle, faces_idle, d_norm, g_norm, "3/4 HERO IDLE (1.3x WINGS, ELBOW/KNEE SPURS, SCYTHE TAIL)"),
+        ("preview_side_left.png",      -90,  4, sc_i * 1.16, center_idle, faces_idle, d_norm, g_norm, "SIDE IDLE (LOW CROUCH, 1.3x ARCHED WINGS, 9-SEG SCYTHE TAIL)"),
+        ("preview_rear.png",             0, 12, sc_i * 1.16, center_idle, faces_idle, d_norm, g_norm, "REAR IDLE (CLEAR SPINE GAP — ZERO WING OVERLAP!)"),
+        ("preview_top_down.png",       180, 82, sc_i * 1.08, center_idle, faces_idle, d_norm, g_norm, "TOP-DOWN IDLE (134px 1.3x WINGSPAN, 150px LENGTH, ZERO OVERLAP)"),
+        ("preview_phase2_enraged.png", 146, 12, sc * 1.18,   center,      faces,      d_enr,  g_enr,  "PHASE 2 OPEN (FULL 1.3x WINGSPAN, MOLTEN CRACKS & CORE)"),
     ]
     imgs = []
-    for fn, yw, pt, s_c, ctr, d_i, g_i, title in specs:
-        im = rasterize_alpha_cutout(faces, d_i, g_i, cam_mat(yw, pt), pw, ph, s_c, ctr)
+    for fn, yw, pt, s_c, ctr, f_list, d_i, g_i, title in specs:
+        im = rasterize_alpha_cutout(f_list, d_i, g_i, cam_mat(yw, pt), pw, ph, s_c, ctr)
         ImageDraw.Draw(im).text((10, 10), title, fill=(255, 220, 180))
         im.save(PREVIEW_DIR / fn)
         imgs.append(im)
@@ -1746,6 +2065,6 @@ if __name__ == "__main__":
     backup_existing_files()
     geo_data, total_cubes, meta = build_cinder_dragon_geo()
     build_textures()
-    build_animations()
-    render_previews(geo_data)
+    anims_data = build_animations()
+    render_previews(geo_data, anims_data)
     print(f"ALL_DONE: Cinder Dragon generated ({meta['bones']} bones, {total_cubes} cubes, {TEX_W}x{TEX_H}, mouth_flame={meta['mouth_flame']})")

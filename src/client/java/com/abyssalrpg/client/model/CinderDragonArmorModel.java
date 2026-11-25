@@ -1,6 +1,7 @@
 package com.abyssalrpg.client.model;
 
 import com.abyssalrpg.AbyssalRpgMod;
+import com.abyssalrpg.client.anim.GeoArmorElbowSync;
 import com.abyssalrpg.item.CinderDragonArmorItem;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -85,6 +86,9 @@ public final class CinderDragonArmorModel extends GeoModel<CinderDragonArmorItem
                                     AnimationState<CinderDragonArmorItem> animationState) {
         super.setCustomAnimations(animatable, instanceId, animationState);
 
+        Entity entity = animationState.getData(DataTickets.ENTITY);
+        GeoArmorElbowSync.applyBentElbows(getAnimationProcessor(), entity);
+
         GeoBone wingRUpper = getAnimationProcessor().getBone("wing_r_upper");
         GeoBone wingRMid = getAnimationProcessor().getBone("wing_r_mid");
         GeoBone wingRTip = getAnimationProcessor().getBone("wing_r_tip");
@@ -100,7 +104,6 @@ public final class CinderDragonArmorModel extends GeoModel<CinderDragonArmorItem
             return;
         }
 
-        Entity entity = animationState.getData(DataTickets.ENTITY);
         float partialTick = animationState.getPartialTick();
 
         float move = 0.0F;

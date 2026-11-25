@@ -10,8 +10,10 @@ import com.abyssalrpg.client.renderer.CerberusGeoRenderer;
 import com.abyssalrpg.client.renderer.CinderDragonArmorRenderer;
 import com.abyssalrpg.client.renderer.CinderDragonGeoRenderer;
 import com.abyssalrpg.client.renderer.CinderDragonHitboxPartRenderer;
+import com.abyssalrpg.client.renderer.CyclopsWardenGeoRenderer;
 import com.abyssalrpg.client.renderer.DualBladeGeoRenderer;
 import com.abyssalrpg.client.renderer.ExcaliburGeoRenderer;
+import com.abyssalrpg.client.renderer.FenrirGeoRenderer;
 import com.abyssalrpg.client.renderer.HydraHitboxPartRenderer;
 import com.abyssalrpg.client.renderer.JormungandrGeoRenderer;
 import com.abyssalrpg.client.renderer.JormungandrHitboxPartRenderer;
@@ -39,9 +41,6 @@ import com.abyssalrpg.client.renderer.vfx.SeveredHydraHeadRenderer;
 import com.abyssalrpg.client.renderer.vfx.ShockwaveRingRenderer;
 import com.abyssalrpg.client.renderer.vfx.TogetsuVfxRenderer;
 import com.abyssalrpg.client.renderer.vfx.VenomProjectileRenderer;
-import com.abyssalrpg.client.sculpt.SculptedBossRenderer;
-import com.abyssalrpg.client.sculpt.SculptedCoreRigs;
-import com.abyssalrpg.client.sculpt.SculptedMythicRigs;
 import com.abyssalrpg.config.CerberusConfig;
 import com.abyssalrpg.config.CinderDragonConfig;
 import com.abyssalrpg.config.LeviathanConfig;
@@ -106,25 +105,11 @@ import software.bernie.geckolib.animatable.client.GeoRenderProvider;
 public class AbyssalRpgClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
-        // Register ALL 4 Core Bosses with High-Poly Smooth-Shaded Organic 3D Sculpted
-        // Renderers (ZERO boxy cubes!)
-        EntityRendererRegistry.register(ModEntities.ABYSSAL_KNIGHT_BOSS, ctx -> new SculptedBossRenderer<>(ctx,
-                SculptedCoreRigs.createShadowFenrir(), "abyssal_knight_boss", 2.2f, 0xB855FF, 0.92f));
-        EntityRendererRegistry.register(ModEntities.CRYPT_LICH_BOSS, ctx -> new SculptedBossRenderer<>(ctx,
-                SculptedCoreRigs.createBroodmotherSpider(), "crypt_lich_boss", 2.4f, 0x2AF5D6, 0.95f));
-        EntityRendererRegistry.register(ModEntities.MOLTEN_TITAN_BOSS, ctx -> new SculptedBossRenderer<>(ctx,
-                SculptedCoreRigs.createVolcanicHydra(), "molten_titan_boss", 2.8f, 0xFF6B14, 0.92f));
+        // Register Core & Mythological Boss Renderers (100% GeckoLib 4.8.3)
         EntityRendererRegistry.register(ModEntities.CINDER_DRAGON, CinderDragonGeoRenderer::new);
         EntityRendererRegistry.register(ModEntities.CINDER_DRAGON_HITBOX_PART, CinderDragonHitboxPartRenderer::new);
 
-        // Register ALL 7 Mythological Titan Bosses with High-Poly Smooth-Shaded Organic
-        // 3D Sculpted Renderers!
-        EntityRendererRegistry.register(ModEntities.QUETZALCOATL_BOSS, ctx -> new SculptedBossRenderer<>(ctx,
-                SculptedMythicRigs.createQuetzalcoatl(), "quetzalcoatl_boss", 2.8f, 0x2BFFB8, 0.92f));
-        EntityRendererRegistry.register(ModEntities.APEP_BOSS, ctx -> new SculptedBossRenderer<>(ctx,
-                SculptedMythicRigs.createApep(), "apep_boss", 3.0f, 0x1BFF9E, 0.92f));
-        EntityRendererRegistry.register(ModEntities.FENRIR_BOSS, ctx -> new SculptedBossRenderer<>(ctx,
-                SculptedMythicRigs.createFenrir(), "fenrir_boss", 2.6f, 0xFF3812, 0.92f));
+        EntityRendererRegistry.register(ModEntities.FENRIR_BOSS, FenrirGeoRenderer::new);
         // Spirit Hydra & Leviathan use dedicated GeckoLib 4.8.3 GeoEntityRenderer +
         // AutoGlowingGeoLayer!
         EntityRendererRegistry.register(ModEntities.HYDRA_BOSS, SpiritHydraGeoRenderer::new);
@@ -132,12 +117,11 @@ public class AbyssalRpgClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.JORMUNGANDR_BOSS, JormungandrGeoRenderer::new);
         EntityRendererRegistry.register(ModEntities.JORMUNGANDR_HITBOX_PART, JormungandrHitboxPartRenderer::new);
         EntityRendererRegistry.register(ModEntities.VENOM_PROJECTILE, VenomProjectileRenderer::new);
-        EntityRendererRegistry.register(ModEntities.TIAMAT_BOSS, ctx -> new SculptedBossRenderer<>(ctx,
-                SculptedMythicRigs.createTiamat(), "tiamat_boss", 3.4f, 0xFF2820, 0.92f));
         EntityRendererRegistry.register(ModEntities.LEVIATHAN_BOSS, LeviathanGeoRenderer::new);
         EntityRendererRegistry.register(ModEntities.CERBERUS, CerberusGeoRenderer::new);
         EntityRendererRegistry.register(ModEntities.NIGHTMARE_KNIGHT, NightmareKnightGeoRenderer::new);
         EntityRendererRegistry.register(ModEntities.NIGHTMARE_HITBOX_PART, NightmareHitboxPartRenderer::new);
+        EntityRendererRegistry.register(ModEntities.CYCLOPS_WARDEN, CyclopsWardenGeoRenderer::new);
 
         // Register all Custom 3D Rendered Boss Spell & VFX Entities!
         EntityRendererRegistry.register(ModEntities.MAGIC_CIRCLE, MagicCircleRenderer::new);

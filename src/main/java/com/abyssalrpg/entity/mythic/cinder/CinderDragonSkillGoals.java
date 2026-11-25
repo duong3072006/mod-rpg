@@ -70,7 +70,7 @@ public final class CinderDragonSkillGoals {
             Vec3 toTarget = t.position().subtract(boss.position());
             boss.smoothRotateToward(toTarget, 7.5f, (float) CinderDragonConfig.get().phase2TurnSpeedMultiplier);
             double distSq = boss.distanceToSqr(t);
-            double stopDist = 8.5 * boss.getScaleRatio();
+            double stopDist = 10.5 * boss.getScaleRatio();
             if (distSq <= stopDist * stopDist) {
                 boss.getNavigation().stop();
                 return;
@@ -394,7 +394,7 @@ public final class CinderDragonSkillGoals {
 
         @Override
         protected boolean matchesCondition(LivingEntity target, double distSq) {
-            double r = 16.0 * boss.getScaleRatio();
+            double r = 20.0 * boss.getScaleRatio();
             return distSq <= r * r;
         }
 
@@ -407,7 +407,7 @@ public final class CinderDragonSkillGoals {
         protected void onSkillStart(ServerLevel level, LivingEntity target) {
             level.playSound(null, boss.blockPosition(), ModSounds.CINDER_ROAR, SoundSource.HOSTILE, 2.4f, 0.82f);
             ModNetworking.sendCinderDragonVfxNearby(level, CinderDragonVfxPayload.KIND_FAN_TELEGRAPH,
-                    boss.position(), forwardFromLockedYaw(), 15.0f * boss.getScaleRatio(), boss.isEnragedVisual());
+                    boss.position(), forwardFromLockedYaw(), 19.5f * boss.getScaleRatio(), boss.isEnragedVisual());
         }
 
         @Override
@@ -420,11 +420,11 @@ public final class CinderDragonSkillGoals {
                 boss.hurtMarked = true;
                 level.playSound(null, boss.blockPosition(), ModSounds.CINDER_BITE, SoundSource.HOSTILE, 2.7f, 0.78f);
                 ModNetworking.sendCinderDragonVfxNearby(level, CinderDragonVfxPayload.KIND_WING_SLASH,
-                        boss.getMouthFlameWorldPos(), fwd, (float) (13.0 * s), boss.isEnragedVisual());
+                        boss.getMouthFlameWorldPos(), fwd, (float) (16.5 * s), boss.isEnragedVisual());
             }
             if (hw.isActive(prevT, currT)) {
                 float dmg = boss.scaleSkillDamage(CinderDragonConfig.get().savageBiteDamage);
-                damageArc(level, boss.position(), forwardFromLockedYaw(), 15.5 * s, 52.0, dmg, 0.90, false, true);
+                damageArc(level, boss.position(), forwardFromLockedYaw(), 19.5 * s, 52.0, dmg, 0.90, false, true);
             }
         }
     }
@@ -439,7 +439,7 @@ public final class CinderDragonSkillGoals {
 
         @Override
         protected boolean matchesCondition(LivingEntity target, double distSq) {
-            double r = 18.5 * boss.getScaleRatio();
+            double r = 23.0 * boss.getScaleRatio();
             return distSq <= r * r;
         }
 
@@ -452,7 +452,7 @@ public final class CinderDragonSkillGoals {
         protected void onSkillStart(ServerLevel level, LivingEntity target) {
             level.playSound(null, boss.blockPosition(), ModSounds.CINDER_WING_FLAP, SoundSource.HOSTILE, 2.7f, 0.76f);
             ModNetworking.sendCinderDragonVfxNearby(level, CinderDragonVfxPayload.KIND_FAN_TELEGRAPH,
-                    boss.position(), forwardFromLockedYaw(), 18.0f * boss.getScaleRatio(), boss.isEnragedVisual());
+                    boss.position(), forwardFromLockedYaw(), 22.5f * boss.getScaleRatio(), boss.isEnragedVisual());
         }
 
         @Override
@@ -462,11 +462,11 @@ public final class CinderDragonSkillGoals {
             if (hw.crossedImpact(prevT, currT)) {
                 level.playSound(null, boss.blockPosition(), ModSounds.CINDER_WING_SWEEP, SoundSource.HOSTILE, 2.9f, 0.80f);
                 ModNetworking.sendCinderDragonVfxNearby(level, CinderDragonVfxPayload.KIND_WING_SLASH,
-                        boss.position().add(0, 2.6, 0), forwardFromLockedYaw(), (float) (18.0 * s), boss.isEnragedVisual());
+                        boss.position().add(0, 2.6, 0), forwardFromLockedYaw(), (float) (22.5 * s), boss.isEnragedVisual());
             }
             if (hw.isActive(prevT, currT)) {
                 float dmg = boss.scaleSkillDamage(CinderDragonConfig.get().wingClawSweepDamage);
-                damageArc(level, boss.position(), forwardFromLockedYaw(), 18.0 * s, 90.0, dmg, 1.50, false, true);
+                damageArc(level, boss.position(), forwardFromLockedYaw(), 22.5 * s, 90.0, dmg, 1.50, false, true);
             }
         }
     }
@@ -481,7 +481,7 @@ public final class CinderDragonSkillGoals {
 
         @Override
         protected boolean matchesCondition(LivingEntity target, double distSq) {
-            double r = 20.0 * boss.getScaleRatio();
+            double r = 27.0 * boss.getScaleRatio();
             if (distSq > r * r) return false;
             Vec3 fwd = new Vec3(-Math.sin(boss.yBodyRot * Mth.DEG_TO_RAD), 0, Math.cos(boss.yBodyRot * Mth.DEG_TO_RAD));
             Vec3 toT = target.position().subtract(boss.position());
@@ -500,7 +500,7 @@ public final class CinderDragonSkillGoals {
             Vec3 rear = forwardFromLockedYaw().scale(-1.0);
             level.playSound(null, boss.blockPosition(), ModSounds.CINDER_WING_FLAP, SoundSource.HOSTILE, 2.4f, 0.74f);
             ModNetworking.sendCinderDragonVfxNearby(level, CinderDragonVfxPayload.KIND_FAN_TELEGRAPH,
-                    boss.position(), rear, 19.5f * boss.getScaleRatio(), boss.isEnragedVisual());
+                    boss.position(), rear, 26.5f * boss.getScaleRatio(), boss.isEnragedVisual());
         }
 
         @Override
@@ -514,11 +514,11 @@ public final class CinderDragonSkillGoals {
                     ModNetworking.sendShakeNearby(level, boss.position(), 48.0 * s, 1.65f, 14);
                 }
                 ModNetworking.sendCinderDragonVfxNearby(level, CinderDragonVfxPayload.KIND_TAIL_ARC,
-                        boss.position().add(0, 2.2, 0), rear, (float) (19.5 * s), boss.isEnragedVisual());
+                        boss.position().add(0, 2.2, 0), rear, (float) (26.5 * s), boss.isEnragedVisual());
             }
             if (hw.isActive(prevT, currT)) {
                 float dmg = boss.scaleSkillDamage(CinderDragonConfig.get().tailCrescentSlamDamage);
-                damageArc(level, boss.position(), rear, 19.5 * s, 118.0, dmg, 1.40, true, true);
+                damageArc(level, boss.position(), rear, 26.5 * s, 118.0, dmg, 1.40, true, true);
             }
         }
     }

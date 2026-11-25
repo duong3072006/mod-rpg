@@ -93,20 +93,15 @@ public final class ModItems {
     public static Item EXCALIBUR;
     public static Item SEA_TRIDENT;
 
-    // Boss Spawn Eggs (13 Colossal Bosses: 6 GeckoLib + 3 Core Sculpted + 4 Mythic Sculpted)
-    public static Item ABYSSAL_KNIGHT_SPAWN_EGG;
-    public static Item CRYPT_LICH_SPAWN_EGG;
-    public static Item MOLTEN_TITAN_SPAWN_EGG;
+    // Boss Spawn Eggs (8 Colossal & Mid-Tier GeckoLib Bosses)
     public static Item CINDER_DRAGON_SPAWN_EGG;
-    public static Item QUETZALCOATL_SPAWN_EGG;
-    public static Item APEP_SPAWN_EGG;
     public static Item FENRIR_SPAWN_EGG;
     public static Item HYDRA_SPAWN_EGG;
     public static Item JORMUNGANDR_SPAWN_EGG;
-    public static Item TIAMAT_SPAWN_EGG;
     public static Item LEVIATHAN_SPAWN_EGG;
     public static Item CERBERUS_SPAWN_EGG;
     public static Item NIGHTMARE_KNIGHT_SPAWN_EGG;
+    public static Item CYCLOPS_WARDEN_SPAWN_EGG;
 
     private static <T extends Item> T register(String name, T item) {
         return Registry.register(BuiltInRegistries.ITEM, AbyssalRpgMod.id(name), item);
@@ -139,32 +134,22 @@ public final class ModItems {
         EXCALIBUR = register("excalibur", new ExcaliburItem());
         SEA_TRIDENT = register("sea_trident", new SeaTridentItem());
 
-        ABYSSAL_KNIGHT_SPAWN_EGG = register("abyssal_knight_spawn_egg",
-                new SpawnEggItem(ModEntities.ABYSSAL_KNIGHT_BOSS, 0x1D1A2B, 0x9B2CFF, new Item.Properties()));
-        CRYPT_LICH_SPAWN_EGG = register("crypt_lich_spawn_egg",
-                new SpawnEggItem(ModEntities.CRYPT_LICH_BOSS, 0x162A2C, 0x35F2D6, new Item.Properties()));
-        MOLTEN_TITAN_SPAWN_EGG = register("molten_titan_spawn_egg",
-                new SpawnEggItem(ModEntities.MOLTEN_TITAN_BOSS, 0x2B1610, 0xFF6B1A, new Item.Properties()));
         CINDER_DRAGON_SPAWN_EGG = register("cinder_dragon_spawn_egg",
                 new SpawnEggItem(ModEntities.CINDER_DRAGON, 0x3D3530, 0xD43818, new Item.Properties()));
-        QUETZALCOATL_SPAWN_EGG = register("quetzalcoatl_spawn_egg",
-                new SpawnEggItem(ModEntities.QUETZALCOATL_BOSS, 0x168A3E, 0xFF2E93, new Item.Properties()));
-        APEP_SPAWN_EGG = register("apep_spawn_egg",
-                new SpawnEggItem(ModEntities.APEP_BOSS, 0x1E2623, 0x1BFF9E, new Item.Properties()));
         FENRIR_SPAWN_EGG = register("fenrir_spawn_egg",
-                new SpawnEggItem(ModEntities.FENRIR_BOSS, 0x171B21, 0xFF3812, new Item.Properties()));
+                new SpawnEggItem(ModEntities.FENRIR_BOSS, 0xE6F5FF, 0x4E9CE8, new Item.Properties()));
         HYDRA_SPAWN_EGG = register("hydra_spawn_egg",
                 new SpawnEggItem(ModEntities.HYDRA_BOSS, 0x142622, 0xD4FF7A, new Item.Properties()));
         JORMUNGANDR_SPAWN_EGG = register("jormungandr_spawn_egg",
                 new SpawnEggItem(ModEntities.JORMUNGANDR_BOSS, 0x17171C, 0x8A74D9, new Item.Properties()));
-        TIAMAT_SPAWN_EGG = register("tiamat_spawn_egg",
-                new SpawnEggItem(ModEntities.TIAMAT_BOSS, 0x241719, 0xFF2222, new Item.Properties()));
         LEVIATHAN_SPAWN_EGG = register("leviathan_spawn_egg",
                 new SpawnEggItem(ModEntities.LEVIATHAN_BOSS, 0x0E2233, 0x1AE8FF, new Item.Properties()));
         CERBERUS_SPAWN_EGG = register("cerberus_spawn_egg",
                 new SpawnEggItem(ModEntities.CERBERUS, 0x1B0C0E, 0xFF3A14, new Item.Properties()));
         NIGHTMARE_KNIGHT_SPAWN_EGG = register("nightmare_knight_spawn_egg",
                 new SpawnEggItem(ModEntities.NIGHTMARE_KNIGHT, 0x14080C, 0xD91628, new Item.Properties()));
+        CYCLOPS_WARDEN_SPAWN_EGG = register("cyclops_warden_spawn_egg",
+                new SpawnEggItem(ModEntities.CYCLOPS_WARDEN, 0x8F4E32, 0xD81B22, new Item.Properties()));
     }
 
     private ModItems() {}

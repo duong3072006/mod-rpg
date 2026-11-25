@@ -1,5 +1,5 @@
 {
-  "parent": "abyssalrpg:block/abyssal_altar",
+  "parent": "abyssalrpg:block/altar_pedestal_crystal_base",
   "textures": {
     "top": "abyssalrpg:block/mythic_altar_top",
     "side": "abyssalrpg:block/mythic_altar_side",

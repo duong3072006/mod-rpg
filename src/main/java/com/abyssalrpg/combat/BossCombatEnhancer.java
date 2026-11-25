@@ -1,20 +1,15 @@
 package com.abyssalrpg.combat;
 
 import com.abyssalrpg.entity.AbstractAbyssalBoss;
-import com.abyssalrpg.entity.AbyssalKnightBossEntity;
-import com.abyssalrpg.entity.CryptLichBossEntity;
-import com.abyssalrpg.entity.MoltenTitanBossEntity;
 import com.abyssalrpg.entity.mythic.AbstractGeoMythicBoss;
-import com.abyssalrpg.entity.mythic.ApepBossEntity;
 import com.abyssalrpg.entity.mythic.CerberusBossEntity;
 import com.abyssalrpg.entity.mythic.CinderDragonBossEntity;
+import com.abyssalrpg.entity.mythic.CyclopsWardenBossEntity;
 import com.abyssalrpg.entity.mythic.FenrirBossEntity;
 import com.abyssalrpg.entity.mythic.HydraBossEntity;
 import com.abyssalrpg.entity.mythic.JormungandrBossEntity;
 import com.abyssalrpg.entity.mythic.LeviathanBossEntity;
 import com.abyssalrpg.entity.mythic.NightmareKnightBossEntity;
-import com.abyssalrpg.entity.mythic.QuetzalcoatlBossEntity;
-import com.abyssalrpg.entity.mythic.TiamatBossEntity;
 import com.abyssalrpg.entity.vfx.ShockwaveRingEntity;
 import com.abyssalrpg.network.ModNetworking;
 import com.abyssalrpg.registry.ModEffects;
@@ -97,25 +92,20 @@ public final class BossCombatEnhancer {
 
         static BossArchetype of(AbstractAbyssalBoss boss) {
             if (boss instanceof CinderDragonBossEntity
-                    || boss instanceof MoltenTitanBossEntity
                     || boss instanceof CerberusBossEntity) {
                 return INFERNO;
             }
             if (boss instanceof NightmareKnightBossEntity
-                    || boss instanceof AbyssalKnightBossEntity
-                    || boss instanceof CryptLichBossEntity
                     || boss instanceof HydraBossEntity) {
                 return NIGHTMARE_VOID;
             }
             if (boss instanceof LeviathanBossEntity) {
                 return OCEAN_ABYSS;
             }
-            if (boss instanceof JormungandrBossEntity || boss instanceof ApepBossEntity) {
+            if (boss instanceof JormungandrBossEntity) {
                 return VENOM_ABYSS;
             }
-            if (boss instanceof FenrirBossEntity
-                    || boss instanceof QuetzalcoatlBossEntity
-                    || boss instanceof TiamatBossEntity) {
+            if (boss instanceof FenrirBossEntity || boss instanceof CyclopsWardenBossEntity) {
                 return APEX_TEMPEST;
             }
             return NIGHTMARE_VOID;
@@ -321,11 +311,9 @@ public final class BossCombatEnhancer {
     }
 
     private static void triggerLightningBarrage(ServerLevel level, AbstractAbyssalBoss boss, Player target, boolean phase2) {
-        boolean stormSpecialist = boss instanceof QuetzalcoatlBossEntity
-                || boss instanceof TiamatBossEntity
-                || boss instanceof CinderDragonBossEntity
+        boolean stormSpecialist = boss instanceof CinderDragonBossEntity
                 || boss instanceof NightmareKnightBossEntity
-                || boss instanceof CryptLichBossEntity;
+                || boss instanceof FenrirBossEntity;
         int boltCount = phase2 ? (stormSpecialist ? 3 : 2) : (stormSpecialist ? 2 : 1);
 
         double bossAtk = boss.getAttributeValue(Attributes.ATTACK_DAMAGE);

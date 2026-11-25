@@ -64,6 +64,7 @@ public class CinderDragonGeoModel extends GeoModel<CinderDragonBossEntity> {
         GeoBone n1 = getAnimationProcessor().getBone(CinderDragonBossEntity.NECK_1_BONE);
         GeoBone n2 = getAnimationProcessor().getBone(CinderDragonBossEntity.NECK_2_BONE);
         GeoBone n3 = getAnimationProcessor().getBone(CinderDragonBossEntity.NECK_3_BONE);
+        GeoBone n4 = getAnimationProcessor().getBone(CinderDragonBossEntity.NECK_4_BONE);
         GeoBone head = getAnimationProcessor().getBone(CinderDragonBossEntity.HEAD_BONE);
         if (head == null || animatable.isHeadLockedByAnimation()) {
             animatable.stepClientHeadTracking(0.0f, 0.0f);
@@ -71,8 +72,7 @@ public class CinderDragonGeoModel extends GeoModel<CinderDragonBossEntity> {
         }
 
         EntityModelData modelData = animationState.getData(DataTickets.ENTITY_MODEL_DATA);
-        // Kẹp gọn góc nhìn đầu/cổ (±28° yaw, ±16° pitch) và tách pitch tập trung vào neck_3 + head
-        // để triệt tiêu hoàn toàn hiện tượng nghiêng xoắn (parasitic roll) làm lệch 2 cặp sừng vương miện!
+        // Trải mượt góc quay đầu (±28° yaw, ±16° pitch) đều qua cả 4 đốt cổ (`neck_1..4`) + `head`
         float targetYaw = (modelData != null) ? Mth.clamp(Mth.wrapDegrees(modelData.netHeadYaw()), -28.0f, 28.0f) : 0.0f;
         float targetPitch = (modelData != null) ? Mth.clamp(Mth.wrapDegrees(modelData.headPitch()), -16.0f, 16.0f) : 0.0f;
         animatable.stepClientHeadTracking(targetYaw, targetPitch);
@@ -81,17 +81,21 @@ public class CinderDragonGeoModel extends GeoModel<CinderDragonBossEntity> {
         float pitchRad = animatable.getClientHeadPitchDeg() * Mth.DEG_TO_RAD;
 
         if (n1 != null) {
-            n1.setRotY(yawRad * 0.24f);
+            n1.setRotY(yawRad * 0.16f);
         }
         if (n2 != null) {
-            n2.setRotY(yawRad * 0.24f);
+            n2.setRotY(yawRad * 0.18f);
         }
         if (n3 != null) {
-            n3.setRotY(yawRad * 0.22f);
-            n3.setRotX(pitchRad * 0.35f);
+            n3.setRotY(yawRad * 0.20f);
+            n3.setRotX(pitchRad * 0.20f);
         }
-        head.setRotY(yawRad * 0.30f);
-        head.setRotX(pitchRad * 0.65f);
+        if (n4 != null) {
+            n4.setRotY(yawRad * 0.20f);
+            n4.setRotX(pitchRad * 0.30f);
+        }
+        head.setRotY(yawRad * 0.26f);
+        head.setRotX(pitchRad * 0.50f);
         head.setRotZ(0.0f);
     }
 }

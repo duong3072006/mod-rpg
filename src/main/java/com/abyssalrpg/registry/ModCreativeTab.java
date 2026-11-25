@@ -91,20 +91,15 @@ public final class ModCreativeTab {
                         output.accept(ModItems.NIGHTMARE_HEART);
                         output.accept(ModItems.JORMUNGANDR_VENOM_FANG);
 
-                        // All 13 Boss Spawn Eggs
-                        output.accept(ModItems.ABYSSAL_KNIGHT_SPAWN_EGG);
-                        output.accept(ModItems.CRYPT_LICH_SPAWN_EGG);
-                        output.accept(ModItems.MOLTEN_TITAN_SPAWN_EGG);
+                        // All 8 Boss Spawn Eggs
                         output.accept(ModItems.CINDER_DRAGON_SPAWN_EGG);
-                        output.accept(ModItems.QUETZALCOATL_SPAWN_EGG);
-                        output.accept(ModItems.APEP_SPAWN_EGG);
                         output.accept(ModItems.FENRIR_SPAWN_EGG);
                         output.accept(ModItems.HYDRA_SPAWN_EGG);
                         output.accept(ModItems.JORMUNGANDR_SPAWN_EGG);
-                        output.accept(ModItems.TIAMAT_SPAWN_EGG);
                         output.accept(ModItems.LEVIATHAN_SPAWN_EGG);
                         output.accept(ModItems.CERBERUS_SPAWN_EGG);
                         output.accept(ModItems.NIGHTMARE_KNIGHT_SPAWN_EGG);
+                        output.accept(ModItems.CYCLOPS_WARDEN_SPAWN_EGG);
                     })
                     .build()
     );

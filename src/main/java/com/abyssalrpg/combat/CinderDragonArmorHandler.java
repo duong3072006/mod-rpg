@@ -4,6 +4,7 @@ import com.abyssalrpg.AbyssalRpgMod;
 import com.abyssalrpg.api.BossHealthHolder;
 import com.abyssalrpg.config.ArmorConfig;
 import com.abyssalrpg.item.CinderDragonArmorItem;
+import com.abyssalrpg.item.NightmareArmorItem;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -184,21 +185,22 @@ public final class CinderDragonArmorHandler {
 
     /**
      * Tính sát thương thực tế vượt ngưỡng giới hạn cứng `30` giáp / `20` toughness của Vanilla
-     * cho người mặc các mảnh **Cinder Dragon Armor** (×2.5 giáp: `8/20/15/7 = 50` Armor, `7.5×4 = 30` Toughness):
+     * cho người mặc các mảnh **Cinder Dragon Armor** hoặc **Nightmare Knight Armor** (×2.5 giáp: `8/20/15/7 = 50` Armor, `7.5×4 = 30` Toughness):
      * - Tránh bị Boss đánh 80–200 dame xuyên thủng giáp như giáp vanilla!
-     * - Giới hạn giảm sát thương tối đa ở `88%` (cộng thêm Đề Kháng I `-20%` khi mặc đủ 4 món -> tank cực trâu mà vẫn công bằng).
-     * - Vẫn tôn trọng đầy đủ tỉ lệ xuyên giáp `pierceFraction` từ đòn đánh của kẻ địch!
+     * - Giới hạn giảm sát thương tối đa ở `88%` (tôn trọng đầy đủ tỉ lệ xuyên giáp `pierceFraction` từ đòn đánh của kẻ địch!).
      */
     public static float applyUncappedCinderArmorMitigation(LivingEntity victim, float rawDamage, float vanillaResult, float pierceFraction) {
-        int pieces = countEquippedPieces(victim);
-        if (pieces <= 0 || rawDamage <= 0.0F) {
+        if (victim == null || rawDamage <= 0.0F) {
             return vanillaResult;
         }
         ArmorConfig cfg = ArmorConfig.get();
         float totalArmor = 0.0F;
         float totalTough = 0.0F;
+        int highTierPieces = 0;
         for (EquipmentSlot slot : ARMOR_SLOTS) {
-            if (victim.getItemBySlot(slot).getItem() instanceof CinderDragonArmorItem) {
+            var item = victim.getItemBySlot(slot).getItem();
+            if (item instanceof CinderDragonArmorItem) {
+                highTierPieces++;
                 totalArmor += switch (slot) {
                     case HEAD -> cfg.cinderHelmetDefense;
                     case CHEST -> cfg.cinderChestplateDefense;
@@ -207,10 +209,20 @@ public final class CinderDragonArmorHandler {
                     default -> 0;
                 };
                 totalTough += cfg.cinderToughness;
+            } else if (item instanceof NightmareArmorItem) {
+                highTierPieces++;
+                totalArmor += switch (slot) {
+                    case HEAD -> cfg.helmetDefense;
+                    case CHEST -> cfg.chestplateDefense;
+                    case LEGS -> cfg.leggingsDefense;
+                    case FEET -> cfg.bootsDefense;
+                    default -> 0;
+                };
+                totalTough += cfg.toughness;
             }
         }
-        // Chỉ kích hoạt vượt ngưỡng khi tổng giáp thực của các mảnh Cinder vượt trên mốc 20 chuẩn vanilla
-        if (totalArmor <= 20.0F) {
+        // Chỉ kích hoạt vượt ngưỡng khi tổng giáp thực của các mảnh Giáp Boss vượt trên mốc 20 chuẩn vanilla
+        if (highTierPieces <= 0 || totalArmor <= 20.0F) {
             return vanillaResult;
         }
         float keep = Math.max(0.0F, 1.0F - pierceFraction);

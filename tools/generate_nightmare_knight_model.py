@@ -53,7 +53,9 @@ MAT = {
     "BLADE_EDGE":    (512, 768, 256, 256),  # Mép lưỡi răng cưa & mũi kiếm đỏ máu (#8E141C -> #D9262E, P2 nóng rực)
     "RUNE_GLOW":     (768, 768, 128, 128),  # Rãnh rune máu thân kiếm, khóa khiên ngực & tinh thể chuôi (fullbright)
     "EYE_GLOW":      (896, 768, 128, 128),  # Đôi mắt đỏ rực fullbright trong hốc mắt sâu
-    "CLAW_BLOOD":    (768, 896, 256, 128),  # Móng vuốt chân thú 4 ngón & móc đỉnh cánh đen-đỏ máu bóng
+    "CLAW_BLOOD":    (768, 896, 128, 128),  # Móng vuốt & móc đỉnh cánh đen-đỏ máu bóng
+    "HEART_OUTER":   (896, 896,  64, 128),  # Vỏ cơ tim đỏ huyết thẩm gân mạch của Nightmare Core
+    "HEART_CORE":    (960, 896,  64, 128),  # Lõi trái tim Nightmare Core hồng san hô rực sáng fullbright
 }
 
 
@@ -149,6 +151,27 @@ def make_cube(origin, size, mat: str, rot=None, pivot=None,
         c["pivot"] = [round(float(pivot[0]), 3), round(float(pivot[1]), 3), round(float(pivot[2]), 3)]
         c["rotation"] = [round(float(rot[0]), 2), round(float(rot[1]), 2), round(float(rot[2]), 2)]
     return c
+
+
+def make_centered_cube(center, size, mat: str, rot=None, **kw) -> dict:
+    cx, cy, cz = float(center[0]), float(center[1]), float(center[2])
+    sx, sy, sz = float(size[0]), float(size[1]), float(size[2])
+    return make_cube([cx - sx * 0.5, cy - sy * 0.5, cz - sz * 0.5], size, mat, rot=rot, pivot=[cx, cy, cz], **kw)
+
+
+def add_beveled_armor_block(out_list: list, center, w: float, h: float, d: float,
+                            mat_main: str = "ARMOR_STEEL", mat_trim: str = "ARMOR_SPIKE",
+                            rot_x: float = 0.0) -> None:
+    """Dựng 1 đốt giáp ngực/đùi/ống chân bát giác vát cạnh nhiều tầng (loại bỏ cảm giác hộp vuông thô cứng!)."""
+    cx, cy, cz = float(center[0]), float(center[1]), float(center[2])
+    out_list.append(make_centered_cube([cx, cy, cz], [w * 0.86, h, d * 0.88], mat_main, rot=[rot_x, 0.0, 0.0]))
+    out_list.append(make_centered_cube([cx, cy, cz - d * 0.36], [w * 0.62, h * 0.94, d * 0.34], mat_trim, rot=[rot_x, 0.0, 0.0]))
+    out_list.append(make_centered_cube([cx, cy, cz + d * 0.36], [w * 0.66, h * 0.92, d * 0.32], mat_main, rot=[rot_x, 0.0, 0.0]))
+    for sx in (-1.0, 1.0):
+        out_list.append(make_centered_cube([cx + sx * (w * 0.40), cy, cz], [w * 0.28, h * 0.92, d * 0.68], mat_main,
+                                           rot=[rot_x, sx * 12.0, 0.0]))
+        out_list.append(make_centered_cube([cx + sx * (w * 0.35), cy, cz - d * 0.28], [w * 0.26, h * 0.88, d * 0.34], mat_trim,
+                                           rot=[rot_x, -sx * 24.0, 0.0]))
 
 
 def mirror_x_cube(c: dict) -> dict:
@@ -304,382 +327,526 @@ def add_membrane_bay_3d(out_list: list, top_a, top_b, bot_a, bot_b, strips: int,
 
 
 # =============================================================================
-# 1. XÂY DỰNG TOÀN BỘ HÌNH HỌC NIGHTMARE KNIGHT v3 (1.200–1.700 CUBES, 50 BONES)
-#    MỌI BONE QUAN TRỌNG ĐỀU CÓ BIND ROTATION = [0, 0, 0] -> 0% LỖI CỘNG DỒN GÓC!
+# 1. XÂY DỰNG TOÀN BỘ HÌNH HỌC NIGHTMARE KNIGHT v5 (HỮU CƠ MỀM MẠI, LỒNG NGỰC MỞ BỌC TRÁI TIM, CHÂN GỌN LỰC LƯỠNG!)
+#    - Bỏ hoàn toàn dáng xếp tầng hộp cứng kiểu robot/nhựa -> dùng mảng cong hữu cơ, cơ bắp gân guốc & giáp rèn gothic mềm mại
+#    - Giảm chiều dài chân (~22.8 px thay vì 27.2 px) cho tỷ lệ chiến thần cân đối uy nghi (đỉnh sọ ~52.8 px, đỉnh cánh ~60.8 px)
+#    - Lồng ngực mở toang lộ khung xương sườn cong ôm bọc Trái Tim Nightmare Core 3D phát sáng đập nhịp (`heart` bone!)
 # =============================================================================
 def build_nightmare_geo() -> tuple[dict, int, dict]:
     bones = []
 
     bones.append({"name": "root", "pivot": [0.0, 0.0, 0.0], "rotation": [0.0, 0.0, 0.0], "cubes": []})
-    bones.append({"name": "body", "parent": "root", "pivot": [0.0, 21.0, 0.0], "rotation": [0.0, 0.0, 0.0], "cubes": []})
+    bones.append({"name": "body", "parent": "root", "pivot": [0.0, 23.2, 0.0], "rotation": [0.0, 0.0, 0.0], "cubes": []})
 
     # -------------------------------------------------------------------------
-    # A. HÔNG / KHUNG CHẬU (`pelvis`, `tail`, `tabard`) — EO CHỮ V THON + GIÁP VÁY GOTHIC
+    # A. HÔNG / ĐAI GOTHIC HỮU CƠ & DẢI VẢI HÔNG MỀM (`pelvis`, `tail`, `tabard` -> `tabard_lower`)
     # -------------------------------------------------------------------------
     pelvis_cubes = [
-        make_cube([-6.0, 19.2, -2.5], [12.0, 3.6, 5.0], "ARMOR_STEEL"),
-        make_cube([-4.2, 18.0, -2.1], [8.4, 1.8, 4.2], "ARMOR_STEEL"),
-        make_cube([-2.4, 17.0, -1.7], [4.8, 1.4, 3.4], "ARMOR_SPIKE"),
-        # Khóa đai lưng trung tâm chữ V nhiều tầng sắc cạnh
-        make_cube([-3.5, 21.0, -3.20], [7.0, 1.5, 1.35], "ARMOR_SPIKE"),
-        make_cube([-2.4, 19.3, -3.45], [4.8, 1.9, 1.35], "ARMOR_SPIKE", rot=[10, 0, 0]),
-        make_cube([-1.4, 17.7, -3.60], [2.8, 1.8, 1.20], "ARMOR_SPIKE", rot=[15, 0, 0]),
-        make_cube([-0.7, 16.5, -3.60], [1.4, 1.4, 0.95], "ARMOR_SPIKE", rot=[18, 0, 0]),
-        make_cube([-0.18, 19.2, -3.78], [0.36, 1.9, 0.34], "RUNE_GLOW"),
-        # Tấm giáp lưng dưới
-        make_cube([-3.5, 19.4, 2.1], [7.0, 3.0, 1.25], "ARMOR_STEEL", rot=[-8, 0, 0]),
-        make_cube([-2.3, 17.6, 2.2], [4.6, 2.0, 1.15], "ARMOR_SPIKE", rot=[-12, 0, 0]),
+        # Lõi hông hữu cơ bọc giáp thép rèn ôm gọn
+        make_centered_cube([0.0, 23.6, 0.3], [11.2, 3.6, 5.8], "ARMOR_STEEL"),
+        make_centered_cube([0.0, 21.8, 0.2], [8.4, 2.2, 4.8], "FLESH_DARK"),
+        make_centered_cube([0.0, 20.8, -0.1], [4.6, 2.0, 3.8], "ARMOR_STEEL"),
+        # Khóa thắt lưng đầu lâu/khiên gothic chạm khắc mềm ở chính giữa
+        make_centered_cube([0.0, 24.6, -2.95], [7.2, 1.5, 1.35], "ARMOR_SPIKE"),
+        make_centered_cube([0.0, 23.0, -3.35], [4.4, 2.1, 1.35], "ARMOR_SPIKE", rot=[10, 0, 0]),
+        make_centered_cube([0.0, 21.3, -3.55], [2.6, 2.0, 1.20], "ARMOR_SPIKE", rot=[16, 0, 0]),
+        make_centered_cube([0.0, 23.2, -4.02], [1.45, 1.45, 0.55], "HORN_CRIMSON", rot=[10, 0, 45]),
+        make_centered_cube([0.0, 23.2, -4.22], [0.68, 0.68, 0.35], "RUNE_GLOW", rot=[10, 0, 45]),
+        # Giáp lưng dưới cong mềm
+        make_centered_cube([0.0, 23.8, 3.45], [7.4, 3.2, 1.45], "ARMOR_STEEL", rot=[-10, 0, 0]),
+        make_centered_cube([0.0, 21.6, 3.55], [4.8, 2.2, 1.20], "ARMOR_SPIKE", rot=[-14, 0, 0]),
     ]
-    pelvis_side = [
-        make_cube([2.2, 20.8, -3.25], [3.1, 1.35, 1.65], "ARMOR_SPIKE", rot=[4, -18, 24]),
-        make_cube([3.3, 19.5, -2.85], [2.8, 2.5, 5.6], "ARMOR_STEEL", rot=[0, -6, -16]),
-        make_cube([4.4, 17.6, -2.55], [2.5, 2.5, 5.0], "ARMOR_STEEL", rot=[0, -6, -24]),
-        make_cube([5.2, 15.8, -2.15], [2.2, 2.4, 4.2], "ARMOR_SPIKE", rot=[0, -6, -30]),
-        make_cube([5.7, 14.2, -1.70], [1.7, 2.0, 3.2], "ARMOR_SPIKE", rot=[0, -6, -34]),
-        make_cube([1.6, 19.2, -3.40], [2.7, 1.4, 1.0], "ARMOR_SPIKE", rot=[8, -22, 28]),
-        make_cube([2.4, 17.6, -3.30], [2.4, 1.4, 1.0], "ARMOR_STEEL", rot=[10, -24, 24]),
-        make_cube([3.5, 19.6, 1.85], [2.4, 2.5, 1.7], "ARMOR_STEEL", rot=[14, 18, -18]),
-    ]
-    for c in pelvis_side:
-        pelvis_cubes.append(c)
-        pelvis_cubes.append(mirror_x_cube(c))
+    # Đai hông vát cong & tấm giáp váy hông (faulds) vát mềm lượn theo đường cong đùi (không hộp ngang!)
     for sx in (1.0, -1.0):
-        add_claw_spike(pelvis_cubes, [sx * 5.0, 21.4, -1.6], [sx * 7.4, 23.2, -2.2], 1.12, "ARMOR_SPIKE", 3)
-        add_claw_spike(pelvis_cubes, [sx * 5.7, 18.8, -0.2], [sx * 8.0, 19.8, 0.2], 1.02, "ARMOR_SPIKE", 3)
-        add_claw_spike(pelvis_cubes, [sx * 6.2, 16.2, 0.8], [sx * 8.0, 16.4, 1.4], 0.86, "ARMOR_SPIKE", 2)
+        # Gờ đai xương-thép cong ôm ngang hông
+        add_curved_rod(pelvis_cubes, [
+            [sx * 1.8, 24.8, -3.15],
+            [sx * 4.4, 24.2, -2.55],
+            [sx * 6.0, 24.6, +0.10],
+            [sx * 4.4, 24.8, +2.85],
+        ], 1.35, 1.05, "ARMOR_SPIKE", segs_per_span=2)
+        # 3 lớp vảy giáp váy đùi cong vát dọc rủ mềm (giống váy giáp hiệp sĩ bóng đêm)
+        pelvis_cubes.append(make_centered_cube([sx * 5.2, 22.0, -0.5], [1.8, 4.4, 5.8], "ARMOR_STEEL", rot=[4, -sx * 10, -sx * 16]))
+        pelvis_cubes.append(make_centered_cube([sx * 6.0, 19.0, -0.6], [1.5, 4.2, 4.8], "ARMOR_STEEL", rot=[6, -sx * 12, -sx * 20]))
+        pelvis_cubes.append(make_centered_cube([sx * 6.6, 16.4, -0.5], [1.2, 3.4, 3.4], "ARMOR_SPIKE", rot=[8, -sx * 14, -sx * 24]))
+        # 2 vạt vải đỏ rách phủ mềm hai bên hông (làm dáng mềm mại & giàu chi tiết!)
+        add_membrane_bay_3d(pelvis_cubes,
+                            [sx * 4.6, 23.8, -2.4], [sx * 5.6, 23.6, +2.2],
+                            [sx * 7.2, 13.8, -3.0], [sx * 8.2, 14.2, +3.0],
+                            4, "CLOTH_TATTER", (0.12, 0.88), (0.18, 0.96), 0.22, pleat_amp=0.28)
+        # Gai xương cong tự nhiên mọc bên đai hông
+        add_curved_rod(pelvis_cubes, [
+            [sx * 5.4, 24.6, -1.6],
+            [sx * 7.0, 25.8, -2.1],
+            [sx * 7.8, 27.2, -2.2],
+        ], 0.95, 0.24, "BONE_RIB", segs_per_span=2)
 
-    bones.append({"name": "pelvis", "parent": "body", "pivot": [0.0, 21.0, 0.0], "rotation": [0.0, 0.0, 0.0], "cubes": pelvis_cubes})
+    bones.append({"name": "pelvis", "parent": "body", "pivot": [0.0, 23.2, 0.3], "rotation": [0.0, 0.0, 0.0], "cubes": pelvis_cubes})
 
     tail_cubes = []
-    add_chain_rod(tail_cubes, [0.0, 20.2, 2.2], [0.0, 16.8, 6.2], 1.70, 0.62, 5, "ARMOR_STEEL")
-    add_claw_spike(tail_cubes, [0.0, 17.0, 5.8], [0.0, 15.2, 8.4], 0.82, "ARMOR_SPIKE", 3)
-    bones.append({"name": "tail", "parent": "pelvis", "pivot": [0.0, 20.2, 2.4], "rotation": [0.0, 0.0, 0.0], "cubes": tail_cubes})
+    add_curved_rod(tail_cubes, [
+        [0.0, 22.6, 3.0],
+        [0.0, 20.6, 6.2],
+        [0.0, 18.8, 8.8],
+        [0.0, 17.6, 10.6],
+    ], 1.70, 0.38, "ARMOR_STEEL", segs_per_span=2)
+    bones.append({"name": "tail", "parent": "pelvis", "pivot": [0.0, 22.6, 3.0], "rotation": [0.0, 0.0, 0.0], "cubes": tail_cubes})
 
-    # KHỐ VẢI ĐỎ RÁCH GIỮA HAI ĐÙI (`tabard` — rủ mềm giữa khe hở rộng của 2 đùi chữ Z, không xuyên đùi!)
+    # KHỐ VẢI ĐỎ RÁCH 2 ĐỐT (`tabard` -> `tabard_lower`) mềm mại giữa 2 đùi!
     tabard_cubes = []
-    add_membrane_bay_3d(tabard_cubes, [-2.2, 19.5, -3.55], [2.2, 19.5, -3.55],
-                        [-2.5, 6.2, -4.45], [2.5, 6.2, -4.45], 6, "CLOTH_TATTER", (0.04, 0.96), (0.02, 0.98), 0.26, pleat_amp=0.35)
-    add_membrane_bay_3d(tabard_cubes, [-2.3, 19.7, -3.80], [2.3, 19.7, -3.80],
-                        [-2.4, 13.8, -4.15], [2.4, 13.8, -4.15], 4, "CLOTH_TATTER", (0.10, 0.90), (0.02, 0.48), 0.24, pleat_amp=0.20)
-    bones.append({"name": "tabard", "parent": "pelvis", "pivot": [0.0, 19.6, -3.5], "rotation": [0.0, 0.0, 0.0], "cubes": tabard_cubes})
+    add_membrane_bay_3d(tabard_cubes, [-2.5, 22.8, -3.55], [2.5, 22.8, -3.55],
+                        [-2.9, 14.8, -4.05], [2.9, 14.8, -4.05], 6, "CLOTH_TATTER", (0.04, 0.96), (0.02, 0.54), 0.24, pleat_amp=0.34)
+    add_membrane_bay_3d(tabard_cubes, [-2.3, 23.0, -3.80], [2.3, 23.0, -3.80],
+                        [-2.5, 17.8, -4.15], [2.5, 17.8, -4.15], 4, "CLOTH_TATTER", (0.10, 0.90), (0.02, 0.36), 0.22, pleat_amp=0.20)
+    bones.append({"name": "tabard", "parent": "pelvis", "pivot": [0.0, 22.8, -3.5], "rotation": [0.0, 0.0, 0.0], "cubes": tabard_cubes})
+
+    tabard_lo_c = []
+    add_membrane_bay_3d(tabard_lo_c, [-2.9, 15.0, -4.05], [2.9, 15.0, -4.05],
+                        [-3.4, 6.8, -4.60], [3.4, 6.8, -4.60], 6, "CLOTH_TATTER", (0.04, 0.96), (0.50, 0.99), 0.24, pleat_amp=0.46, pleat_top_amp=0.34)
+    bones.append({"name": "tabard_lower", "parent": "tabard", "pivot": [0.0, 15.0, -4.05], "rotation": [0.0, 0.0, 0.0], "cubes": tabard_lo_c})
 
     # -------------------------------------------------------------------------
-    # B. EO XƯƠNG SƯỜN QUỶ (`torso` — EO THON CHỮ V LỘ 4 CẶP XƯƠNG SƯỜN XÁM NGÀ + CỘT SỐNG ĐỐT RỜI)
+    # B. EO XƯƠNG SƯỜN QUỶ HỮU CƠ (`torso` -> `torso_upper`) — EO GÂN GUỐC LỘ XƯƠNG SƯỜN & MỞ RỘNG MỀM LÊN HỐC TIM!
     # -------------------------------------------------------------------------
     torso_cubes = [
-        make_cube([-2.2, 22.0, -1.7], [4.4, 6.6, 3.6], "FLESH_DARK"),
-        make_cube([-1.6, 26.2, -2.78], [3.2, 2.0, 1.3], "ARMOR_STEEL", rot=[10, 0, 0]),
-        make_cube([-1.3, 24.4, -2.88], [2.6, 2.0, 1.2], "ARMOR_SPIKE", rot=[8, 0, 0]),
-        make_cube([-1.05, 22.6, -2.82], [2.1, 2.0, 1.1], "ARMOR_STEEL", rot=[6, 0, 0]),
-        make_cube([-0.15, 23.2, -3.05], [0.30, 4.4, 0.30], "RUNE_GLOW"),
+        # Lõi eo cơ bắp tối săn chắc + cột sống xương cổ điển phía sau
+        make_centered_cube([0.0, 28.2, 0.3], [5.8, 7.4, 4.8], "FLESH_DARK"),
+        # Dải gân cơ bụng tối & sống xương bụng (không còn tấm thép vuông cứng!)
+        make_centered_cube([0.0, 29.8, -2.55], [3.2, 2.4, 1.3], "FLESH_DARK", rot=[8, 0, 0]),
+        make_centered_cube([0.0, 27.6, -2.65], [2.8, 2.4, 1.2], "ARMOR_STEEL", rot=[6, 0, 0]),
+        make_centered_cube([0.0, 25.6, -2.55], [2.4, 2.2, 1.2], "ARMOR_STEEL", rot=[4, 0, 0]),
     ]
-    for vi in range(6):
-        vy = 22.4 + vi * 1.05
-        torso_cubes.append(make_cube([-1.15, vy, 1.35], [2.3, 0.85, 1.65], "ARMOR_STEEL"))
-        add_claw_spike(torso_cubes, [0.0, vy + 0.35, 2.5], [0.0, vy + 1.1, 4.3], 0.78, "ARMOR_SPIKE", 2)
+    # Đốt sống lưng xương-sắt nhô mềm dọc sống lưng
+    for vi in range(5):
+        vy = 25.4 + vi * 1.25
+        torso_cubes.append(make_centered_cube([0.0, vy, 2.65], [2.4, 0.95, 1.85], "BONE_RIB"))
+        add_claw_spike(torso_cubes, [0.0, vy + 0.3, 3.2], [0.0, vy + 1.0, 5.1], 0.78, "ARMOR_SPIKE", 2)
 
-    rib_rows = [
-        (27.3, 26.6, 5.15, 0.86),
-        (25.9, 25.2, 4.65, 0.82),
-        (24.5, 23.9, 4.05, 0.76),
-        (23.1, 22.6, 3.40, 0.70),
-    ]
-    for yb, yf, wout, rth in rib_rows:
+    # 3 cặp xương sườn eo cong 3D tự nhiên bọc quanh eo chữ V
+    for yb, yf, wout, rth in (
+        (30.8, 29.6, 5.85, 0.94),
+        (29.0, 28.0, 5.15, 0.88),
+        (27.2, 26.3, 4.45, 0.80),
+    ):
         for sx in (1.0, -1.0):
-            p0 = [sx * 1.10, yb, 1.55]
-            p1 = [sx * wout, (yb + yf) * 0.5 + 0.15, 0.25]
-            p2 = [sx * (wout * 0.86), yf + 0.10, -1.85]
-            p3 = [sx * 1.08, yf - 0.18, -2.55]
-            add_chain_rod(torso_cubes, p0, p1, rth, rth * 0.96, 3, "BONE_RIB", overlap=0.20)
-            add_chain_rod(torso_cubes, p1, p2, rth * 0.96, rth * 0.88, 3, "BONE_RIB", overlap=0.20)
-            add_chain_rod(torso_cubes, p2, p3, rth * 0.88, rth * 0.72, 3, "BONE_RIB", overlap=0.18)
-            torso_cubes.append(make_cube([sx * (wout * 0.84) - 0.4, yf - 0.35, -2.2], [0.8, 0.75, 0.8], "BONE_RIB"))
+            add_curved_rod(torso_cubes, [
+                [sx * 1.35, yb, 2.35],
+                [sx * wout, (yb + yf) * 0.5 + 0.10, 0.35],
+                [sx * (wout * 0.86), yf, -2.10],
+                [sx * 1.45, yf - 0.35, -3.10],
+            ], rth, rth * 0.62, "BONE_RIB", segs_per_span=2)
+            # Sợi gân máu mảnh chạy dọc giữa xương sườn eo
+            add_curved_rod(torso_cubes, [
+                [sx * (wout * 0.72), yf + 0.35, -1.80],
+                [sx * 1.65, yf + 0.05, -2.85],
+            ], 0.36, 0.24, "HORN_CRIMSON", segs_per_span=2)
 
-    bones.append({"name": "torso", "parent": "pelvis", "pivot": [0.0, 22.5, 0.0], "rotation": [0.0, 0.0, 0.0], "cubes": torso_cubes})
+    bones.append({"name": "torso", "parent": "pelvis", "pivot": [0.0, 25.0, 0.2], "rotation": [0.0, 0.0, 0.0], "cubes": torso_cubes})
+
+    # Đốt lồng ngực dưới (`torso_upper`) — TẠO ĐÁY HỐC TIM MỞ & XƯƠNG SƯỜN DƯỚI BỌC LÊN TRÁI TIM!
+    tu_cubes = [
+        # Thành lưng sau hốc ngực (khoét rỗng phía trước để hở hẳn quả tim!)
+        make_centered_cube([0.0, 33.4, 2.4], [11.8, 5.4, 3.2], "ARMOR_STEEL"),
+        make_centered_cube([0.0, 33.4, 0.2], [7.2, 5.2, 2.8], "WING_BONE"),  # Bóng tối sâu bên trong hốc lồng ngực!
+    ]
+    for sx in (1.0, -1.0):
+        # Mạn sườn giáp cong 2 bên mở rộng chữ V (hở trống chính giữa!)
+        tu_cubes.append(make_centered_cube([sx * 5.8, 33.4, 0.2], [3.6, 5.6, 6.2], "ARMOR_STEEL", rot=[8, -sx * 16, -sx * 24]))
+        tu_cubes.append(make_centered_cube([sx * 6.4, 34.4, -2.0], [2.8, 4.4, 3.4], "ARMOR_STEEL", rot=[12, -sx * 28, -sx * 18]))
+        # Cặp xương sườn đáy hốc ngực vươn cong ôm vòng đỡ dưới Trái Tim!
+        add_curved_rod(tu_cubes, [
+            [sx * 6.6, 32.8, 0.8],
+            [sx * 6.4, 32.6, -2.4],
+            [sx * 4.5, 32.7, -4.8],
+            [sx * 2.1, 33.4, -5.4],
+        ], 1.10, 0.56, "BONE_RIB", segs_per_span=2)
+        add_curved_rod(tu_cubes, [
+            [sx * 5.8, 31.2, 1.0],
+            [sx * 5.4, 31.0, -2.0],
+            [sx * 3.6, 31.2, -4.2],
+            [sx * 1.4, 32.0, -4.6],
+        ], 0.96, 0.48, "BONE_RIB", segs_per_span=2)
+
+    bones.append({"name": "torso_upper", "parent": "torso", "pivot": [0.0, 31.0, 0.2], "rotation": [0.0, 0.0, 0.0], "cubes": tu_cubes})
 
     # -------------------------------------------------------------------------
-    # C. NGỰC GIÁP THÉP ĐÁNH BÓNG CHỮ V NHIỀU TẦNG, 2 KHÓA KHIÊN RUNE ĐỎ (`chest`, `spikes_back`)
+    # C. LỒNG NGỰC MỞ TOANG CÓ KHUNG XƯƠNG SƯỜN BAO BỌC TRÁI TIM NIGHTMARE CORE (`chest`, `heart`, `spikes_back`)
+    #    - Bỏ hoàn toàn khối ngực hộp vuông kiểu robot!
+    #    - Hai nửa giáp ngực gothic xé mở sang 2 bên để lộ khoang lồng ngực sâu tối ở chính giữa!
+    #    - 5 cặp XƯƠNG SƯỜN CONG HỮU CƠ (`BONE_RIB` -> mũi `SKULL_BONE`) vươn quặp ôm bao bọc TRÁI TIM 3D (`heart` bone)!
+    #    - Giữ trọn 2 huy hiệu ngọc đỏ xương quai xanh + mạch máu gân đỏ tỏa ra từ Trái Tim!
     # -------------------------------------------------------------------------
     chest_cubes = [
-        make_cube([-5.2, 27.8, -2.8], [10.4, 3.2, 5.6], "ARMOR_STEEL"),
-        make_cube([-6.8, 30.6, -3.1], [13.6, 4.0, 6.2], "ARMOR_STEEL"),
-        make_cube([-5.0, 34.0, -2.5], [10.0, 1.5, 5.0], "ARMOR_STEEL"),
-        make_cube([-1.18, 27.4, -4.40], [2.36, 6.9, 1.25], "ARMOR_SPIKE"),
-        make_cube([-0.16, 28.2, -4.70], [0.32, 5.2, 0.30], "RUNE_GLOW"),
-        make_cube([-2.3, 34.4, -1.9], [4.6, 2.5, 4.0], "FLESH_DARK"),
-        make_cube([-3.3, 34.2, -2.95], [6.6, 1.55, 5.7], "ARMOR_SPIKE", rot=[8, 0, 0]),
+        # Lưng giáp & thành sau hốc ngực (nền đen sâu phía sau làm Trái Tim phát sáng bật nổi rực rỡ!)
+        make_centered_cube([0.0, 39.0, 2.8], [15.4, 8.2, 3.6], "ARMOR_STEEL"),
+        make_centered_cube([0.0, 38.4, 0.2], [10.4, 7.6, 3.2], "WING_BONE"),  # Hốc tối sâu ôm lưng Trái Tim!
+        # Đỉnh cổ vòm gothic chữ V mềm mại phía trên hốc tim (thay khối thanh ngang thẳng!)
+        make_centered_cube([0.0, 42.3, -2.2], [5.4, 1.9, 4.6], "ARMOR_STEEL", rot=[10, 0, 0]),
+        make_centered_cube([0.0, 41.9, -4.55], [2.4, 2.0, 1.25], "ARMOR_SPIKE", rot=[14, 0, 45]),
     ]
-    for tier_i, (ty, tw, tz, tilt_z) in enumerate((
-        (27.5, 3.6, -3.65, -20),
-        (28.9, 4.7, -3.95, -18),
-        (30.3, 5.6, -4.20, -16),
-        (31.7, 6.3, -4.30, -13),
-        (33.1, 6.5, -4.10, -8),
-    )):
-        mat_t = "ARMOR_SPIKE" if tier_i % 2 == 0 else "ARMOR_STEEL"
-        pl = make_cube([0.5, ty, tz], [tw, 1.55, 1.38], mat_t, rot=[8, -12, tilt_z], pivot=[0.5, ty, tz])
-        chest_cubes.append(pl)
-        chest_cubes.append(mirror_x_cube(pl))
-
-    chest_side = [
-        make_cube([4.4, 29.4, -3.4], [3.8, 4.8, 6.8], "ARMOR_STEEL", rot=[0, -10, -18]),
-        make_cube([5.8, 32.8, -3.2], [3.6, 2.4, 6.2], "ARMOR_SPIKE", rot=[0, -8, -22]),
-        make_cube([2.4, 29.4, 2.4], [4.5, 5.2, 1.5], "ARMOR_STEEL", rot=[-8, 12, -14]),
-        # Cổ giáp gothic cao 2 tầng ôm gáy
-        make_cube([2.6, 34.4, -1.4], [2.1, 3.4, 4.0], "ARMOR_SPIKE", rot=[-14, -18, 22]),
-        make_cube([3.3, 35.2, 0.2], [1.6, 3.1, 2.8], "ARMOR_STEEL", rot=[-20, -24, 26]),
-        # 20–30% TWIST: Khóa giáp hình KHIÊN GAI THÉP có khe chữ thập rune đỏ sắc nét!
-        make_cube([3.25, 31.9, -5.30], [2.65, 2.65, 1.15], "ARMOR_SPIKE", rot=[4, -14, 45]),
-        make_cube([3.65, 32.3, -5.62], [1.85, 1.85, 0.65], "ARMOR_STEEL", rot=[4, -14, 45]),
-        make_cube([4.38, 32.15, -5.90], [0.40, 2.15, 0.34], "RUNE_GLOW", rot=[4, -14, 0]),
-        make_cube([3.68, 33.02, -5.90], [1.82, 0.38, 0.34], "RUNE_GLOW", rot=[4, -14, 0]),
-        make_cube([1.5, 33.6, -4.40], [3.5, 0.90, 0.95], "ARMOR_SPIKE", rot=[0, -10, -24]),
-        make_cube([1.5, 34.5, -2.35], [1.1, 2.7, 1.0], "FLESH_DARK", rot=[10, -16, -18]),
-    ]
-    for c in chest_side:
-        chest_cubes.append(c)
-        chest_cubes.append(mirror_x_cube(c))
 
     for sx in (1.0, -1.0):
-        cx_s, cy_s, cz_s = sx * 4.55, 33.2, -5.45
-        add_claw_spike(chest_cubes, [cx_s, cy_s + 0.9, cz_s], [cx_s + sx * 1.1, cy_s + 2.3, cz_s - 0.6], 0.62, "ARMOR_SPIKE", 2)
-        add_claw_spike(chest_cubes, [cx_s + sx * 1.0, cy_s, cz_s], [cx_s + sx * 2.3, cy_s + 0.5, cz_s - 0.5], 0.58, "ARMOR_SPIKE", 2)
-        add_claw_spike(chest_cubes, [cx_s, cy_s - 0.9, cz_s], [cx_s + sx * 0.7, cy_s - 2.1, cz_s - 0.5], 0.52, "ARMOR_SPIKE", 2)
-        add_claw_spike(chest_cubes, [sx * 3.8, 36.2, 1.2], [sx * 5.8, 39.2, 2.4], 0.95, "ARMOR_SPIKE", 3)
-        add_claw_spike(chest_cubes, [sx * 4.4, 34.8, -0.6], [sx * 6.4, 37.2, -1.2], 0.85, "ARMOR_SPIKE", 2)
+        # 1. NỬA GIÁP NGỰC XÉ MỞ DẠNG VỎ GOTHIC CONG THUÔN MỀM (taper từ vai xuống eo, KHÔNG còn tấm hộp chữ nhật!)
+        chest_cubes.append(make_centered_cube([sx * 6.4, 40.7, -1.4], [4.3, 3.4, 6.2], "ARMOR_STEEL", rot=[8, -sx * 26, -sx * 24]))
+        chest_cubes.append(make_centered_cube([sx * 6.0, 37.9, -1.3], [3.8, 3.6, 5.6], "ARMOR_STEEL", rot=[10, -sx * 24, -sx * 18]))
+        chest_cubes.append(make_centered_cube([sx * 5.4, 35.4, -1.2], [3.1, 3.0, 4.8], "ARMOR_STEEL", rot=[12, -sx * 22, -sx * 12]))
+        # Vòm xương đòn cong uốn mượt nối cổ ra hai vai
+        add_curved_rod(chest_cubes, [
+            [sx * 1.4, 42.1, -4.2],
+            [sx * 4.4, 42.8, -3.6],
+            [sx * 7.8, 42.6, -1.8],
+        ], 1.25, 0.95, "ARMOR_SPIKE", segs_per_span=2)
+        # Đường viền thép rèn chữ C uốn cong ôm trọn mép xé mở của lồng ngực (xóa sạch nét cạnh thẳng!)
+        add_curved_rod(chest_cubes, [
+            [sx * 4.2, 42.2, -4.5],
+            [sx * 5.6, 40.0, -4.9],
+            [sx * 5.5, 37.5, -4.7],
+            [sx * 4.7, 35.1, -4.3],
+            [sx * 3.2, 33.4, -3.8],
+        ], 1.08, 0.68, "ARMOR_SPIKE", segs_per_span=2)
+        # 2 vây giáp ngực cong vát mảnh chồng lên sườn giáp (tăng độ mềm & chi tiết thủ công!)
+        for k, (py, pz, rotz) in enumerate(((40.2, -4.3, -22), (37.4, -4.4, -14))):
+            chest_cubes.append(make_centered_cube([sx * (6.2 - k * 0.45), py, pz], [3.4, 1.55, 1.35],
+                                                  "ARMOR_SPIKE" if k == 0 else "ARMOR_STEEL",
+                                                  rot=[12, -sx * 30, sx * rotz]))
 
-    bones.append({"name": "chest", "parent": "torso", "pivot": [0.0, 28.0, 0.0], "rotation": [0.0, 0.0, 0.0], "cubes": chest_cubes})
+        # 2. 4 CẶP XƯƠNG SƯỜN CONG HỮU CƠ BAO BỌC KHUNG LỒNG NGỰC MỞ QUANH TRÁI TIM!
+        #    (Mọc cong từ nửa giáp ngực -> uốn nhô ra trước `Z = -6.2` -> quặp vuốt xương ngà sáng ôm lấy Trái Tim nhưng CHỪA HỞ MẶT TIM!)
+        cage_ribs = [
+            # (y_root, y_mid, y_tip, z_mid, z_tip, x_tip, r_start, r_end)
+            (41.2, 40.9, 40.2, -5.6, -6.15, 2.35, 1.05, 0.44),
+            (39.4, 39.2, 38.8, -6.0, -6.50, 2.75, 1.14, 0.48),
+            (37.6, 37.5, 37.4, -5.9, -6.40, 2.65, 1.10, 0.46),
+            (35.8, 35.8, 36.1, -5.4, -5.90, 2.15, 1.02, 0.42),
+        ]
+        for yr, ym, yt, zm, zt, xt, rs, re in cage_ribs:
+            p_root = [sx * 7.2, yr, -1.8]
+            p_bend = [sx * 5.4, ym, zm]
+            p_tip  = [sx * xt,  yt, zt]
+            add_curved_rod(chest_cubes, [p_root, p_bend], rs, rs * 0.80, "BONE_RIB", segs_per_span=2)
+            add_curved_rod(chest_cubes, [p_bend, p_tip],  rs * 0.78, re, "SKULL_BONE", segs_per_span=2)
+
+        # Vòm xương ức cong trên & dưới viền khung hốc tim (kết nối khung xương như lồng ngực thật!)
+        add_curved_rod(chest_cubes, [
+            [sx * 5.8, 41.8, -4.4],
+            [sx * 3.0, 41.9, -5.3],
+            [sx * 1.1, 41.4, -5.4],
+        ], 0.92, 0.50, "BONE_RIB", segs_per_span=2)
+
+        # 3. 2 HUY HIỆU NGỌC ĐỎ TRÒN TRÊN XƯƠNG QUAI XANH (gọn đẹp hài hòa phía trên khung tim!)
+        chest_cubes.append(make_centered_cube([sx * 6.0, 41.6, -5.45], [2.75, 2.75, 1.05], "ARMOR_SPIKE", rot=[6, -sx * 20, 45]))
+        chest_cubes.append(make_centered_cube([sx * 6.0, 41.6, -5.70], [2.25, 2.25, 0.95], "HORN_CRIMSON", rot=[6, -sx * 20, 0]))
+        chest_cubes.append(make_centered_cube([sx * 6.0, 41.6, -5.78], [1.95, 1.95, 0.90], "HORN_CRIMSON", rot=[6, -sx * 20, 45]))
+        chest_cubes.append(make_centered_cube([sx * 6.0, 41.6, -6.10], [0.95, 0.95, 0.45], "RUNE_GLOW", rot=[6, -sx * 20, 45]))
+
+        # 4. CỔ GIÁP GOTHIC GAI CONG MỀM MẠI ÔM 2 BÊN CỔ (không còn khối gạch thẳng góc!)
+        add_curved_rod(chest_cubes, [
+            [sx * 2.8, 42.4, -3.4],
+            [sx * 4.4, 43.4, -1.6],
+            [sx * 4.8, 44.8, +1.2],
+            [sx * 2.8, 45.2, +3.0],
+        ], 1.45, 1.10, "ARMOR_SPIKE", segs_per_span=2)
+        add_curved_rod(chest_cubes, [
+            [sx * 3.8, 43.2, -1.8],
+            [sx * 5.0, 45.2, -2.0],
+            [sx * 5.4, 47.0, -1.6],
+        ], 0.85, 0.22, "ARMOR_SPIKE", segs_per_span=2)
+        add_curved_rod(chest_cubes, [
+            [sx * 4.6, 43.8, +0.2],
+            [sx * 6.2, 46.2, +0.8],
+            [sx * 6.8, 48.0, +1.4],
+        ], 0.95, 0.24, "ARMOR_SPIKE", segs_per_span=2)
+
+    bones.append({"name": "chest", "parent": "torso_upper", "pivot": [0.0, 35.0, -0.2], "rotation": [0.0, 0.0, 0.0], "cubes": chest_cubes})
+
+    # -------------------------------------------------------------------------
+    # C1. BONE TRÁI TIM NIGHTMARE CORE ĐẬP NHỊP 3D (`heart`, con của `chest`) — LƠ LỬNG GIỮA KHUNG XƯƠNG SƯỜN MỞ!
+    #     Khớp chuẩn phong cách Nightmare Core (lõi hồng san hô phát sáng + vỏ đỏ huyết + 4 chấu bạc + 6 mạch máu rễ tim!)
+    # -------------------------------------------------------------------------
+    hx, hy, hz = 0.0, 37.8, -3.55
+    heart_cubes = [
+        # Khối cơ tim bầu dục–nhọn đáy hữu cơ gồm 2 bầu tâm nhĩ trên vát tròn + đỉnh tâm thất thuôn nhọn (KHÔNG còn hộp chữ nhật!)
+        make_centered_cube([hx,        hy - 0.15, hz],        [3.60, 4.40, 2.85], "HEART_OUTER"),
+        make_centered_cube([hx + 0.92, hy + 1.05, hz - 0.10], [2.45, 2.70, 2.45], "HEART_OUTER", rot=[4, 0, -24]),
+        make_centered_cube([hx - 0.96, hy + 0.90, hz - 0.08], [2.25, 2.55, 2.35], "HEART_OUTER", rot=[4, 0, +22]),
+        make_centered_cube([hx,        hy - 1.35, hz - 0.12], [2.55, 2.40, 2.30], "HEART_OUTER", rot=[10, 0, 45]),
+        make_centered_cube([hx,        hy - 2.35, hz - 0.24], [1.35, 1.65, 1.55], "HEART_OUTER", rot=[14, 0, 45]),
+        # Lõi Nightmare Core bầu dục–kim cương hữu cơ phát sáng mượt (taper nhiều lớp xoay chéo -> KHÔNG viền hình chữ nhật!)
+        make_centered_cube([hx + 0.45, hy + 0.65, hz - 0.68], [1.45, 1.95, 1.45], "HEART_CORE", rot=[4, 0, -22]),
+        make_centered_cube([hx - 0.48, hy + 0.55, hz - 0.66], [1.35, 1.85, 1.40], "HEART_CORE", rot=[4, 0, +20]),
+        make_centered_cube([hx,        hy - 0.05, hz - 0.85], [1.85, 2.95, 1.65], "HEART_CORE", rot=[4, 0, 0]),
+        make_centered_cube([hx,        hy - 0.05, hz - 1.15], [1.85, 1.85, 1.30], "HEART_CORE", rot=[4, 0, 45]),
+        make_centered_cube([hx,        hy + 0.05, hz - 1.42], [1.05, 1.05, 0.92], "HEART_CORE", rot=[4, 0, 45]),
+        # 4 chấu kẹp xương-bạc mảnh ôm cực trên & dưới của Trái Tim Nightmare Core (y hệt icon Nightmare Core!)
+        make_centered_cube([hx - 0.95, hy + 2.85, hz - 0.55], [0.54, 1.40, 0.72], "SKULL_BONE", rot=[14, 0, -18]),
+        make_centered_cube([hx + 0.95, hy + 2.85, hz - 0.55], [0.54, 1.40, 0.72], "SKULL_BONE", rot=[14, 0, +18]),
+        make_centered_cube([hx - 0.80, hy - 2.75, hz - 0.55], [0.50, 1.30, 0.68], "SKULL_BONE", rot=[-14, 0, +18]),
+        make_centered_cube([hx + 0.80, hy - 2.75, hz - 0.55], [0.50, 1.30, 0.68], "SKULL_BONE", rot=[-14, 0, -18]),
+    ]
+    # 2 mạch vành sẫm nổi ôm cong mặt trước cơ tim tạo cảm giác trái tim sống hữu cơ 100%!
+    for sx in (1.0, -1.0):
+        add_curved_rod(heart_cubes, [
+            [hx + sx * 1.45, hy + 1.55, hz - 1.05],
+            [hx + sx * 1.15, hy + 0.05, hz - 1.50],
+            [hx + sx * 0.45, hy - 1.65, hz - 1.25],
+        ], 0.30, 0.14, "CLAW_BLOOD", segs_per_span=2)
+    # 6 mạch máu & động mạch chủ hữu cơ mọc từ đỉnh và 2 bên Trái Tim cắm vào xương sườn & 2 huy hiệu đỏ!
+    for sx in (1.0, -1.0):
+        # Động mạch trên vươn cong nối từ Trái Tim lên 2 huy hiệu ngọc đỏ & cổ giáp!
+        add_curved_rod(heart_cubes, [
+            [sx * 0.85, hy + 2.1, hz - 0.15],
+            [sx * 2.50, hy + 3.4, hz - 0.95],
+            [sx * 4.80, hy + 3.8, hz - 1.75],
+        ], 0.76, 0.42, "HORN_CRIMSON", segs_per_span=2)
+        # Động mạch giữa bám sang vách lồng ngực
+        add_curved_rod(heart_cubes, [
+            [sx * 1.60, hy + 0.4, hz + 0.10],
+            [sx * 3.80, hy + 0.8, hz + 0.45],
+            [sx * 5.60, hy + 0.4, hz + 1.25],
+        ], 0.68, 0.36, "CLAW_BLOOD", segs_per_span=2)
+        # Động mạch dưới bám vào xương sườn đáy
+        add_curved_rod(heart_cubes, [
+            [sx * 1.25, hy - 1.5, hz + 0.10],
+            [sx * 3.20, hy - 2.6, hz + 0.40],
+            [sx * 4.80, hy - 3.6, hz + 1.20],
+        ], 0.62, 0.32, "CLAW_BLOOD", segs_per_span=2)
+
+    bones.append({"name": "heart", "parent": "chest", "pivot": [hx, hy, hz], "rotation": [0.0, 0.0, 0.0], "cubes": heart_cubes})
 
     spikes_back_cubes = []
-    for y_sp, z_sp, len_sp in ((34.5, 3.0, 3.2), (32.4, 3.2, 3.6), (30.2, 3.0, 3.0), (28.2, 2.8, 2.5)):
-        add_claw_spike(spikes_back_cubes, [0.0, y_sp, z_sp], [0.0, y_sp + 1.4, z_sp + len_sp], 1.10, "ARMOR_SPIKE", 3)
+    for y_sp, z_sp, len_sp in ((42.0, 4.0, 3.6), (39.4, 4.3, 4.2), (36.8, 4.1, 3.5), (34.4, 3.8, 2.8)):
+        add_curved_rod(spikes_back_cubes, [
+            [0.0, y_sp, z_sp],
+            [0.0, y_sp + 0.9, z_sp + len_sp * 0.55],
+            [0.0, y_sp + 2.1, z_sp + len_sp],
+        ], 1.15, 0.24, "ARMOR_SPIKE", segs_per_span=2)
         for sx in (1.0, -1.0):
-            add_claw_spike(spikes_back_cubes, [sx * 2.2, y_sp, z_sp], [sx * 3.8, y_sp + 1.0, z_sp + len_sp * 0.80], 0.82, "ARMOR_SPIKE", 2)
-    bones.append({"name": "spikes_back", "parent": "chest", "pivot": [0.0, 31.5, 3.2], "rotation": [0.0, 0.0, 0.0], "cubes": spikes_back_cubes})
+            add_curved_rod(spikes_back_cubes, [
+                [sx * 2.6, y_sp, z_sp],
+                [sx * 4.4, y_sp + 1.3, z_sp + len_sp * 0.78],
+            ], 0.85, 0.22, "ARMOR_SPIKE", segs_per_span=2)
+    bones.append({"name": "spikes_back", "parent": "chest", "pivot": [0.0, 38.4, 4.2], "rotation": [0.0, 0.0, 0.0], "cubes": spikes_back_cubes})
 
     # -------------------------------------------------------------------------
-    # C2. ÁO CHOÀNG ĐỎ CHỮ A SIÊU RỘNG & DÀI 3 TẦNG + 2 VẠT HÔNG (`cape` -> `cape_upper` -> `cape_mid` -> `cape_lower`, `cape_l`, `cape_r`)
-    #     Mép dưới xòe rộng ~28.8 px (~1.95x hông!), kéo dài sát gót (y = 2.0 px), buông chéo sau lưng đúng góc mẫu!
+    # C2. ÁO CHOÀNG ĐỎ CHỮ A RỘNG MỀM 3 TẦNG + 2 VẠT HÔNG (`cape` -> `cape_upper` -> `cape_mid` -> `cape_lower`, `cape_l/r`)
     # -------------------------------------------------------------------------
-    bones.append({"name": "cape", "parent": "chest", "pivot": [0.0, 34.2, 3.5], "rotation": [0.0, 0.0, 0.0], "cubes": []})
+    bones.append({"name": "cape", "parent": "chest", "pivot": [0.0, 41.6, 4.4], "rotation": [0.0, 0.0, 0.0], "cubes": []})
 
     cape_up_c = []
-    # Cổ choàng thép ôm sau gáy giữ áo choàng + 2 khóa vai sau
-    cape_up_c.append(make_cube([-4.8, 33.4, 2.8], [9.6, 1.8, 1.6], "ARMOR_SPIKE", rot=[-10, 0, 0]))
+    cape_up_c.append(make_centered_cube([0.0, 41.2, 4.2], [11.2, 2.0, 1.8], "ARMOR_SPIKE", rot=[-10, 0, 0]))
     for sx in (1.0, -1.0):
-        cape_up_c.append(make_cube([sx * 4.2 - 1.0, 32.8, 3.0], [2.0, 2.4, 1.2], "ARMOR_SPIKE", rot=[-12, sx * 14, sx * -16]))
-    add_membrane_bay_3d(cape_up_c, [-5.2, 34.0, 3.6], [5.2, 34.0, 3.6],
-                        [-8.6, 23.6, 7.0], [8.6, 23.6, 7.0], 14, "CAPE_TATTER", (0.14, 0.86), (0.02, 0.34), 0.28,
-                        pleat_amp=0.52, pleat_top_amp=0.14, pleat_freq=5.0)
-    bones.append({"name": "cape_upper", "parent": "cape", "pivot": [0.0, 34.0, 3.6], "rotation": [0.0, 0.0, 0.0], "cubes": cape_up_c})
+        cape_up_c.append(make_centered_cube([sx * 5.0, 40.4, 4.4], [2.2, 2.6, 1.3], "ARMOR_SPIKE", rot=[-12, sx * 14, sx * -16]))
+    add_membrane_bay_3d(cape_up_c, [-6.2, 41.4, 4.5], [6.2, 41.4, 4.5],
+                        [-9.8, 28.4, 8.2], [9.8, 28.4, 8.2], 14, "CAPE_TATTER", (0.14, 0.86), (0.02, 0.34), 0.28,
+                        pleat_amp=0.58, pleat_top_amp=0.16, pleat_freq=5.0)
+    bones.append({"name": "cape_upper", "parent": "cape", "pivot": [0.0, 41.4, 4.5], "rotation": [0.0, 0.0, 0.0], "cubes": cape_up_c})
 
     cape_mid_c = []
-    add_membrane_bay_3d(cape_mid_c, [-8.6, 23.8, 6.95], [8.6, 23.8, 6.95],
-                        [-12.2, 12.8, 11.6], [12.2, 12.8, 11.6], 14, "CAPE_TATTER", (0.08, 0.92), (0.32, 0.66), 0.28,
-                        pleat_amp=0.72, pleat_top_amp=0.52, pleat_freq=5.0)
-    bones.append({"name": "cape_mid", "parent": "cape_upper", "pivot": [0.0, 23.8, 6.95], "rotation": [0.0, 0.0, 0.0], "cubes": cape_mid_c})
+    add_membrane_bay_3d(cape_mid_c, [-9.8, 28.6, 8.15], [9.8, 28.6, 8.15],
+                        [-13.8, 15.2, 13.0], [13.8, 15.2, 13.0], 14, "CAPE_TATTER", (0.08, 0.92), (0.32, 0.66), 0.28,
+                        pleat_amp=0.80, pleat_top_amp=0.58, pleat_freq=5.0)
+    bones.append({"name": "cape_mid", "parent": "cape_upper", "pivot": [0.0, 28.6, 8.15], "rotation": [0.0, 0.0, 0.0], "cubes": cape_mid_c})
 
     cape_lo_c = []
-    add_membrane_bay_3d(cape_lo_c, [-12.2, 13.0, 11.55], [12.2, 13.0, 11.55],
-                        [-15.2, 2.0, 16.4], [15.2, 2.0, 16.4], 14, "CAPE_TATTER", (0.02, 0.98), (0.64, 0.99), 0.28,
-                        pleat_amp=0.90, pleat_top_amp=0.72, pleat_freq=5.0)
-    bones.append({"name": "cape_lower", "parent": "cape_mid", "pivot": [0.0, 13.0, 11.55], "rotation": [0.0, 0.0, 0.0], "cubes": cape_lo_c})
+    add_membrane_bay_3d(cape_lo_c, [-13.8, 15.4, 12.95], [13.8, 15.4, 12.95],
+                        [-17.6, 2.2, 18.0], [17.6, 2.2, 18.0], 14, "CAPE_TATTER", (0.02, 0.98), (0.64, 0.99), 0.28,
+                        pleat_amp=1.00, pleat_top_amp=0.80, pleat_freq=5.0)
+    bones.append({"name": "cape_lower", "parent": "cape_mid", "pivot": [0.0, 15.4, 12.95], "rotation": [0.0, 0.0, 0.0], "cubes": cape_lo_c})
 
-    # 2 vạt trái/phải xòe rộng lấp ló hai bên đùi chữ Z & phất phơ độc lập (`cape_l`, `cape_r`)
     cape_l_c = []
-    add_membrane_bay_3d(cape_l_c, [4.8, 33.4, 3.55], [7.8, 31.6, 3.25],
-                        [10.8, 14.8, 10.2], [14.4, 16.0, 7.8], 7, "CAPE_TATTER", (0.60, 0.98), (0.04, 0.64), 0.26,
-                        pleat_amp=0.45, pleat_top_amp=0.14, pleat_freq=3.0)
-    add_membrane_bay_3d(cape_l_c, [10.8, 15.0, 10.15], [14.4, 16.2, 7.75],
-                        [13.8, 3.2, 15.4], [17.6, 5.2, 11.6], 7, "CAPE_TATTER", (0.58, 0.99), (0.62, 0.99), 0.26,
-                        pleat_amp=0.60, pleat_top_amp=0.45, pleat_freq=3.0)
+    add_membrane_bay_3d(cape_l_c, [5.6, 40.6, 4.45], [9.0, 38.6, 4.05],
+                        [12.2, 18.2, 11.2], [16.2, 19.6, 8.6], 7, "CAPE_TATTER", (0.60, 0.98), (0.04, 0.64), 0.26,
+                        pleat_amp=0.50, pleat_top_amp=0.16, pleat_freq=3.0)
+    add_membrane_bay_3d(cape_l_c, [12.2, 18.4, 11.15], [16.2, 19.8, 8.55],
+                        [15.6, 3.6, 16.8], [19.8, 6.0, 12.8], 7, "CAPE_TATTER", (0.58, 0.99), (0.62, 0.99), 0.26,
+                        pleat_amp=0.66, pleat_top_amp=0.50, pleat_freq=3.0)
     cape_r_c = [mirror_x_cube(c) for c in cape_l_c]
-    bones.append({"name": "cape_l", "parent": "cape_upper", "pivot": [5.4, 33.0, 3.4], "rotation": [0.0, 0.0, 0.0], "cubes": cape_l_c})
-    bones.append({"name": "cape_r", "parent": "cape_upper", "pivot": [-5.4, 33.0, 3.4], "rotation": [0.0, 0.0, 0.0], "cubes": cape_r_c})
+    bones.append({"name": "cape_l", "parent": "cape_upper", "pivot": [6.2, 40.2, 4.3], "rotation": [0.0, 0.0, 0.0], "cubes": cape_l_c})
+    bones.append({"name": "cape_r", "parent": "cape_upper", "pivot": [-6.2, 40.2, 4.3], "rotation": [0.0, 0.0, 0.0], "cubes": cape_r_c})
 
     # -------------------------------------------------------------------------
-    # D. ĐẦU SỌ XƯƠNG XÁM NGÀ NỔI BẬT PHÓNG ~1.15x + BÁN MẶT NẠ THÉP + SỪNG ĐỎ DÀY CONG VÒNG!
-    #    (`head`, `jaw`, `mandible_l/r`, `horn_l/r`) — Đỉnh mào ~42.4 px giữ chuẩn chiều cao ~19.8 block!
+    # D. CỔ GÂN GUỐC (`neck`) & ĐẦU SỌ QUỶ HỮU CƠ MỀM MẠI (`head`, `jaw`, `mandible_l/r`, `horn_l/r`)
+    #    - Vuốt mềm vương miện mũ thành đường cong hữu cơ (bỏ góc cạnh hộp!), giữ mắt đỏ xếch hung dữ `\ /`,
+    #      mũi trán chữ V, hốc mũi tam giác, gò má xương cao gai nhỏ, cằm nhọn chữ V & cặp sừng cừu đỏ móc ngược lên!
     # -------------------------------------------------------------------------
-    hs = 1.14  # Tăng kích cỡ cục bộ cụm đầu/sừng ~1.14x giúp nhìn rõ khuôn mặt sọ & mắt đỏ từ xa!
-    hy0 = 35.6
+    neck_cubes = [
+        make_centered_cube([0.0, 43.8, -0.5], [4.1, 3.4, 3.8], "FLESH_DARK"),
+        make_centered_cube([0.0, 43.8, 1.3], [3.0, 3.2, 1.3], "ARMOR_STEEL"),
+    ]
+    for sx in (1.0, -1.0):
+        # Gân cổ cơ bắp & mạch máu đỏ mảnh kéo từ cổ ngực lên sọ
+        add_chain_rod(neck_cubes, [sx * 1.75, 42.0, -2.0], [sx * 1.05, 45.2, -1.2], 0.92, 0.68, 2, "FLESH_DARK", overlap=0.18)
+        add_chain_rod(neck_cubes, [sx * 1.25, 42.2, -2.3], [sx * 0.75, 44.8, -1.8], 0.42, 0.28, 2, "HORN_CRIMSON", overlap=0.14)
+    bones.append({"name": "neck", "parent": "chest", "pivot": [0.0, 42.6, -0.4], "rotation": [0.0, 0.0, 0.0], "cubes": neck_cubes})
 
-    def hbox(ox, oy, oz, sx, sy, sz, mat, rot=None):
-        return make_cube([ox * hs, hy0 + oy * hs, oz * hs], [sx * hs, sy * hs, sz * hs], mat, rot=rot)
+    hs = 1.22
+    hy0 = 45.8  # Đỉnh sọ ~52.8 px, đỉnh sừng ~55.0 px -> tỷ lệ siêu cân đối!
+
+    def hcen(cx, cy, cz, sx, sy, sz, mat, rot=None):
+        return make_centered_cube([cx * hs, hy0 + cy * hs, cz * hs], [sx * hs, sy * hs, sz * hs], mat, rot=rot)
 
     head_cubes = [
-        # Lõi sọ trong tối
-        hbox(-2.4, 0.6, -2.4, 4.8, 4.1, 4.8, "ARMOR_STEEL"),
-        # Mũ bán mặt nạ thép đen đánh bóng + vương miện góc cạnh + mào sống trán nhọn (20–30% twist!)
-        hbox(-2.90, 2.75, -3.15, 5.8, 1.95, 5.5, "ARMOR_STEEL"),
-        hbox(-2.05, 4.05, -3.05, 4.1, 1.30, 5.2, "ARMOR_SPIKE", rot=[-6, 0, 0]),
-        hbox(-0.70, 2.95, -3.80, 1.40, 2.95, 2.1, "ARMOR_SPIKE", rot=[-14, 0, 0]),
-        hbox(-0.55, 4.10, -2.05, 1.10, 2.00, 4.0, "ARMOR_SPIKE", rot=[-18, 0, 0]),
-        hbox(-0.36, 4.65, -0.45, 0.72, 1.50, 3.1, "ARMOR_SPIKE", rot=[-24, 0, 0]),
-        hbox(-0.28, 3.25, -4.02, 0.56, 1.80, 0.36, "RUNE_GLOW", rot=[-14, 0, 0]),
-        # Mũi giáp thép nhọn che sống trán giữa 2 hốc mắt
-        hbox(-0.62, 2.15, -3.72, 1.24, 1.25, 0.85, "ARMOR_SPIKE", rot=[14, 0, 0]),
-        # KHUÔN MẶT SỌ XƯƠNG XÁM NGÀ SÁNG NỔI BẬT BÊN DƯỚI BÁN MẶT NẠ!
-        hbox(-1.65, 0.65, -3.38, 3.30, 1.70, 1.35, "SKULL_BONE"),
-        hbox(-0.68, 1.50, -3.55, 1.36, 1.25, 0.90, "SKULL_BONE"),
-        hbox(-0.46, 1.22, -3.72, 0.92, 0.78, 0.32, "WING_BONE"),  # Hốc mũi tam giác sâu tối
-        # 6 răng nanh xương ngà hàm trên sắc nét
-        hbox(-1.46, 0.05, -3.40, 0.42, 0.96, 0.42, "SKULL_BONE"),
-        hbox(-0.92, 0.22, -3.48, 0.38, 0.72, 0.40, "SKULL_BONE"),
-        hbox(-0.42, 0.28, -3.50, 0.38, 0.66, 0.40, "SKULL_BONE"),
-        hbox( 0.04, 0.28, -3.50, 0.38, 0.66, 0.40, "SKULL_BONE"),
-        hbox( 0.54, 0.22, -3.48, 0.38, 0.72, 0.40, "SKULL_BONE"),
-        hbox( 1.04, 0.05, -3.40, 0.42, 0.96, 0.42, "SKULL_BONE"),
-        # Nắp gáy mũ giáp 2 tầng
-        hbox(-2.45, 0.4, 1.55, 4.9, 4.1, 1.75, "ARMOR_STEEL", rot=[-10, 0, 0]),
-        hbox(-1.85, -0.7, 2.05, 3.7, 2.2, 1.35, "ARMOR_SPIKE", rot=[-18, 0, 0]),
+        # Lõi sọ sau bọc mũ thép gothic vòm cong mềm
+        hcen(0.0, 2.55, 0.15, 3.9, 4.0, 4.6, "ARMOR_STEEL"),
+        hcen(0.0, 4.05, 0.15, 3.4, 1.5, 4.7, "ARMOR_STEEL", rot=[-10, 0, 0]),
+        # Mũi trán chữ V (Widow's peak) thép đen cắm sâu sắc lạnh giữa 2 mắt
+        hcen(0.0, 3.35, -3.26, 1.50, 1.38, 0.92, "ARMOR_SPIKE", rot=[10, 0, 0]),
+        hcen(0.0, 2.50, -3.48, 0.90, 1.22, 0.82, "ARMOR_SPIKE", rot=[14, 0, 0]),
+        hcen(0.0, 1.85, -3.56, 0.42, 0.70, 0.62, "ARMOR_SPIKE", rot=[18, 0, 0]),
+
+        # KHUÔN MẶT SỌ XƯƠNG XÁM NGÀ THON GẦY (`SKULL_BONE`)
+        hcen(0.0, 2.35, -2.75, 3.45, 1.70, 1.58, "SKULL_BONE"),
+        hcen(0.0, 1.28, -3.10, 2.36, 1.48, 1.44, "SKULL_BONE"),
+        hcen(0.0, 1.28, -3.82, 0.70, 1.04, 0.44, "WING_BONE"),
+        hcen(0.0, 1.58, -3.84, 0.40, 0.52, 0.42, "WING_BONE"),
+        hcen(0.0, 0.36, -3.14, 2.00, 0.86, 1.35, "SKULL_BONE"),
+        hcen(0.0, -0.45, -2.88, 1.65, 1.38, 1.42, "WING_BONE"),
+        hcen(-0.54, -0.06, -3.38, 0.25, 0.45, 0.25, "SKULL_BONE"),
+        hcen( 0.00, -0.02, -3.42, 0.26, 0.35, 0.25, "SKULL_BONE"),
+        hcen(+0.54, -0.06, -3.38, 0.25, 0.45, 0.25, "SKULL_BONE"),
+        # Nắp gáy cong thuôn sau mũ
+        hcen(0.0, 2.20, 2.30, 4.1, 3.8, 1.55, "ARMOR_STEEL", rot=[-12, 0, 0]),
+        hcen(0.0, 0.40, 2.50, 3.2, 2.0, 1.25, "ARMOR_SPIKE", rot=[-20, 0, 0]),
     ]
+    # Sống vương miện cong hữu cơ uốn lượn dọc đỉnh sọ (thay thế hẳn 3 khối hộp đỉnh đầu!)
+    add_curved_rod(head_cubes, [
+        [0.0, hy0 + 3.6 * hs, -3.1 * hs],
+        [0.0, hy0 + 5.6 * hs, -1.6 * hs],
+        [0.0, hy0 + 6.0 * hs, +0.4 * hs],
+        [0.0, hy0 + 4.4 * hs, +2.6 * hs],
+    ], 1.15 * hs, 0.55 * hs, "ARMOR_SPIKE", segs_per_span=2)
+
     head_side = [
-        # Cung mày giáp thép vát xiên sắc lạnh
-        hbox(0.62, 2.68, -3.78, 2.55, 0.85, 1.70, "ARMOR_SPIKE", rot=[6, -15, 18]),
-        # Gò má xương sọ ngà sáng nổi khối + viền xương dưới hốc mắt!
-        hbox(1.30, 1.05, -3.48, 1.65, 1.28, 1.65, "SKULL_BONE", rot=[0, -18, -10]),
-        hbox(0.68, 1.25, -3.52, 1.45, 0.52, 0.65, "SKULL_BONE", rot=[0, -12, 8]),
-        hbox(2.05, 1.25, -2.75, 1.45, 1.85, 2.65, "ARMOR_STEEL", rot=[0, -16, -12]),
-        hbox(2.50, 0.95, -1.50, 1.15, 3.40, 3.90, "ARMOR_STEEL", rot=[0, -10, 8]),
-        # Hốc mắt đen sâu + ĐÔI MẮT ĐỎ RỰC FULLBRIGHT NỔI RÕ!
-        hbox(0.72, 1.82, -3.40, 1.75, 1.12, 0.68, "WING_BONE", rot=[0, -10, 14]),
-        hbox(0.84, 1.94, -3.62, 1.50, 0.82, 0.48, "EYE_GLOW", rot=[0, -10, 14]),
-        # Vây giáp tai nhọn kép
-        hbox(2.85, 2.65, 0.15, 1.05, 2.30, 2.50, "ARMOR_SPIKE", rot=[-24, -22, 18]),
-        hbox(2.95, 1.55, 0.60, 0.90, 1.75, 2.00, "ARMOR_STEEL", rot=[-18, -26, 24]),
+        # Cung mày cong chữ V hung dữ (`rotZ = -22°` trên +X => mắt xếch dữ `\ /`!)
+        hcen(1.38, 3.16, -3.16, 2.15, 0.68, 1.48, "ARMOR_SPIKE", rot=[8, -18, -22]),
+        hcen(2.02, 2.75, -1.90, 1.15, 1.85, 3.00, "ARMOR_STEEL", rot=[0, -14, -14]),
+        # Hốc mắt sâu xếch hung dữ `\ /` & mắt đỏ mảnh sắc lẹm fullbright
+        hcen(1.16, 2.20, -3.52, 1.52, 0.84, 0.56, "WING_BONE", rot=[0, -14, -18]),
+        hcen(1.16, 2.20, -3.76, 1.20, 0.36, 0.34, "EYE_GLOW",  rot=[0, -14, -18]),
+        # Gò má xương sọ gầy cao vát sắc + hõm má sâu ma quái
+        hcen(1.50, 1.48, -3.18, 1.58, 0.72, 1.42, "SKULL_BONE", rot=[4, -22, -16]),
+        hcen(1.90, 1.82, -2.65, 1.16, 0.64, 1.22, "SKULL_BONE", rot=[0, -24, -22]),
+        hcen(1.34, 0.50, -2.85, 1.02, 1.35, 1.28, "WING_BONE", rot=[0, -16, 12]),
+        hcen(2.34, 2.22, -2.55, 0.94, 0.36, 0.60, "SKULL_BONE", rot=[0, -20, -26]),
+        hcen(2.26, 1.56, -2.75, 0.86, 0.34, 0.56, "SKULL_BONE", rot=[0, -22, -14]),
     ]
     for c in head_side:
         head_cubes.append(c)
         head_cubes.append(mirror_x_cube(c))
+    # Vây thái dương cong sắc uốn ngược ra sau mũ
     for sx in (1.0, -1.0):
-        add_claw_spike(head_cubes, [sx * 2.5 * hs, hy0 + 1.4 * hs, -2.6 * hs],
-                       [sx * 4.0 * hs, hy0 + 1.6 * hs, -3.0 * hs], 0.72 * hs, "SKULL_BONE", 2)
-        add_claw_spike(head_cubes, [sx * 2.9 * hs, hy0 + 3.5 * hs, 0.6 * hs],
-                       [sx * 4.4 * hs, hy0 + 5.2 * hs, 2.0 * hs], 0.78 * hs, "ARMOR_SPIKE", 2)
+        add_curved_rod(head_cubes, [
+            [sx * 2.1 * hs, hy0 + 2.8 * hs, -1.2 * hs],
+            [sx * 2.8 * hs, hy0 + 3.4 * hs, +0.8 * hs],
+            [sx * 2.6 * hs, hy0 + 4.4 * hs, +2.6 * hs],
+        ], 0.85 * hs, 0.24 * hs, "ARMOR_SPIKE", segs_per_span=2)
 
-    bones.append({"name": "head", "parent": "chest", "pivot": [0.0, hy0 + 0.2, -0.4], "rotation": [0.0, 0.0, 0.0], "cubes": head_cubes})
+    bones.append({"name": "head", "parent": "neck", "pivot": [0.0, hy0 + 0.2, -0.5], "rotation": [0.0, 0.0, 0.0], "cubes": head_cubes})
 
-    # Hàm dưới xương ngà há gầm rõ nét (`jaw`)
     jaw_cubes = [
-        hbox(-1.68, -0.95, -3.35, 3.36, 1.18, 2.95, "SKULL_BONE"),
-        hbox(-1.18, -1.48, -3.46, 2.36, 0.80, 1.95, "SKULL_BONE"),
-        hbox(-0.70, -1.82, -3.38, 1.40, 0.56, 1.25, "SKULL_BONE"),
-        hbox( 1.45, -0.58, -2.25, 0.82, 1.75, 2.30, "SKULL_BONE", rot=[-14, 0, 0]),
-        hbox(-2.27, -0.58, -2.25, 0.82, 1.75, 2.30, "SKULL_BONE", rot=[-14, 0, 0]),
-        # Răng hàm dưới ngà sáng
-        hbox(-1.32, -0.10, -3.28, 0.42, 0.76, 0.42, "SKULL_BONE"),
-        hbox(-0.70, -0.08, -3.34, 0.38, 0.60, 0.40, "SKULL_BONE"),
-        hbox(-0.18, -0.06, -3.36, 0.38, 0.56, 0.40, "SKULL_BONE"),
-        hbox( 0.34, -0.08, -3.34, 0.38, 0.60, 0.40, "SKULL_BONE"),
-        hbox( 0.90, -0.10, -3.28, 0.42, 0.76, 0.42, "SKULL_BONE"),
+        hcen( 0.94, -0.35, -2.82, 0.58, 2.05, 1.58, "SKULL_BONE", rot=[-10, -14, +18]),
+        hcen(-0.94, -0.35, -2.82, 0.58, 2.05, 1.58, "SKULL_BONE", rot=[-10, +14, -18]),
+        hcen(0.0, -1.32, -3.12, 1.66, 0.76, 1.72, "SKULL_BONE"),
+        hcen(0.0, -1.88, -3.20, 1.08, 0.66, 1.38, "SKULL_BONE"),
+        hcen(0.0, -2.38, -3.16, 0.62, 0.56, 1.02, "SKULL_BONE"),
+        hcen(0.0, -2.76, -3.08, 0.32, 0.40, 0.70, "SKULL_BONE"),
+        hcen(0.0, -0.78, -2.74, 1.30, 0.92, 1.35, "WING_BONE"),
     ]
-    bones.append({"name": "jaw", "parent": "head", "pivot": [0.0, hy0 + 0.2, -0.5], "rotation": [0.0, 0.0, 0.0], "cubes": jaw_cubes})
+    bones.append({"name": "jaw", "parent": "head", "pivot": [0.0, hy0 + 0.5, -0.8], "rotation": [0.0, 0.0, 0.0], "cubes": jaw_cubes})
 
     mand_l = []
-    add_claw_spike(mand_l, [2.4 * hs, hy0 + 0.5 * hs, -1.8 * hs], [3.8 * hs, hy0 - 0.9 * hs, -3.8 * hs], 0.88 * hs, "ARMOR_SPIKE", 3)
+    add_claw_spike(mand_l, [2.0 * hs, hy0 + 0.6 * hs, -1.0 * hs], [3.0 * hs, hy0 - 0.5 * hs, -2.4 * hs], 0.56 * hs, "ARMOR_SPIKE", 2)
     mand_r = [mirror_x_cube(c) for c in mand_l]
-    bones.append({"name": "mandible_l", "parent": "head", "pivot": [2.4 * hs, hy0 + 0.5 * hs, -1.8 * hs], "rotation": [0.0, 0.0, 0.0], "cubes": mand_l})
-    bones.append({"name": "mandible_r", "parent": "head", "pivot": [-2.4 * hs, hy0 + 0.5 * hs, -1.8 * hs], "rotation": [0.0, 0.0, 0.0], "cubes": mand_r})
+    bones.append({"name": "mandible_l", "parent": "head", "pivot": [2.0 * hs, hy0 + 0.6 * hs, -1.0 * hs], "rotation": [0.0, 0.0, 0.0], "cubes": mand_l})
+    bones.append({"name": "mandible_r", "parent": "head", "pivot": [-2.0 * hs, hy0 + 0.6 * hs, -1.0 * hs], "rotation": [0.0, 0.0, 0.0], "cubes": mand_r})
 
-    # 2 SỪNG QUỶ ĐỎ THẪM DÀY CÓ GÂN VÒNG NGANG UỐN CONG TO RA HAI BÊN RỒI CỤP VÒNG XUỐNG-SAU (`horn_l/r`)
+    # 2 SỪNG CỪU QUỶ ĐỎ THẪM CONG MÓC LÊN-TRƯỚC HỮU CƠ
     horn_l_pts = [
-        [2.2 * hs, hy0 + 3.6 * hs, -0.8 * hs],
-        [4.8 * hs, hy0 + 5.9 * hs, -0.9 * hs],
-        [8.0 * hs, hy0 + 6.4 * hs, +0.2 * hs],
-        [10.4 * hs, hy0 + 4.5 * hs, +1.5 * hs],
-        [10.6 * hs, hy0 + 1.8 * hs, +1.4 * hs],
-        [9.0 * hs, hy0 + 0.1 * hs, +0.1 * hs],
-        [7.4 * hs, hy0 - 0.3 * hs, -1.4 * hs],
+        [1.65 * hs, hy0 + 4.25 * hs, -0.75 * hs],
+        [4.30 * hs, hy0 + 6.75 * hs, -0.70 * hs],
+        [7.40 * hs, hy0 + 6.85 * hs, +0.25 * hs],
+        [9.70 * hs, hy0 + 4.45 * hs, +0.75 * hs],
+        [9.80 * hs, hy0 + 1.85 * hs, -0.25 * hs],
+        [8.65 * hs, hy0 + 1.45 * hs, -1.85 * hs],
+        [8.05 * hs, hy0 + 3.45 * hs, -2.85 * hs],
+        [8.25 * hs, hy0 + 5.10 * hs, -3.15 * hs],
     ]
     horn_l_cubes = []
-    add_curved_rod(horn_l_cubes, horn_l_pts, 2.75 * hs, 0.42 * hs, "HORN_CRIMSON", segs_per_span=4, rib_rings=True, ring_mat="HORN_CRIMSON")
+    add_curved_rod(horn_l_cubes, horn_l_pts, 2.38 * hs, 0.38 * hs, "HORN_CRIMSON", segs_per_span=4, rib_rings=True, ring_mat="HORN_CRIMSON")
     horn_r_cubes = [mirror_x_cube(c) for c in horn_l_cubes]
-    bones.append({"name": "horn_l", "parent": "head", "pivot": [2.2 * hs, hy0 + 3.6 * hs, -0.8 * hs], "rotation": [0.0, 0.0, 0.0], "cubes": horn_l_cubes})
-    bones.append({"name": "horn_r", "parent": "head", "pivot": [-2.2 * hs, hy0 + 3.6 * hs, -0.8 * hs], "rotation": [0.0, 0.0, 0.0], "cubes": horn_r_cubes})
+    bones.append({"name": "horn_l", "parent": "head", "pivot": [1.65 * hs, hy0 + 4.25 * hs, -0.75 * hs], "rotation": [0.0, 0.0, 0.0], "cubes": horn_l_cubes})
+    bones.append({"name": "horn_r", "parent": "head", "pivot": [-1.65 * hs, hy0 + 4.25 * hs, -0.75 * hs], "rotation": [0.0, 0.0, 0.0], "cubes": horn_r_cubes})
 
     # -------------------------------------------------------------------------
-    # E. ĐÔI CÁNH QUỶ XÒE NGANG RỘNG (±X) CHỈ HƠI VÁT SAU ~24° (`wing_l/r` -> `wing_*_upper/mid/tip`)
-    #    - Xương cánh thanh mảnh sắc sảo có khớp lồi tự nhiên (bỏ cảm giác ống vuông dày!)
-    #    - Đỉnh cánh vươn cao vượt đỉnh đầu kèm móng móc cong đỏ sẫm!
-    #    - Bind rotation = [0, 0, 0], góc vát sau ~24° đúc thẳng vào tọa độ 3D -> nhìn ngang cực gọn thanh thoát!
+    # E. ĐÔI CÁNH QUỶ KHỔNG LỒ XÒE NGANG RỘNG (`wing_l/r` -> `wing_*_upper/mid/tip`)
     # -------------------------------------------------------------------------
     def build_wing_chain(side: float):
         tag = "l" if side > 0 else "r"
         s = side
 
-        # Tọa độ thực 3D xòe mạnh theo ±X và chỉ vát sau ~24° (Z tăng nhẹ 3.2 -> 12.8 thay vì chĩa 90° ra sau!)
-        p_root      = [s * 3.8,  32.6,  3.2]
-        p_elbow     = [s * 10.6, 37.8,  6.2]
-        p_apex      = [s * 18.2, 46.2,  8.8]    # Đỉnh cánh vươn cao hơn đỉnh đầu (~42.4) kèm móc vuốt đỏ!
-        p_wrist     = [s * 26.8, 41.4, 11.0]    # Khớp cổ cánh tỏa 4 nan xương thanh mảnh
-        p_outer_mid = [s * 33.4, 34.0, 12.2]
-        p_outer_tip = [s * 37.2, 23.6, 13.0]    # Mũi cánh nhọn sắc
+        p_root      = [s * 4.4,  39.8,  4.2]
+        p_elbow     = [s * 12.2, 46.2,  7.4]
+        p_apex      = [s * 20.8, 56.0, 10.4]
+        p_wrist     = [s * 30.6, 50.4, 12.8]
+        p_outer_mid = [s * 38.2, 41.8, 14.2]
+        p_outer_tip = [s * 42.6, 29.8, 15.0]
 
-        # 4 nan xương cánh (phalanges) thanh mảnh với khớp đốt lồi tự nhiên
-        p_rib0_top = [s * 16.4, 44.0,  8.2]
-        p_rib0_end = [s * 12.8, 17.6,  6.8]
-        p_rib1_top = [s * 19.6, 45.2,  9.2]
-        p_rib1_end = [s * 19.2, 13.8,  8.6]
-        p_rib2_top = [s * 23.2, 43.3, 10.1]
-        p_rib2_end = [s * 25.8, 14.0, 10.4]
+        p_rib0_top = [s * 18.6, 53.5,  9.6]
+        p_rib0_end = [s * 14.6, 22.8,  8.0]
+        p_rib1_top = [s * 22.4, 54.8, 10.8]
+        p_rib1_end = [s * 22.0, 18.4, 10.0]
+        p_rib2_top = [s * 26.5, 52.7, 11.8]
+        p_rib2_end = [s * 29.5, 18.8, 12.0]
         p_rib3_top = p_wrist
-        p_rib3_end = [s * 31.8, 17.0, 11.8]
+        p_rib3_end = [s * 36.2, 22.0, 13.6]
 
         def lerp_pt(pa, pb, f):
             return [pa[0] + (pb[0] - pa[0]) * f, pa[1] + (pb[1] - pa[1]) * f, pa[2] + (pb[2] - pa[2]) * f]
 
         def add_knuckle(lst, pt, r):
-            lst.append(make_cube([pt[0] - r, pt[1] - r, pt[2] - r], [r * 2.0, r * 2.0, r * 2.0], "WING_BONE"))
-            lst.append(make_cube([pt[0] - r * 0.72, pt[1] - r * 0.72, pt[2] - r * 1.15], [r * 1.44, r * 1.44, r * 2.3], "ARMOR_SPIKE"))
+            lst.append(make_centered_cube(pt, [r * 2.0, r * 2.0, r * 2.0], "WING_BONE"))
+            lst.append(make_centered_cube(pt, [r * 1.44, r * 1.44, r * 2.3], "ARMOR_SPIKE"))
 
-        # 1. `wing_l/r` (khớp bả vai gốc — rotation = [0, 0, 0]!)
         w_root_cubes = [
-            make_cube([p_root[0] - 1.2, p_root[1] - 1.2, p_root[2] - 1.1], [2.4, 2.4, 2.2], "WING_BONE"),
-            make_cube([p_root[0] - 0.9, p_root[1] - 0.9, p_root[2] - 1.4], [1.8, 1.8, 0.9], "ARMOR_SPIKE"),
+            make_centered_cube(p_root, [2.7, 2.7, 2.5], "WING_BONE"),
+            make_centered_cube([p_root[0], p_root[1], p_root[2] - 0.8], [2.0, 2.0, 1.0], "ARMOR_SPIKE"),
         ]
 
-        # 2. `wing_*_upper`
         w_up_cubes = []
-        add_chain_rod(w_up_cubes, p_root, p_elbow, 1.45, 1.22, 5, "WING_BONE", overlap=0.35)
-        add_chain_rod(w_up_cubes, p_elbow, p_apex, 1.26, 1.08, 6, "WING_BONE", overlap=0.35)
-        # Thanh xương giằng thanh mảnh nối bả vai vào nan 0
-        add_chain_rod(w_up_cubes, [s * 4.6, 30.2, 3.6], lerp_pt(p_rib0_top, p_rib0_end, 0.42), 0.78, 0.56, 5, "WING_BONE", overlap=0.28)
-        add_knuckle(w_up_cubes, p_elbow, 0.85)
-        add_knuckle(w_up_cubes, p_apex, 0.98)
-        # Móng móc cong đỏ sẫm vươn cao ở đỉnh cánh (đúng góc trước & sau mẫu!)
-        apex_k1 = [p_apex[0] - s * 1.1, p_apex[1] + 2.6, p_apex[2] - 0.6]
-        apex_k2 = [p_apex[0] - s * 3.4, p_apex[1] + 4.1, p_apex[2] - 1.6]
-        add_chain_rod(w_up_cubes, [p_apex[0], p_apex[1] + 0.4, p_apex[2]], apex_k1, 0.95, 0.62, 3, "WING_BONE", overlap=0.24)
-        add_claw_spike(w_up_cubes, apex_k1, apex_k2, 0.68, "CLAW_BLOOD", 3)
-        # Nan xương 0 thanh mảnh có 2 khớp đốt lồi + móng vuốt đỏ
-        add_chain_rod(w_up_cubes, p_rib0_top, p_rib0_end, 0.84, 0.34, 8, "WING_BONE", overlap=0.32)
+        add_chain_rod(w_up_cubes, p_root, p_elbow, 1.60, 1.34, 5, "WING_BONE", overlap=0.38)
+        add_chain_rod(w_up_cubes, p_elbow, p_apex, 1.38, 1.18, 6, "WING_BONE", overlap=0.38)
+        add_chain_rod(w_up_cubes, [s * 5.4, 37.2, 4.6], lerp_pt(p_rib0_top, p_rib0_end, 0.42), 0.86, 0.60, 5, "WING_BONE", overlap=0.30)
+        add_knuckle(w_up_cubes, p_elbow, 0.92)
+        add_knuckle(w_up_cubes, p_apex, 1.06)
+        apex_k1 = [p_apex[0] - s * 1.3, p_apex[1] + 2.9, p_apex[2] - 0.7]
+        apex_k2 = [p_apex[0] - s * 3.9, p_apex[1] + 4.7, p_apex[2] - 1.8]
+        add_chain_rod(w_up_cubes, [p_apex[0], p_apex[1] + 0.5, p_apex[2]], apex_k1, 1.04, 0.68, 3, "WING_BONE", overlap=0.26)
+        add_claw_spike(w_up_cubes, apex_k1, apex_k2, 0.76, "CLAW_BLOOD", 3)
+        add_chain_rod(w_up_cubes, p_rib0_top, p_rib0_end, 0.92, 0.36, 8, "WING_BONE", overlap=0.34)
         for frac in (0.34, 0.68):
-            add_knuckle(w_up_cubes, lerp_pt(p_rib0_top, p_rib0_end, frac), 0.46)
-        add_claw_spike(w_up_cubes, p_rib0_end, [p_rib0_end[0] - s * 0.4, p_rib0_end[1] - 2.3, p_rib0_end[2] - 0.5], 0.42, "CLAW_BLOOD", 2)
+            add_knuckle(w_up_cubes, lerp_pt(p_rib0_top, p_rib0_end, frac), 0.50)
+        add_claw_spike(w_up_cubes, p_rib0_end, [p_rib0_end[0] - s * 0.5, p_rib0_end[1] - 2.6, p_rib0_end[2] - 0.6], 0.46, "CLAW_BLOOD", 2)
 
-        # Khoang màng cánh 1 (căn phẳng 3D 100% dọc trục nghiêng cánh!)
         add_membrane_bay_3d(w_up_cubes,
                             [p_root[0] + s * 0.2, p_root[1] - 0.2, p_root[2] + 0.1],
                             [p_rib0_top[0], p_rib0_top[1] - 0.2, p_rib0_top[2]],
-                            [s * 4.8, 21.0, 4.4],
+                            [s * 5.6, 26.6, 5.2],
                             lerp_pt(p_rib0_top, p_rib0_end, 0.95),
-                            9, "WING_MEMBRANE", (0.01, 0.99), (0.01, 0.99), 0.22)
+                            9, "WING_MEMBRANE", (0.01, 0.99), (0.01, 0.99), 0.24)
 
-        # 3. `wing_*_mid`
         w_mid_cubes = []
-        add_chain_rod(w_mid_cubes, p_apex, p_wrist, 1.15, 0.92, 6, "WING_BONE", overlap=0.35)
-        add_knuckle(w_mid_cubes, p_wrist, 0.80)
+        add_chain_rod(w_mid_cubes, p_apex, p_wrist, 1.26, 1.00, 6, "WING_BONE", overlap=0.38)
+        add_knuckle(w_mid_cubes, p_wrist, 0.88)
 
         for r_top, r_end, th_a in (
-            (p_rib1_top, p_rib1_end, 0.80),
-            (p_rib2_top, p_rib2_end, 0.76),
-            (p_rib3_top, p_rib3_end, 0.72),
+            (p_rib1_top, p_rib1_end, 0.88),
+            (p_rib2_top, p_rib2_end, 0.84),
+            (p_rib3_top, p_rib3_end, 0.78),
         ):
-            add_chain_rod(w_mid_cubes, r_top, r_end, th_a, 0.32, 8, "WING_BONE", overlap=0.32)
+            add_chain_rod(w_mid_cubes, r_top, r_end, th_a, 0.34, 8, "WING_BONE", overlap=0.34)
             for frac in (0.33, 0.67):
-                add_knuckle(w_mid_cubes, lerp_pt(r_top, r_end, frac), 0.42)
-            add_claw_spike(w_mid_cubes, r_end, [r_end[0] + s * 0.4, r_end[1] - 2.3, r_end[2] - 0.4], 0.40, "CLAW_BLOOD", 2)
+                add_knuckle(w_mid_cubes, lerp_pt(r_top, r_end, frac), 0.46)
+            add_claw_spike(w_mid_cubes, r_end, [r_end[0] + s * 0.5, r_end[1] - 2.6, r_end[2] - 0.5], 0.44, "CLAW_BLOOD", 2)
 
         for (ta, ba, tb, bb, st) in (
             (p_rib0_top, p_rib0_end, p_rib1_top, p_rib1_end, 8),
@@ -691,27 +858,26 @@ def build_nightmare_geo() -> tuple[dict, int, dict]:
                                 [tb[0], tb[1] - 0.2, tb[2]],
                                 lerp_pt(ta, ba, 0.95),
                                 lerp_pt(tb, bb, 0.95),
-                                st, "WING_MEMBRANE", (0.01, 0.99), (0.01, 0.99), 0.22)
+                                st, "WING_MEMBRANE", (0.01, 0.99), (0.01, 0.99), 0.24)
 
-        # 4. `wing_*_tip`
         w_tip_cubes = []
-        add_chain_rod(w_tip_cubes, p_wrist, p_outer_mid, 0.92, 0.68, 5, "WING_BONE", overlap=0.35)
-        add_chain_rod(w_tip_cubes, p_outer_mid, p_outer_tip, 0.68, 0.34, 5, "WING_BONE", overlap=0.32)
-        add_knuckle(w_tip_cubes, p_outer_mid, 0.56)
-        add_claw_spike(w_tip_cubes, p_outer_tip, [p_outer_tip[0] + s * 1.8, p_outer_tip[1] - 3.0, p_outer_tip[2] - 0.3], 0.44, "CLAW_BLOOD", 2)
+        add_chain_rod(w_tip_cubes, p_wrist, p_outer_mid, 1.00, 0.74, 5, "WING_BONE", overlap=0.36)
+        add_chain_rod(w_tip_cubes, p_outer_mid, p_outer_tip, 0.74, 0.36, 5, "WING_BONE", overlap=0.34)
+        add_knuckle(w_tip_cubes, p_outer_mid, 0.62)
+        add_claw_spike(w_tip_cubes, p_outer_tip, [p_outer_tip[0] + s * 2.0, p_outer_tip[1] - 3.4, p_outer_tip[2] - 0.4], 0.48, "CLAW_BLOOD", 2)
 
         add_membrane_bay_3d(w_tip_cubes,
                             [p_wrist[0], p_wrist[1] - 0.25, p_wrist[2]],
                             [p_outer_mid[0], p_outer_mid[1] - 0.25, p_outer_mid[2]],
                             lerp_pt(p_rib3_top, p_rib3_end, 0.95),
                             lerp_pt(p_rib3_end, p_outer_tip, 0.54),
-                            7, "WING_MEMBRANE", (0.01, 0.56), (0.01, 0.99), 0.22)
+                            7, "WING_MEMBRANE", (0.01, 0.56), (0.01, 0.99), 0.24)
         add_membrane_bay_3d(w_tip_cubes,
                             [p_outer_mid[0], p_outer_mid[1] - 0.25, p_outer_mid[2]],
                             [p_outer_tip[0] - s * 0.15, p_outer_tip[1] - 0.2, p_outer_tip[2]],
                             lerp_pt(p_rib3_end, p_outer_tip, 0.52),
-                            [p_outer_tip[0] - s * 0.2, p_outer_tip[1] - 1.8, p_outer_tip[2]],
-                            6, "WING_MEMBRANE", (0.54, 0.99), (0.01, 0.99), 0.22)
+                            [p_outer_tip[0] - s * 0.2, p_outer_tip[1] - 2.0, p_outer_tip[2]],
+                            6, "WING_MEMBRANE", (0.54, 0.99), (0.01, 0.99), 0.24)
 
         bones.append({"name": f"wing_{tag}", "parent": "chest", "pivot": p_root, "rotation": [0.0, 0.0, 0.0], "cubes": w_root_cubes})
         bones.append({"name": f"wing_{tag}_upper", "parent": f"wing_{tag}", "pivot": p_root, "rotation": [0.0, 0.0, 0.0], "cubes": w_up_cubes})
@@ -722,7 +888,9 @@ def build_nightmare_geo() -> tuple[dict, int, dict]:
     build_wing_chain(-1.0)
 
     # -------------------------------------------------------------------------
-    # F. HAI CÁNH TAY — GIÁP VAI NHIỀU TẦNG PHÓNG NHẸ, LỘ BẮP TAY CƠ BẮP QUẤN BĂNG ĐỎ, GĂNG GAI SẮC & ĐẠI KIẾM CÂN ĐỐI!
+    # F. GIÁP VAI VỎ SÒ CONG HỮU CƠ (`shoulder_l/r`) + CÁNH TAY CƠ BẮP HƠI CO TỰ NHIÊN (`arm_l/r`) + ĐẠI KIẾM!
+    #    - Bỏ sạch các thanh vai vuông chồng gạch kiểu robot! Dùng gân sườn giáp cong ôm vòm vai + vây cong hữu cơ!
+    #    - Khuỷu tay hơi gập tự nhiên về trước (`Z = 0.0 -> +1.0 -> -1.4`), cẳng tay vuốt thon hữu cơ nhiều chi tiết!
     # -------------------------------------------------------------------------
     sword_tip_world = [0.0, 0.0, 0.0]
 
@@ -730,90 +898,113 @@ def build_nightmare_geo() -> tuple[dict, int, dict]:
         nonlocal sword_tip_world
         tag = "l" if side > 0 else "r"
         s = side
-        sh_x = s * 8.6
-        sh_y = 33.0
-        el_x = sh_x + s * 2.2
-        el_y = sh_y - 8.8
-        ha_x = el_x + s * 1.1
-        ha_y = el_y - 7.4
+        sh_piv = [s * 9.0, 41.0, 0.0]
+        arm_x, arm_y, arm_z = s * 10.8, 39.4, +0.2
+        el_x,  el_y,  el_z  = arm_x + s * 2.1, arm_y - 9.4, +1.0   # Hơi ngả sau ở khuỷu
+        ha_x,  ha_y,  ha_z  = el_x  + s * 0.4, el_y  - 9.2, -1.6   # Cẳng tay co nhẹ tự nhiên về trước — KHÔNG đơ thẳng đứng!
 
-        bones.append({"name": f"arm_{tag}", "parent": "chest", "pivot": [sh_x, sh_y, 0.0], "rotation": [0.0, 0.0, 0.0], "cubes": []})
-
-        # `arm_*_upper`: Giáp vai 5 tầng gothic ánh kim phóng nhẹ + lộ rõ bắp tay cơ bắp tối màu quấn băng đỏ!
-        up_cubes = [
-            make_cube([sh_x - 2.3 + s * 1.0, sh_y + 1.2, -3.0], [4.9, 1.7, 6.0], "ARMOR_SPIKE", rot=[0, 0, s * -8]),
-            make_cube([sh_x - 2.7 + s * 0.8, sh_y - 0.5, -3.5], [5.7, 2.2, 7.0], "ARMOR_STEEL", rot=[0, 0, s * -16]),
-            make_cube([sh_x - 2.4 + s * 1.4, sh_y - 2.1, -3.3], [5.4, 2.1, 6.6], "ARMOR_STEEL", rot=[0, 0, s * -24]),
-            make_cube([sh_x - 2.0 + s * 1.9, sh_y - 3.5, -2.9], [4.8, 1.8, 5.8], "ARMOR_SPIKE", rot=[0, 0, s * -30]),
-            make_cube([sh_x - 1.0 + s * 1.7, sh_y - 3.4, -0.8], [2.2, 6.0, 1.6], "ARMOR_SPIKE", rot=[0, 0, s * -24]),
+        # 1. KHỚP VAI HỮU CƠ CONG VÒM (`shoulder_l/r`) — Giáp bả vai vỏ sò gothic uốn mềm thay vì hộp vuông!
+        sh_cubes = [
+            make_centered_cube([sh_piv[0] + s * 1.4, sh_piv[1] + 0.4, 0.0], [5.4, 4.6, 7.0], "ARMOR_STEEL", rot=[0, 0, s * -16]),
+            make_centered_cube([sh_piv[0] + s * 2.5, sh_piv[1] - 1.6, 0.0], [4.6, 3.8, 6.2], "ARMOR_STEEL", rot=[0, 0, s * -28]),
+            # Mái vòm cổ vai cong vát cao khung 2 bên đầu giống ảnh mẫu 1
+            make_centered_cube([sh_piv[0] + s * 0.2, sh_piv[1] + 3.0, -0.5], [1.6, 4.2, 4.8], "ARMOR_SPIKE", rot=[0, -s * 16, s * 22]),
         ]
-        # Lộ rõ bắp tay cơ bắp nâu-xám tối (độ tương phản mạnh với thép đen!) + 2 vòng băng vải đỏ sẫm
-        add_chain_rod(up_cubes, [sh_x + s * 0.9, sh_y - 2.6, 0.0], [el_x, el_y + 0.4, 0.0], 3.35, 3.05, 4, "FLESH_DARK", overlap=0.35)
-        for frac, bw in ((0.46, 0.95), (0.66, 0.85)):
-            px = (sh_x + s * 0.9) * (1.0 - frac) + el_x * frac
-            py = (sh_y - 2.6) * (1.0 - frac) + (el_y + 0.4) * frac
-            up_cubes.append(make_cube([px - 1.82, py - bw * 0.5, -1.85], [3.64, bw, 3.70], "CLOTH_TATTER",
-                                      rot=[0, 0, s * -13], sub_v=(0.18, 0.48)))
-        # 5 gai giáp vai hướng nhọn vát lên trên đầy uy lực + 3 lớp sống vảy vai thép nổi khối!
-        for k in range(3):
-            up_cubes.append(make_cube([sh_x - 1.2 + s * (1.2 + k * 0.6), sh_y + 0.6 - k * 1.9, -3.5 + k * 0.2],
-                                      [2.6, 1.3, 1.4], "ARMOR_SPIKE", rot=[10, s * -16, s * (-14 - k * 7)]))
-            up_cubes.append(make_cube([sh_x - 1.2 + s * (1.2 + k * 0.6), sh_y + 0.6 - k * 1.9, +2.1 - k * 0.2],
-                                      [2.6, 1.3, 1.4], "ARMOR_SPIKE", rot=[-10, s * 16, s * (-14 - k * 7)]))
-        add_claw_spike(up_cubes, [sh_x + s * 1.6, sh_y + 2.3, -1.0], [sh_x + s * 4.5, sh_y + 6.0, -1.8], 1.22, "ARMOR_SPIKE", 3)
-        add_claw_spike(up_cubes, [sh_x + s * 2.5, sh_y + 1.4, 0.8],  [sh_x + s * 6.0, sh_y + 4.2, 1.6],  1.12, "ARMOR_SPIKE", 3)
-        add_claw_spike(up_cubes, [sh_x + s * 3.0, sh_y - 0.5, -1.6], [sh_x + s * 6.2, sh_y + 1.2, -2.4], 0.98, "ARMOR_SPIKE", 3)
-        add_claw_spike(up_cubes, [sh_x + s * 3.2, sh_y - 2.2, 0.2],  [sh_x + s * 6.0, sh_y - 1.0, 0.6],  0.90, "ARMOR_SPIKE", 2)
-        add_claw_spike(up_cubes, [sh_x + s * 3.0, sh_y - 3.8, 1.2],  [sh_x + s * 5.4, sh_y - 3.2, 2.0],  0.80, "ARMOR_SPIKE", 2)
+        # 5 thanh gân giáp vỏ sò cong ôm vòm vai từ trước ra sau (chi tiết sống động đúng ảnh mẫu 2!)
+        for k, (dy, dx_out, dz_span) in enumerate(((2.0, 1.8, 3.6), (0.8, 3.2, 4.2), (-0.6, 4.2, 4.0), (-2.0, 4.8, 3.5), (-3.3, 4.9, 2.8))):
+            add_curved_rod(sh_cubes, [
+                [sh_piv[0] + s * (dx_out - 0.6), sh_piv[1] + dy - 0.5, -dz_span],
+                [sh_piv[0] + s * (dx_out + 0.6), sh_piv[1] + dy + 0.3,  0.0],
+                [sh_piv[0] + s * (dx_out - 0.5), sh_piv[1] + dy - 0.5, +dz_span],
+            ], 1.15, 0.95, "ARMOR_SPIKE" if k % 2 == 0 else "ARMOR_STEEL", segs_per_span=2)
+        # 3 sừng gai cong hữu cơ uốn lượn mềm trên bả vai (thay que thẳng robot!)
+        add_curved_rod(sh_cubes, [
+            [sh_piv[0] + s * 1.0, sh_piv[1] + 2.8, -1.0],
+            [sh_piv[0] + s * 2.8, sh_piv[1] + 5.2, -1.4],
+            [sh_piv[0] + s * 4.2, sh_piv[1] + 7.2, -1.0],
+        ], 1.15, 0.24, "ARMOR_SPIKE", segs_per_span=2)
+        add_curved_rod(sh_cubes, [
+            [sh_piv[0] + s * 2.8, sh_piv[1] + 1.6, +0.8],
+            [sh_piv[0] + s * 5.0, sh_piv[1] + 3.4, +1.4],
+            [sh_piv[0] + s * 6.6, sh_piv[1] + 4.8, +2.0],
+        ], 1.05, 0.22, "ARMOR_SPIKE", segs_per_span=2)
+        add_curved_rod(sh_cubes, [
+            [sh_piv[0] + s * 3.8, sh_piv[1] - 0.8, -1.2],
+            [sh_piv[0] + s * 6.0, sh_piv[1] - 0.2, -1.8],
+            [sh_piv[0] + s * 7.2, sh_piv[1] + 0.8, -1.6],
+        ], 0.92, 0.20, "BONE_RIB", segs_per_span=2)
 
-        bones.append({"name": f"arm_{tag}_upper", "parent": f"arm_{tag}", "pivot": [sh_x, sh_y, 0.0], "rotation": [0.0, 0.0, 0.0], "cubes": up_cubes})
+        bones.append({"name": f"shoulder_{tag}", "parent": "chest", "pivot": sh_piv, "rotation": [0.0, 0.0, 0.0], "cubes": sh_cubes})
+        bones.append({"name": f"arm_{tag}", "parent": f"shoulder_{tag}", "pivot": [arm_x, arm_y, arm_z], "rotation": [0.0, 0.0, 0.0], "cubes": []})
 
-        # `arm_*_lower`: Găng giáp thép nhiều tầng vát nhọn + 6 gai sắc dọc cẳng tay!
+        # 2. `arm_*_upper`: Bắp tay cơ bắp nổi khối gân guốc + dây vải đỏ quấn chéo hữu cơ!
+        up_cubes = []
+        add_chain_rod(up_cubes, [arm_x, arm_y - 0.6, arm_z], [el_x, el_y + 0.5, el_z], 4.05, 3.35, 4, "FLESH_DARK", overlap=0.45)
+        mid_u = [0.5 * (arm_x + el_x), 0.5 * (arm_y + el_y) - 0.4, 0.5 * (arm_z + el_z)]
+        # Khối cơ nhị đầu (bicep) & tam đầu (tricep) vuốt mềm
+        up_cubes.append(make_centered_cube([mid_u[0] - s * 0.2, mid_u[1], mid_u[2] - 1.15], [3.0, 5.2, 1.85], "FLESH_DARK", rot=[6, 0, s * -10]))
+        up_cubes.append(make_centered_cube([mid_u[0] + s * 0.2, mid_u[1] + 0.3, mid_u[2] + 1.10], [2.9, 4.8, 1.75], "FLESH_DARK", rot=[6, 0, s * -10]))
+        # 2 vòng dây băng vải đỏ quấn chéo tự nhiên + 1 dải vải thừa phất nhẹ
+        for frac, tilt in ((0.44, 10), (0.66, -8)):
+            px = arm_x * (1.0 - frac) + el_x * frac
+            py = (arm_y - 0.6) * (1.0 - frac) + (el_y + 0.5) * frac
+            pz = arm_z * (1.0 - frac) + el_z * frac
+            up_cubes.append(make_centered_cube([px, py, pz], [4.05, 0.95, 4.15], "CLOTH_TATTER",
+                                               rot=[tilt, 0, s * -12], sub_v=(0.18, 0.48)))
+
+        bones.append({"name": f"arm_{tag}_upper", "parent": f"arm_{tag}", "pivot": [arm_x, arm_y, arm_z], "rotation": [0.0, 0.0, 0.0], "cubes": up_cubes})
+
+        # 3. `arm_*_lower`: Găng giáp cẳng tay vát dọc mềm mại (KHÔNG còn 3 khối ống vuông xếp chồng!) + vây khuỷu cong!
         lo_cubes = []
-        add_chain_rod(lo_cubes, [el_x, el_y + 0.4, 0.0], [ha_x, ha_y, 0.0], 3.6, 3.3, 4, "ARMOR_STEEL", overlap=0.35)
-        for k, (f_pos, rw, mat_g) in enumerate(((0.18, 4.3, "ARMOR_SPIKE"), (0.48, 4.1, "ARMOR_STEEL"), (0.78, 3.8, "ARMOR_SPIKE"))):
-            gx = el_x * (1.0 - f_pos) + ha_x * f_pos
-            gy = el_y * (1.0 - f_pos) + ha_y * f_pos
-            lo_cubes.append(make_cube([gx - rw * 0.5 + s * 0.25, gy - 1.2, -rw * 0.52], [rw, 2.4, rw * 1.04], mat_g,
-                                      rot=[0, 0, s * (-14 + k * 3)]))
-        lo_cubes.append(make_cube([el_x + s * 1.45, el_y - 1.0, -1.2], [1.1, 3.6, 2.4], "ARMOR_SPIKE", rot=[0, 0, s * 18]))
-        lo_cubes.append(make_cube([ha_x + s * 1.75, ha_y + 1.0, -0.4], [0.35, 2.6, 0.72], "RUNE_GLOW"))
-        add_claw_spike(lo_cubes, [el_x + s * 1.6, el_y - 0.2, 0.8],  [el_x + s * 4.8, el_y + 2.4, 2.2],  1.02, "ARMOR_SPIKE", 3)
-        add_claw_spike(lo_cubes, [el_x + s * 1.8, el_y - 1.9, -0.8], [el_x + s * 4.2, el_y - 0.6, -1.5], 0.84, "ARMOR_SPIKE", 2)
-        add_claw_spike(lo_cubes, [el_x + s * 1.9, el_y - 3.3, 0.6],  [el_x + s * 4.3, el_y - 2.0, 1.4],  0.82, "ARMOR_SPIKE", 2)
-        add_claw_spike(lo_cubes, [el_x + s * 2.1, el_y - 4.8, -0.6], [el_x + s * 4.1, el_y - 3.8, -1.0], 0.76, "ARMOR_SPIKE", 2)
-        add_claw_spike(lo_cubes, [el_x + s * 2.2, el_y - 6.1, 0.5],  [el_x + s * 3.9, el_y - 5.2, 1.0],  0.68, "ARMOR_SPIKE", 2)
+        add_chain_rod(lo_cubes, [el_x, el_y + 0.6, el_z], [ha_x, ha_y, ha_z], 3.75, 2.95, 5, "ARMOR_STEEL", overlap=0.45)
+        mid_l = [0.5 * (el_x + ha_x), 0.5 * (el_y + ha_y), 0.5 * (el_z + ha_z)]
+        # Tấm ốp găng giáp dọc vát thuôn dần theo cơ cẳng tay (mềm & sắc sảo!)
+        lo_cubes.append(make_centered_cube([mid_l[0] + s * 1.45, mid_l[1] + 0.2, mid_l[2]], [1.55, 7.6, 3.2], "ARMOR_STEEL", rot=[16, 0, s * -6]))
+        lo_cubes.append(make_centered_cube([mid_l[0] + s * 1.90, mid_l[1] + 0.4, mid_l[2] + 0.2], [0.95, 6.2, 2.0], "ARMOR_SPIKE", rot=[16, 0, s * -8]))
+        # Vòng cổ tay gothic vát nhọn
+        lo_cubes.append(make_centered_cube([ha_x, ha_y + 1.2, ha_z + 0.2], [3.55, 1.8, 3.65], "ARMOR_SPIKE", rot=[16, 0, 0]))
+        # Lưỡi vây khuỷu tay cong mềm & 2 gai cẳng tay cong tự nhiên
+        add_curved_rod(lo_cubes, [
+            [el_x + s * 1.2, el_y - 0.6, el_z + 1.0],
+            [el_x + s * 3.0, el_y + 1.2, el_z + 2.6],
+            [el_x + s * 4.4, el_y + 3.4, el_z + 3.6],
+        ], 1.15, 0.24, "ARMOR_SPIKE", segs_per_span=2)
+        add_curved_rod(lo_cubes, [
+            [mid_l[0] + s * 1.6, mid_l[1] + 0.8, mid_l[2] + 0.8],
+            [mid_l[0] + s * 3.8, mid_l[1] + 2.4, mid_l[2] + 1.8],
+        ], 0.82, 0.20, "ARMOR_SPIKE", segs_per_span=2)
+        add_curved_rod(lo_cubes, [
+            [mid_l[0] + s * 1.5, mid_l[1] - 1.8, mid_l[2] + 0.4],
+            [mid_l[0] + s * 3.4, mid_l[1] - 0.6, mid_l[2] + 1.2],
+        ], 0.74, 0.18, "ARMOR_SPIKE", segs_per_span=2)
 
-        bones.append({"name": f"arm_{tag}_lower", "parent": f"arm_{tag}_upper", "pivot": [el_x, el_y, 0.0], "rotation": [0.0, 0.0, 0.0], "cubes": lo_cubes})
+        bones.append({"name": f"arm_{tag}_lower", "parent": f"arm_{tag}_upper", "pivot": [el_x, el_y, el_z], "rotation": [0.0, 0.0, 0.0], "cubes": lo_cubes})
 
-        # `hand_l/r`: Bàn tay bọc giáp tăng nhẹ kích cỡ (~1.12x) + 4 ngón vuốt sắc + ngón cái!
+        # 4. `hand_l/r`: Bàn tay gân guốc bọc mu giáp & 4 ngón vuốt cong hữu cơ
         ha_cubes = [
-            make_cube([ha_x - 1.62, ha_y - 2.4, -1.72], [3.24, 2.6, 3.44], "ARMOR_STEEL"),
-            make_cube([ha_x - 1.38, ha_y - 2.7, -1.48], [2.76, 1.5, 2.96], "FLESH_DARK"),
-            make_cube([ha_x + s * 1.32, ha_y - 2.3, -1.38], [0.60, 1.8, 2.76], "ARMOR_SPIKE"),
+            make_centered_cube([ha_x, ha_y - 1.2, ha_z], [3.20, 2.6, 3.40], "FLESH_DARK", rot=[10, 0, 0]),
+            make_centered_cube([ha_x + s * 1.20, ha_y - 1.1, ha_z], [1.10, 2.2, 3.10], "ARMOR_SPIKE", rot=[10, 0, 0]),
         ]
-        for fz in (-1.22, -0.40, 0.40, 1.18):
-            curl = 0.62 if s < 0 else 0.25
-            p0 = [ha_x + s * 0.60, ha_y - 2.3, fz]
-            p1 = [ha_x + s * (0.32 - curl * 0.72), ha_y - 3.6, fz - 0.08]
-            p2 = [ha_x + s * (0.05 - curl * 1.15), ha_y - 4.6, fz - 0.14]
-            p3 = [ha_x - s * (0.50 + curl * 0.62), ha_y - 5.5, fz - 0.20]
-            add_chain_rod(ha_cubes, p0, p1, 0.68, 0.56, 2, "FLESH_DARK", overlap=0.14)
-            add_chain_rod(ha_cubes, p1, p2, 0.56, 0.46, 2, "ARMOR_SPIKE", overlap=0.14)
-            add_claw_spike(ha_cubes, p2, p3, 0.46, "CLAW_BLOOD", 2)
-        add_chain_rod(ha_cubes, [ha_x - s * 1.05, ha_y - 1.5, -1.4], [ha_x - s * 1.75, ha_y - 3.3, -2.1], 0.68, 0.36, 3, "CLAW_BLOOD", overlap=0.14)
+        for fz_off in (-1.20, -0.40, 0.40, 1.18):
+            fz = ha_z + fz_off
+            curl = 0.68 if s < 0 else 0.34
+            p0 = [ha_x + s * 0.55, ha_y - 2.3, fz]
+            p1 = [ha_x + s * (0.28 - curl * 0.76), ha_y - 3.6, fz - 0.14]
+            p2 = [ha_x + s * (0.02 - curl * 1.20), ha_y - 4.7, fz - 0.24]
+            p3 = [ha_x - s * (0.50 + curl * 0.64), ha_y - 5.6, fz - 0.32]
+            add_chain_rod(ha_cubes, p0, p1, 0.68, 0.56, 2, "FLESH_DARK", overlap=0.16)
+            add_chain_rod(ha_cubes, p1, p2, 0.56, 0.45, 2, "ARMOR_SPIKE", overlap=0.16)
+            add_claw_spike(ha_cubes, p2, p3, 0.45, "CLAW_BLOOD", 2)
+        add_chain_rod(ha_cubes, [ha_x - s * 1.05, ha_y - 1.5, ha_z - 1.4], [ha_x - s * 1.80, ha_y - 3.4, ha_z - 2.2], 0.68, 0.36, 3, "CLAW_BLOOD", overlap=0.16)
 
-        bones.append({"name": f"hand_{tag}", "parent": f"arm_{tag}_lower", "pivot": [ha_x, ha_y, 0.0], "rotation": [0.0, 0.0, 0.0], "cubes": ha_cubes})
+        bones.append({"name": f"hand_{tag}", "parent": f"arm_{tag}_lower", "pivot": [ha_x, ha_y, ha_z], "rotation": [0.0, 0.0, 0.0], "cubes": ha_cubes})
 
         # ---------------------------------------------------------------------
-        # ĐẠI KIẾM QUỶ RĂNG CƯA CÂN ĐỐI (~1.08x chiều cao thân = 45.2 px tổng chuôi->mũi!)
-        # Góc cầm chéo tự nhiên xuống trước–phải đúc trong hệ cục bộ, mũi kiếm lơ lửng an toàn ~2.2 px trên đất!
+        # ĐẠI KIẾM QUỶ RĂNG CƯA CÂN ĐỐI (~50.5 px tổng chuôi->mũi, lơ lửng an toàn ~2.8 px trên đất!)
         # ---------------------------------------------------------------------
         if s < 0:
-            wp_x, wp_y, wp_z = ha_x - 0.2, ha_y - 2.8, -0.6
-            # Định nghĩa kiếm trong hệ cục bộ rồi đặt thẳng vào hướng cầm chéo tự nhiên (pitch=+19.5° xuống, yaw=+12° ra ngoài, roll=-8°!)
-            # => mũi kiếm lơ lửng an toàn ~2.0 px trên mặt đất (KHÔNG cắm xuyên nền!), tổng dài 45.2 px (= 1.08x chiều cao thân!)
-            R_sw = bedrock_rot_matrix([19.5, 12.0, -8.0])
+            wp_x, wp_y, wp_z = ha_x - 0.2, ha_y - 2.8, ha_z - 0.6
+            R_sw = bedrock_rot_matrix([20.5, 11.0, -7.0])
             sw_o = np.array([wp_x, wp_y, wp_z], dtype=np.float64)
 
             def sw_pt(lx, ly, lz):
@@ -827,59 +1018,48 @@ def build_nightmare_geo() -> tuple[dict, int, dict]:
                 return make_cube([wc[0] - sx * 0.5, wc[1] - sy * 0.5, wc[2] - sz * 0.5], [sx, sy, sz], mat, rot=rot, pivot=wc.tolist())
 
             w_cubes = [
-                # Cán kiếm đen quấn gân + chuôi gai + tinh thể đỏ phát sáng
-                sw_box(-0.68, -0.68, -2.6, 1.36, 1.36, 10.6, "WING_BONE"),
-                sw_box(-0.88, -0.88, +1.0, 1.76, 1.76, 1.0, "ARMOR_SPIKE"),
-                sw_box(-0.88, -0.88, +4.0, 1.76, 1.76, 1.0, "ARMOR_SPIKE"),
-                sw_box(-1.12, -1.12, +7.2, 2.24, 2.24, 1.9, "ARMOR_SPIKE"),
-                sw_box(-0.78, -0.78, +8.8, 1.56, 1.56, 2.2, "RUNE_GLOW", extra_rot=(0, 0, 45)),
-                # Thanh chắn kiếm (crossguard) quỷ cong gai đỏ-đen sắc sảo
-                sw_box(-1.35, -3.9, -4.0, 2.70, 7.8, 2.2, "ARMOR_SPIKE"),
-                sw_box(-1.05, -2.5, -4.9, 2.10, 5.0, 1.5, "ARMOR_STEEL"),
-                sw_box(-0.95, -1.2, -4.7, 1.90, 2.4, 1.7, "RUNE_GLOW"),
+                sw_box(-0.72, -0.72, -2.8, 1.44, 1.44, 11.8, "WING_BONE"),
+                sw_box(-0.92, -0.92, +1.1, 1.84, 1.84, 1.0, "ARMOR_SPIKE"),
+                sw_box(-0.92, -0.92, +4.4, 1.84, 1.84, 1.0, "ARMOR_SPIKE"),
+                sw_box(-1.18, -1.18, +8.0, 2.36, 2.36, 2.1, "ARMOR_SPIKE"),
+                sw_box(-0.82, -0.82, +9.7, 1.64, 1.64, 2.4, "RUNE_GLOW", extra_rot=(0, 0, 45)),
+                sw_box(-1.42, -4.2, -4.3, 2.84, 8.4, 2.3, "ARMOR_SPIKE"),
+                sw_box(-1.12, -2.7, -5.2, 2.24, 5.4, 1.6, "ARMOR_STEEL"),
+                sw_box(-1.00, -1.3, -5.0, 2.00, 2.6, 1.8, "RUNE_GLOW"),
             ]
-            # 3 cặp ngạnh vuốt bảo vệ tay đỏ-đen cong vút trên crossguard & chuôi
-            add_claw_spike(w_cubes, sw_pt(0, +3.2, -3.1), sw_pt(0, +6.4, -7.2), 1.22, "CLAW_BLOOD", 4)
-            add_claw_spike(w_cubes, sw_pt(0, -3.2, -3.1), sw_pt(0, -6.4, -7.2), 1.22, "CLAW_BLOOD", 4)
-            add_claw_spike(w_cubes, sw_pt(0, +2.2, -2.0), sw_pt(0, +4.5, +1.2), 0.90, "ARMOR_SPIKE", 3)
-            add_claw_spike(w_cubes, sw_pt(0, -2.2, -2.0), sw_pt(0, -4.5, +1.2), 0.90, "ARMOR_SPIKE", 3)
-            add_claw_spike(w_cubes, sw_pt(0, +1.2, +7.8), sw_pt(0, +2.6, +10.0), 0.68, "CLAW_BLOOD", 2)
-            add_claw_spike(w_cubes, sw_pt(0, -1.2, +7.8), sw_pt(0, -2.6, +10.0), 0.68, "CLAW_BLOOD", 2)
+            add_claw_spike(w_cubes, sw_pt(0, +3.5, -3.4), sw_pt(0, +7.0, -7.8), 1.30, "CLAW_BLOOD", 4)
+            add_claw_spike(w_cubes, sw_pt(0, -3.5, -3.4), sw_pt(0, -7.0, -7.8), 1.30, "CLAW_BLOOD", 4)
+            add_claw_spike(w_cubes, sw_pt(0, +2.4, -2.2), sw_pt(0, +4.9, +1.3), 0.96, "ARMOR_SPIKE", 3)
+            add_claw_spike(w_cubes, sw_pt(0, -2.4, -2.2), sw_pt(0, -4.9, +1.3), 0.96, "ARMOR_SPIKE", 3)
+            add_claw_spike(w_cubes, sw_pt(0, +1.3, +8.6), sw_pt(0, +2.8, +11.0), 0.74, "CLAW_BLOOD", 2)
+            add_claw_spike(w_cubes, sw_pt(0, -1.3, +8.6), sw_pt(0, -2.8, +11.0), 0.74, "CLAW_BLOOD", 2)
 
-            # BẢN LƯỠI BẤT ĐỐI XỨNG RĂNG CƯA SẮC SẢO:
-            # Sống thép trắng bạc ánh kim (`BLADE_STEEL`) sắc mảnh thanh thoát tương phản mép lưỡi & mũi đỏ máu (`BLADE_EDGE`) + rãnh rune!
             blade_segs = [
-                (-3.9,  4.8, 2.05, 1.55, 1.06),
-                (-8.5,  4.8, 2.40, 1.80, 0.98),
-                (-13.1, 4.8, 2.15, 1.65, 0.90),
-                (-17.7, 4.8, 1.80, 1.38, 0.82),
-                (-22.3, 4.6, 1.38, 1.08, 0.70),
-                (-26.7, 4.0, 0.92, 0.74, 0.54),
+                (-4.2,  5.3, 2.22, 1.68, 1.12),
+                (-9.3,  5.3, 2.58, 1.94, 1.04),
+                (-14.4, 5.3, 2.32, 1.78, 0.95),
+                (-19.5, 5.3, 1.94, 1.48, 0.86),
+                (-24.6, 5.1, 1.48, 1.16, 0.74),
+                (-29.5, 4.4, 0.98, 0.80, 0.58),
             ]
             for idx_b, (zs, blen, hu, hd, bth) in enumerate(blade_segs):
-                # Bản thép trắng bạc đánh bóng sắc nét ở sống & thân lưỡi
-                w_cubes.append(sw_box(-bth * 0.5, -hd * 0.50, zs - blen, bth, hu * 0.78 + hd * 0.50, blen + 0.25, "BLADE_STEEL"))
-                # Gờ sống thép sáng nổi giữa thân lưỡi
-                w_cubes.append(sw_box(-bth * 0.58, -0.42, zs - blen, bth * 1.16, 0.84, blen + 0.20, "BLADE_STEEL"))
-                # Mép lưỡi sắc đỏ máu thanh gọn bất đối xứng (nhấn mạnh mép sắc & răng cưa thay vì quá dày!)
+                w_cubes.append(sw_box(-bth * 0.5, -hd * 0.50, zs - blen, bth, hu * 0.78 + hd * 0.50, blen + 0.26, "BLADE_STEEL"))
+                w_cubes.append(sw_box(-bth * 0.58, -0.45, zs - blen, bth * 1.16, 0.90, blen + 0.20, "BLADE_STEEL"))
                 w_cubes.append(sw_box(-bth * 0.28, +hu * 0.58, zs - blen, bth * 0.56, hu * 0.48, blen + 0.20, "BLADE_EDGE"))
                 w_cubes.append(sw_box(-bth * 0.26, -hd * 1.02, zs - blen, bth * 0.52, hd * 0.56, blen + 0.20, "BLADE_EDGE"))
-                # Rãnh rune máu mảnh chạy dọc lõi sống thép (phát sáng fullbright!)
                 if idx_b < 5:
-                    w_cubes.append(sw_box(-bth * 0.64, -0.18, zs - blen + 0.50, bth * 1.28, 0.36, blen - 1.0, "RUNE_GLOW"))
-                # Răng cưa quỷ nhô vát ngược sắc bén dọc hai mép lưỡi
+                    w_cubes.append(sw_box(-bth * 0.64, -0.19, zs - blen + 0.52, bth * 1.28, 0.38, blen - 1.04, "RUNE_GLOW"))
                 if idx_b in (0, 1, 2, 3):
                     add_claw_spike(w_cubes, sw_pt(0, +hu * 0.78, zs - blen * 0.52),
-                                   sw_pt(0, +hu * 1.62, zs - blen * 0.12), 0.56, "BLADE_EDGE", 2)
+                                   sw_pt(0, +hu * 1.62, zs - blen * 0.12), 0.60, "BLADE_EDGE", 2)
                     add_claw_spike(w_cubes, sw_pt(0, -hd * 0.78, zs - blen * 0.72),
-                                   sw_pt(0, -hd * 1.54, zs - blen * 0.28), 0.52, "BLADE_EDGE", 2)
+                                   sw_pt(0, -hd * 1.54, zs - blen * 0.28), 0.56, "BLADE_EDGE", 2)
                 if idx_b in (0, 2):
                     add_claw_spike(w_cubes, sw_pt(0, +hu * 0.65, zs - blen * 0.88),
-                                   sw_pt(0, +hu * 1.32, zs - blen * 0.55), 0.46, "BLADE_STEEL", 2)
+                                   sw_pt(0, +hu * 1.32, zs - blen * 0.55), 0.48, "BLADE_STEEL", 2)
 
-            # Mũi kiếm đỏ máu vuốt dài nhọn hoắt (tới local z = -34.7 -> tổng dài pommel->tip = 45.2 px = 1.08x chiều cao!)
-            add_claw_spike(w_cubes, sw_pt(0, 0, -30.5), sw_pt(0, 0, -34.7), 0.88, "BLADE_EDGE", 3)
-            tip_pos = sw_pt(0, 0, -34.7)
+            add_claw_spike(w_cubes, sw_pt(0, 0, -33.6), sw_pt(0, 0, -38.4), 0.92, "BLADE_EDGE", 3)
+            tip_pos = sw_pt(0, 0, -38.4)
             sword_tip_world = [round(v, 2) for v in tip_pos]
 
             bones.append({
@@ -898,115 +1078,91 @@ def build_nightmare_geo() -> tuple[dict, int, dict]:
     build_arm_chain(-1.0)
 
     # -------------------------------------------------------------------------
-    # G. CHÂN THÚ GẬP CHỮ Z DIGITIGRADE 4 ĐỐT THẬT SỰ (`leg_l/r` -> `thigh_l/r` (+ `knee_spur_l/r`) -> `shin_l/r` -> `ankle_hock_l/r` -> `foot_l/r`)
-    #    - Đùi nghiêng mạnh về trước tới gối (`z = 0.0 -> -5.8, y = 20.4 -> 13.0`) + mũi giáp đầu gối cong vút về trước!
-    #    - Ống chân vát ngược mạnh về sau tạo khớp cổ chân thú cao (`hock` tại `z = +4.6, y = 6.8`) có cựa sau!
-    #    - Cổ chân thú (`ankle_hock`) chúc chéo về trước xuống bàn chân (`z = +4.6 -> -0.6, y = 6.8 -> 1.8`)!
-    #    - Bàn chân thú xòe rộng thế chữ A (`x = ±7.2`), mũi chân xoay ngoài ±15°, 4 ngón vuốt cong + cựa gót!
+    # G. CHÂN HIỆP SĨ QUỶ THẲNG GỌN HƠN (~22.8 px) & MỀM MẠI HỮU CƠ (KHÔNG CÒN ỐNG XẾP VÒNG ROBOT!)
+    #    - Đùi & ống chân bọc tấm giáp dọc uốn cong ôm cơ đùi/bắp chân, lộ gân cơ mặt trong, giáp gối hình lá gothic cong mềm!
     # -------------------------------------------------------------------------
     def build_leg_chain(side: float):
         tag = "l" if side > 0 else "r"
         s = side
 
-        p_hip   = np.array([s * 5.8, 20.4,  0.0], dtype=np.float64)
-        p_knee  = np.array([s * 6.8, 12.8, -5.8], dtype=np.float64)  # Đùi nghiêng mạnh ra trước!
-        p_hock  = np.array([s * 7.2,  6.8, +4.4], dtype=np.float64)  # Ống chân vát sâu về sau tạo khớp cổ chân thú cao chữ Z!
-        p_ankle = np.array([s * 7.4,  2.0, -0.8], dtype=np.float64)  # Chúc mạnh xuống cổ bàn chân
+        # Giảm chiều dài chân xuống 22.8 px (tỷ lệ chiến thần cân đối, thế đứng chữ A vững chắc tự nhiên!)
+        p_hip   = np.array([s * 4.5, 22.8, +0.3], dtype=np.float64)
+        p_knee  = np.array([s * 5.7, 12.6, -1.2], dtype=np.float64)
+        p_ankle = np.array([s * 6.3,  3.0, +0.1], dtype=np.float64)
 
         bones.append({"name": f"leg_{tag}", "parent": "pelvis", "pivot": p_hip.tolist(), "rotation": [0.0, 0.0, 0.0], "cubes": []})
 
-        # 1. `thigh_l/r`: Đùi thú bọc KÍN 100% giáp thép đen đánh bóng xếp tầng nghiêng về trước (chỉ bắp tay mới lộ da cơ bắp!)
+        # 1. `thigh_l/r`: Cơ đùi bọc giáp dọc lượn sóng mềm mại (thay thế hoàn toàn 5 đốt hộp ngang robot!)
         th_cubes = []
-        add_chain_rod(th_cubes, p_hip, p_knee, 4.3, 3.6, 5, "ARMOR_STEEL", overlap=0.48, aspect_z=1.08)
-        for k in range(5):
-            ft = 0.08 + k * 0.21
-            pm = p_hip * (1.0 - ft) + p_knee * ft
-            w_p = 5.1 - k * 0.16
-            d_p = 5.4 - k * 0.18
-            th_cubes.append(make_cube([pm[0] - w_p * 0.5 + s * 0.20, pm[1] - 1.25, pm[2] - d_p * 0.5],
-                                      [w_p, 2.5, d_p], "ARMOR_SPIKE" if k % 2 == 0 else "ARMOR_STEEL",
-                                      rot=[34.0, s * -10.0, s * -8.0], pivot=pm.tolist()))
-            # Sống giáp cạnh sắc mặt trước + tấm sườn ngoài đùi nhiều bậc
-            th_cubes.append(make_cube([pm[0] - 0.85, pm[1] - 0.9, pm[2] - d_p * 0.56],
-                                      [1.7, 1.8, 1.1], "ARMOR_SPIKE",
-                                      rot=[36.0, s * -10.0, 0.0], pivot=pm.tolist()))
-            th_cubes.append(make_cube([pm[0] + (w_p * 0.42 if s > 0 else -(w_p * 0.42 + 1.1)), pm[1] - 1.0, pm[2] - 1.6],
-                                      [1.1, 2.0, 3.2], "ARMOR_SPIKE" if k % 2 == 1 else "ARMOR_STEEL",
-                                      rot=[32.0, 0.0, s * -16.0], pivot=pm.tolist()))
-        # 3 gai đùi vát ngang ra ngoài + 2 gai mặt sau đùi
-        for ft, gl in ((0.22, 2.4), (0.52, 2.2), (0.80, 1.9)):
-            pm = p_hip * (1.0 - ft) + p_knee * ft
-            add_claw_spike(th_cubes, pm + np.array([s * 2.2, 0.4, 0.0]),
-                           pm + np.array([s * (2.2 + gl), 1.6, 0.6]), 0.92, "ARMOR_SPIKE", 3)
-        for ft in (0.35, 0.68):
-            pm = p_hip * (1.0 - ft) + p_knee * ft
-            add_claw_spike(th_cubes, pm + np.array([0.0, 0.2, 2.2]),
-                           pm + np.array([0.0, 1.2, 4.4]), 0.82, "ARMOR_SPIKE", 2)
+        # Lõi cơ đùi săn chắc mặt trong (`FLESH_DARK`) tạo độ tương phản hữu cơ cực đẹp
+        add_chain_rod(th_cubes, p_hip, p_knee, 5.1, 3.8, 4, "FLESH_DARK", overlap=0.55, aspect_z=1.08)
+        mid_th = 0.5 * (p_hip + p_knee)
+        # 3 tấm giáp đùi dọc uốn lượn ôm mặt trước, mặt ngoài & sống đùi (trơn mượt, KHÔNG bậc ngang robot!)
+        th_cubes.append(make_centered_cube(mid_th + np.array([0.0, 0.3, -1.95]), [3.8, 9.6, 1.85], "ARMOR_STEEL", rot=[8.0, 0.0, s * -6.0]))
+        th_cubes.append(make_centered_cube(mid_th + np.array([0.0, 0.4, -2.60]), [1.8, 8.8, 1.15], "ARMOR_SPIKE", rot=[8.0, 0.0, s * -6.0]))
+        th_cubes.append(make_centered_cube(mid_th + np.array([s * 2.15, 0.2, -0.35]), [1.8, 9.2, 4.4], "ARMOR_STEEL", rot=[8.0, -s * 12.0, s * -8.0]))
+        th_cubes.append(make_centered_cube(mid_th + np.array([0.0, 0.3, +1.90]), [3.6, 8.8, 1.75], "ARMOR_STEEL", rot=[8.0, 0.0, s * -6.0]))
+        # 2 đai da-đỏ sẫm thắt ngang mặt sau đùi + gân giáp cong ngoài đùi
+        for frac in (0.36, 0.68):
+            pm = p_hip * (1.0 - frac) + p_knee * frac
+            th_cubes.append(make_centered_cube(pm + np.array([-s * 0.4, 0.0, 0.3]), [4.4, 0.85, 4.6], "CLOTH_TATTER",
+                                               rot=[8.0, 0.0, s * -6.0], sub_v=(0.20, 0.46)))
+        add_curved_rod(th_cubes, [
+            (p_hip * 0.72 + p_knee * 0.28 + np.array([s * 2.4, 0.2, 0.0])).tolist(),
+            (p_hip * 0.48 + p_knee * 0.52 + np.array([s * 3.8, 1.2, 0.5])).tolist(),
+            (p_hip * 0.30 + p_knee * 0.70 + np.array([s * 4.5, 2.2, 0.9])).tolist(),
+        ], 0.92, 0.22, "ARMOR_SPIKE", segs_per_span=2)
 
         bones.append({"name": f"thigh_{tag}", "parent": f"leg_{tag}", "pivot": p_hip.tolist(), "rotation": [0.0, 0.0, 0.0], "cubes": th_cubes})
 
-        # 1b. `knee_spur_l/r`: Mũi giáp đầu gối nhọn cong vút mạnh về trước (cực kỳ sắc nét ở góc nhìn ngang & dưới lên!)
+        # 1b. `knee_spur_l/r`: Giáp gối hình lá gothic uốn cong tinh xảo (nhiều chi tiết mềm mại, KHÔNG khối vuông!)
         ks_cubes = [
-            make_cube([p_knee[0] - 1.95, p_knee[1] - 1.6, p_knee[2] - 2.4], [3.9, 3.2, 3.2], "ARMOR_SPIKE", rot=[18.0, s * -12.0, 0.0]),
-            make_cube([p_knee[0] + s * 1.45, p_knee[1] - 1.3, p_knee[2] - 1.5], [1.2, 2.6, 2.6], "ARMOR_STEEL", rot=[12.0, s * -18.0, s * -14.0]),
+            make_centered_cube(p_knee + np.array([0.0, 0.1, -1.75]), [3.8, 3.2, 2.0], "ARMOR_STEEL", rot=[6.0, -s * 8.0, 0.0]),
+            make_centered_cube(p_knee + np.array([0.0, 0.2, -2.40]), [2.8, 2.8, 1.3], "ARMOR_SPIKE", rot=[6.0, -s * 8.0, 45.0]),
+            make_centered_cube(p_knee + np.array([s * 1.95, 0.0, -0.4]), [1.2, 2.8, 2.9], "ARMOR_SPIKE", rot=[0.0, -s * 16.0, -s * 12.0]),
         ]
-        # Mũi giáp cong vút lên-trước đặc trưng đúng 6 ảnh mẫu!
-        spur_pts = [
-            (p_knee + np.array([0.0, -0.4, -1.6])).tolist(),
-            (p_knee + np.array([s * 0.2, +0.6, -4.4])).tolist(),
-            (p_knee + np.array([s * 0.4, +2.6, -6.8])).tolist(),
-            (p_knee + np.array([s * 0.5, +4.4, -8.0])).tolist(),
-        ]
-        add_curved_rod(ks_cubes, spur_pts, 2.15, 0.30, "ARMOR_SPIKE", segs_per_span=3, rib_rings=False)
-        add_claw_spike(ks_cubes, p_knee + np.array([0.0, -1.2, -1.8]),
-                       p_knee + np.array([0.0, -3.2, -3.4]), 1.10, "ARMOR_SPIKE", 2)
+        # Sống mũi gối cong uốn mượt lên trên & xuống dưới như cánh hoa thép gothic
+        add_curved_rod(ks_cubes, [
+            (p_knee + np.array([0.0, -1.6, -2.2])).tolist(),
+            (p_knee + np.array([0.0, +0.4, -3.1])).tolist(),
+            (p_knee + np.array([s * 0.2, +2.6, -3.3])).tolist(),
+        ], 1.05, 0.24, "ARMOR_SPIKE", segs_per_span=2)
         bones.append({"name": f"knee_spur_{tag}", "parent": f"thigh_{tag}", "pivot": p_knee.tolist(), "rotation": [0.0, 0.0, 0.0], "cubes": ks_cubes})
 
-        # 2. `shin_l/r`: Ống chân vát ngược MẠNH về sau (`z = -5.8 -> +4.4`, tạo góc gập chữ Z cực rõ ở góc bên!)
+        # 2. `shin_l/r`: Ống chân giáp dọc thuôn mềm ôm bắp chân (taper mượt xuống cổ chân thanh thoát!)
         sh_cubes = []
-        add_chain_rod(sh_cubes, p_knee, p_hock, 3.45, 2.55, 6, "ARMOR_STEEL", overlap=0.40, aspect_z=1.15)
-        for k in range(5):
-            ft = 0.14 + k * 0.18
-            pm = p_knee * (1.0 - ft) + p_hock * ft
-            w_s = 3.55 - k * 0.18
-            sh_cubes.append(make_cube([pm[0] - w_s * 0.5, pm[1] - 1.0, pm[2] - 1.85],
-                                      [w_s, 2.2, 3.6], "ARMOR_SPIKE" if k % 2 == 0 else "ARMOR_STEEL",
-                                      rot=[-55.0, 0.0, s * -6.0], pivot=pm.tolist()))
-            sh_cubes.append(make_cube([pm[0] - 0.65, pm[1] - 0.7, pm[2] - 2.2],
-                                      [1.3, 1.5, 1.1], "ARMOR_SPIKE",
-                                      rot=[-55.0, 0.0, 0.0], pivot=pm.tolist()))
-        # Gai bắp chân hướng ngược sau & ngoài (3 tầng gai dọc ống chân!)
-        for ft, sc_g in ((0.25, 1.0), (0.52, 0.9), (0.78, 0.8)):
-            pm = p_knee * (1.0 - ft) + p_hock * ft
-            add_claw_spike(sh_cubes, pm + np.array([s * 1.4, 0.4, 0.8]),
-                           pm + np.array([s * (1.4 + 2.2 * sc_g), 1.6, 2.6]), 0.88 * sc_g, "ARMOR_SPIKE", 3)
-            add_claw_spike(sh_cubes, pm + np.array([0.0, 0.7, 1.3]),
-                           pm + np.array([0.0, 2.0, 3.8 * sc_g]), 0.84 * sc_g, "ARMOR_SPIKE", 2)
+        add_chain_rod(sh_cubes, p_knee, p_ankle, 3.9, 2.9, 4, "FLESH_DARK", overlap=0.50, aspect_z=1.10)
+        mid_sh = 0.5 * (p_knee + p_ankle)
+        # Tấm giáp ống quyển dọc vuốt nhọn & bắp chân cong mềm mại
+        sh_cubes.append(make_centered_cube(mid_sh + np.array([0.0, 0.2, -1.65]), [3.2, 8.6, 1.65], "ARMOR_STEEL", rot=[-7.0, 0.0, s * -3.0]))
+        sh_cubes.append(make_centered_cube(mid_sh + np.array([0.0, 0.2, -2.25]), [1.4, 8.2, 1.05], "ARMOR_SPIKE", rot=[-7.0, 0.0, s * -3.0]))
+        sh_cubes.append(make_centered_cube(mid_sh + np.array([s * 1.65, 0.1, -0.15]), [1.45, 8.2, 3.6], "ARMOR_STEEL", rot=[-7.0, -s * 10.0, s * -5.0]))
+        sh_cubes.append(make_centered_cube(p_knee * 0.62 + p_ankle * 0.38 + np.array([0.0, 0.0, +1.75]), [3.3, 4.6, 1.85], "ARMOR_STEEL", rot=[8.0, 0.0, 0.0]))
+        # 2 vây gai cong hữu cơ bên bắp chân
+        add_curved_rod(sh_cubes, [
+            (p_knee * 0.65 + p_ankle * 0.35 + np.array([s * 1.6, 0.0, 0.5])).tolist(),
+            (p_knee * 0.52 + p_ankle * 0.48 + np.array([s * 3.2, 1.2, 1.4])).tolist(),
+        ], 0.80, 0.20, "ARMOR_SPIKE", segs_per_span=2)
+        add_curved_rod(sh_cubes, [
+            (p_knee * 0.32 + p_ankle * 0.68 + np.array([s * 1.4, 0.0, 0.4])).tolist(),
+            (p_knee * 0.22 + p_ankle * 0.78 + np.array([s * 2.8, 0.9, 1.1])).tolist(),
+        ], 0.70, 0.18, "ARMOR_SPIKE", segs_per_span=2)
 
         bones.append({"name": f"shin_{tag}", "parent": f"thigh_{tag}", "pivot": p_knee.tolist(), "rotation": [0.0, 0.0, 0.0], "cubes": sh_cubes})
 
-        # 3. `ankle_hock_l/r` (NEW BONE): Khớp cổ chân thú cao (`hock`) có gai sau + đốt cổ chân chúc xuống bàn chân!
+        # 3. `ankle_hock_l/r`: Cổ chân giáp gọn thanh thoát
         hk_cubes = [
-            make_cube([p_hock[0] - 1.45, p_hock[1] - 1.45, p_hock[2] - 1.55], [2.9, 2.9, 3.1], "ARMOR_SPIKE"),
+            make_centered_cube(p_ankle + np.array([0.0, 0.4, 0.0]), [3.5, 2.0, 3.9], "ARMOR_STEEL"),
+            make_centered_cube(p_ankle + np.array([0.0, 0.5, -1.85]), [2.1, 1.7, 1.0], "ARMOR_SPIKE", rot=[16.0, 0.0, 0.0]),
         ]
-        # Cựa gai sau cổ chân thú sắc nhọn chĩa sau
-        add_claw_spike(hk_cubes, p_hock + np.array([0.0, 0.2, 1.1]), p_hock + np.array([0.0, 1.5, 4.4]), 1.15, "ARMOR_SPIKE", 3)
-        add_claw_spike(hk_cubes, p_hock + np.array([s * 1.1, -0.4, 0.8]), p_hock + np.array([s * 2.8, 0.4, 2.6]), 0.78, "ARMOR_SPIKE", 2)
-        # Đốt cổ chân thú nghiêng về trước nối xuống cổ bàn chân
-        add_chain_rod(hk_cubes, p_hock, p_ankle, 2.55, 2.75, 5, "ARMOR_STEEL", overlap=0.38, aspect_z=1.18)
-        for k in range(4):
-            ft = 0.18 + k * 0.22
-            pm = p_hock * (1.0 - ft) + p_ankle * ft
-            hk_cubes.append(make_cube([pm[0] - 1.48, pm[1] - 0.9, pm[2] - 1.65], [2.96, 1.9, 3.2],
-                                      "ARMOR_SPIKE" if k % 2 == 0 else "ARMOR_STEEL",
-                                      rot=[42.0, 0.0, 0.0], pivot=pm.tolist()))
-            hk_cubes.append(make_cube([pm[0] - 0.55, pm[1] - 0.6, pm[2] - 1.95], [1.10, 1.4, 0.9],
-                                      "ARMOR_SPIKE", rot=[44.0, 0.0, 0.0], pivot=pm.tolist()))
-        bones.append({"name": f"ankle_hock_{tag}", "parent": f"shin_{tag}", "pivot": p_hock.tolist(), "rotation": [0.0, 0.0, 0.0], "cubes": hk_cubes})
+        add_curved_rod(hk_cubes, [
+            (p_ankle + np.array([0.0, 0.4, 1.6])).tolist(),
+            (p_ankle + np.array([0.0, 1.3, 3.8])).tolist(),
+        ], 0.82, 0.20, "ARMOR_SPIKE", segs_per_span=2)
+        bones.append({"name": f"ankle_hock_{tag}", "parent": f"shin_{tag}", "pivot": p_ankle.tolist(), "rotation": [0.0, 0.0, 0.0], "cubes": hk_cubes})
 
-        # 4. `foot_l/r`: Bàn chân thú rộng bám đất (`y = 0.0`), 4 ngón vuốt cong xòe rõ xoay ngoài ±15° + cựa sau gót!
-        yaw_out = math.radians(s * -15.0)  # Xoay mũi chân (-Z) chếch ra ngoài ±15°!
-        R_ft = bedrock_rot_matrix([0.0, s * -15.0, 0.0])
+        # 4. `foot_l/r`: Ủng chiến giáp gothic vảy cong đặt phẳng Y = 0.0 + 3 vuốt cong mềm sắc bén!
+        R_ft = bedrock_rot_matrix([0.0, s * -10.0, 0.0])
 
         def ft_pt(lx, ly, lz):
             return (np.array([p_ankle[0], 0.0, p_ankle[2]]) + R_ft @ np.array([lx, ly, lz], dtype=np.float64)).tolist()
@@ -1018,25 +1174,20 @@ def build_nightmare_geo() -> tuple[dict, int, dict]:
             return make_cube([wc[0] - sx * 0.5, wc[1] - sy * 0.5, wc[2] - sz * 0.5], [sx, sy, sz], mat, rot=rot, pivot=wc.tolist())
 
         ft_cubes = [
-            ft_box(-2.55, 1.15, -2.6, 5.1, 2.1, 5.0, "ARMOR_STEEL"),
-            ft_box(-2.05, 2.05, -3.1, 4.1, 1.4, 3.8, "ARMOR_SPIKE", extra_rot=(18, 0, 0)),
-            ft_box(-2.35, 0.0,  -2.2, 4.7, 1.35, 4.4, "FLESH_DARK"),
+            ft_box(-2.15, 0.0,  -3.4, 4.3, 1.50, 6.0, "ARMOR_STEEL"),
+            ft_box(-1.90, 1.25, -3.0, 3.8, 1.70, 5.0, "ARMOR_STEEL"),
+            ft_box(-1.50, 1.65, -4.1, 3.0, 1.35, 3.8, "ARMOR_SPIKE", extra_rot=(18, 0, 0)),
+            ft_box(-1.00, 0.40, -4.9, 2.0, 1.15, 2.0, "ARMOR_SPIKE", extra_rot=(10, 0, 0)),
         ]
-        # 4 NGÓN CHÂN THÚ XÒE RÕ RÀNG (đúng ảnh Bottom-Up mẫu!) + móng vuốt cong đỏ-đen chạm đất y=0.05
-        toe_specs = [(-2.15, -26.0, 5.4), (-0.75, -9.0, 6.4), (+0.75, +9.0, 6.4), (+2.15, +26.0, 5.4)]
-        for tx_b, tang_deg, tlen in toe_specs:
+        for tx_b, tang_deg, tlen in ((-1.30, -14.0, 2.7), (0.0, 0.0, 3.3), (+1.30, +14.0, 2.7)):
             rad = math.radians(tang_deg)
             dx, dz = math.sin(rad), -math.cos(rad)
-            p0 = ft_pt(tx_b, 1.65, -1.6)
-            p1 = ft_pt(tx_b + dx * tlen * 0.36, 1.35, -1.6 + dz * tlen * 0.36)
-            p2 = ft_pt(tx_b + dx * tlen * 0.68, 0.92, -1.6 + dz * tlen * 0.68)
-            p3 = ft_pt(tx_b + dx * tlen * 1.05, 0.08, -1.6 + dz * tlen * 1.05)
-            add_chain_rod(ft_cubes, p0, p1, 1.24, 1.05, 2, "ARMOR_STEEL", overlap=0.18)
-            add_chain_rod(ft_cubes, p1, p2, 1.04, 0.86, 2, "ARMOR_SPIKE", overlap=0.18)
-            add_claw_spike(ft_cubes, p2, p3, 0.84, "CLAW_BLOOD", 3)
-        # Cựa sau gót chân sắc bám đất
-        add_chain_rod(ft_cubes, ft_pt(0.0, 1.45, +1.9), ft_pt(0.0, 0.92, +3.9), 1.15, 0.78, 3, "ARMOR_STEEL", overlap=0.18)
-        add_claw_spike(ft_cubes, ft_pt(0.0, 0.92, +3.8), ft_pt(0.0, 0.08, +5.6), 0.76, "CLAW_BLOOD", 3)
+            p0 = ft_pt(tx_b, 1.15, -3.6)
+            p1 = ft_pt(tx_b + dx * tlen * 0.48, 0.82, -3.6 + dz * tlen * 0.48)
+            p2 = ft_pt(tx_b + dx * tlen,        0.16, -3.6 + dz * tlen)
+            add_chain_rod(ft_cubes, p0, p1, 0.98, 0.76, 2, "ARMOR_SPIKE", overlap=0.16)
+            add_claw_spike(ft_cubes, p1, p2, 0.72, "CLAW_BLOOD", 2)
+        add_claw_spike(ft_cubes, ft_pt(0.0, 1.05, +2.2), ft_pt(0.0, 0.30, +4.1), 0.76, "ARMOR_SPIKE", 2)
 
         bones.append({"name": f"foot_{tag}", "parent": f"ankle_hock_{tag}", "pivot": p_ankle.tolist(), "rotation": [0.0, 0.0, 0.0], "cubes": ft_cubes})
 
@@ -1044,7 +1195,7 @@ def build_nightmare_geo() -> tuple[dict, int, dict]:
     build_leg_chain(-1.0)
 
     total_cubes = sum(len(b.get("cubes", [])) for b in bones)
-    assert 1200 <= total_cubes <= 1700, f"Cube count {total_cubes} ngoài khoảng 1200-1700!"
+    assert 1000 <= total_cubes <= 2800, f"Cube count {total_cubes} ngoài khoảng 1000-2800!"
 
     geo = {
         "format_version": "1.12.0",
@@ -1054,9 +1205,9 @@ def build_nightmare_geo() -> tuple[dict, int, dict]:
                     "identifier": "geometry.nightmare_knight",
                     "texture_width": TEX_W,
                     "texture_height": TEX_H,
-                    "visible_bounds_width": 18.0,
-                    "visible_bounds_height": 14.0,
-                    "visible_bounds_offset": [0.0, 6.0, 0.0],
+                    "visible_bounds_width": 22.0,
+                    "visible_bounds_height": 18.0,
+                    "visible_bounds_offset": [0.0, 7.5, 0.0],
                 },
                 "bones": bones,
             }
@@ -1110,44 +1261,58 @@ def build_textures() -> None:
     enraged = base.copy()
     enraged_glow = np.zeros((TEX_H, TEX_W, 4), dtype=np.uint8)
 
-    # Thép đen đánh bóng ánh kim nổi khối sắc nét (đúng bảng màu #1E2128 -> #343945 -> #565E70 -> #8E97A8!)
-    c_st0 = hex_arr("#12141A")
-    c_st1 = hex_arr("#1E2128")
-    c_st2 = hex_arr("#343945")
-    c_st3 = hex_arr("#565E70")
-    c_st4 = hex_arr("#8E97A8")
+    # Thép rèn gothic tối cổ điển (BỎ hẳn viền sáng bóng nhựa kiểu đồ chơi robot -> rèn búa nhám, vệt chiến trận, ánh thép lạnh tự nhiên!)
+    c_st0 = hex_arr("#0E0F14")
+    c_st1 = hex_arr("#1A1C23")
+    c_st2 = hex_arr("#2B2F3A")
+    c_st3 = hex_arr("#464D5E")
+    c_st4 = hex_arr("#768094")
 
     c_fire_out = hex_arr("#B81214")
     c_fire_mid = hex_arr("#FF3818")
     c_fire_hot = hex_arr("#FFE89C")
 
-    # 1. ARMOR_STEEL & ARMOR_SPIKE (256x256 mỗi ô): Phase 1 sạch ánh kim thép đánh bóng (0 vết nứt cam!), Phase 2 nứt đỏ mảnh!
-    for key, seed, hi_boost in (("ARMOR_STEEL", 11, 1.05), ("ARMOR_SPIKE", 22, 1.35)):
+    # 1. ARMOR_STEEL & ARMOR_SPIKE (256x256 mỗi ô): Sắt rèn cổ đại có hạt búa đập, rỉ máu mờ ở khe sâu & xước kiếm chiến trận!
+    for key, seed, hi_boost in (("ARMOR_STEEL", 11, 0.42), ("ARMOR_SPIKE", 22, 0.88)):
         x0, y0, w, h = MAT[key]
         yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
         nx, ny = xx / w, yy / h
-        edge_x = np.minimum(nx, 1.0 - nx) * 2.0
-        ao_seam = np.clip((1.0 - np.exp(-((1.0 - ny) * 10.0))) * np.clip(edge_x * 5.2, 0.38, 1.0), 0.26, 1.0)
-        # Vát ánh kim sắc dọc cạnh trên, gờ giữa và 2 mép ngoài giúp tách khối từng tầng giáp rõ mồn một!
-        bevel_hi = (
-            np.exp(-(((ny - 0.07) * 15.0) ** 2)) * 1.00
-            + np.exp(-((edge_x * 12.0) ** 2)) * 0.72
-            + np.exp(-(((nx - 0.50) * 16.0) ** 2)) * (0.45 if key == "ARMOR_SPIKE" else 0.18)
-        )
         rng = np.random.default_rng(seed)
-        brushed = 0.93 + 0.07 * np.sin(nx * 24.0 + ny * 8.0) * np.cos(ny * 16.0 - nx * 5.0)
+
+        # Kết cấu rèn búa đa tầng (hammered dark iron — triệt tiêu 100% cảm giác mặt nhựa láng!)
+        grid_coarse = rng.normal(0.0, 1.0, (h // 16, w // 16)).astype(np.float32)
+        grid_med    = rng.normal(0.0, 1.0, (h // 8,  w // 8)).astype(np.float32)
+        grid_fine   = rng.normal(0.0, 1.0, (h // 4,  w // 4)).astype(np.float32)
+        n_c = np.repeat(np.repeat(grid_coarse, 16, axis=0), 16, axis=1)
+        n_m = np.repeat(np.repeat(grid_med,     8, axis=0),  8, axis=1)
+        n_f = np.repeat(np.repeat(grid_fine,    4, axis=0),  4, axis=1)
+        forged_noise = np.clip(0.50 + 0.16 * n_c + 0.14 * n_m + 0.08 * n_f, 0.08, 0.96)
+        damascus = 0.5 + 0.5 * np.sin((nx * 14.0 + ny * 5.0 + n_c * 0.8) * math.pi)
+
+        # Bóng đổ AO mềm tự nhiên ở mép khe (KHÔNG vẽ viền xám trắng sáng chạy quanh từng ô cube nữa!)
+        edge_x = np.minimum(nx, 1.0 - nx) * 2.0
+        ao_seam = np.clip((1.0 - np.exp(-((1.0 - ny) * 8.0))) * np.clip(edge_x * 4.5, 0.45, 1.0), 0.30, 1.0)
+        # Chỉ nhấn ánh thép mảnh trên gờ sống giữa & mép rèn nhọn của ARMOR_SPIKE
+        ridge_hi = (
+            np.exp(-(((nx - 0.50) * 14.0) ** 2)) * (0.62 if key == "ARMOR_SPIKE" else 0.14)
+            + np.exp(-(((ny - 0.08) * 18.0) ** 2)) * (0.48 if key == "ARMOR_SPIKE" else 0.16)
+        )
+
+        # Vết chém xước chiến trận & vết rỉ máu tối mờ ở rãnh sâu
         s_img = Image.new("L", (w, h), 0)
         sd = ImageDraw.Draw(s_img)
-        for _ in range(14):
-            sx0, sy0 = int(rng.integers(14, w - 14)), int(rng.integers(14, h - 14))
-            sd.line([(sx0, sy0), (sx0 + int(rng.integers(-48, 48)), sy0 + int(rng.integers(-28, 28)))], fill=225, width=2)
+        for _ in range(22):
+            sx0, sy0 = int(rng.integers(10, w - 10)), int(rng.integers(10, h - 10))
+            sd.line([(sx0, sy0), (sx0 + int(rng.integers(-54, 54)), sy0 + int(rng.integers(-34, 34)))], fill=int(rng.integers(130, 235)), width=int(rng.integers(1, 3)))
         scratch = np.array(s_img, dtype=np.float32) / 255.0
 
-        grad = np.clip(0.36 + 0.54 * (1.0 - ny) + 0.24 * (1.0 - np.abs(nx - 0.5) * 2.0), 0.0, 1.0)
+        grad = np.clip(0.28 + 0.44 * (1.0 - ny) * 0.8 + 0.28 * forged_noise + 0.10 * damascus, 0.0, 1.0)
         col = c_st0 * (1.0 - ao_seam[:, :, None]) + (c_st1 * (1.0 - grad[:, :, None]) + c_st2 * grad[:, :, None]) * ao_seam[:, :, None]
-        col = col * brushed[:, :, None]
-        col += (c_st3 - c_st2) * np.clip(bevel_hi * 0.95 * hi_boost, 0.0, 1.0)[:, :, None]
-        col += (c_st4 - c_st3) * np.clip(scratch * 0.65 + (bevel_hi > 0.68) * 0.68 * hi_boost, 0.0, 1.0)[:, :, None]
+        # Rỉ đỏ huyết cổ rất nhẹ trong hốc tối cho chiều sâu dark-fantasy
+        patina = np.clip((1.0 - ao_seam) * 0.6 + (1.0 - forged_noise) * 0.25, 0.0, 0.42)
+        col = col * (1.0 - patina[:, :, None] * 0.35) + hex_arr("#341016") * (patina[:, :, None] * 0.35)
+        col += (c_st3 - c_st2) * np.clip(ridge_hi * hi_boost + (forged_noise > 0.72) * 0.28, 0.0, 1.0)[:, :, None]
+        col += (c_st4 - c_st3) * np.clip(scratch * 0.52 + ridge_hi * 0.32 * hi_boost, 0.0, 1.0)[:, :, None]
         base[y0:y0 + h, x0:x0 + w, :3] = np.clip(col, 0, 255).astype(np.uint8)
 
         # Phase 2 Enraged: các vết nứt đỏ nóng mảnh trên giáp ngực/vai/đùi
@@ -1242,22 +1407,24 @@ def build_textures() -> None:
         enraged_glow[y0:y0 + h, x0:x0 + w, :3] = np.clip(c_fire_mid, 0, 255).astype(np.uint8)
         enraged_glow[y0:y0 + h, x0:x0 + w, 3] = np.clip(char * 185.0 * c_alpha, 0, 255).astype(np.uint8)
 
-    # 4. BONE_RIB & SKULL_BONE (256x256 mỗi ô): Sọ xương xám ngà SÁNG nổi bật (#9E9892 -> #C7C0B8 -> #E2DCD4)!
-    for key, c_lo, c_mid_h, c_hi_h in (
-        ("BONE_RIB",   "#544E4A", "#9E968E", "#CFC8C0"),
-        ("SKULL_BONE", "#6E6762", "#B2AAA2", "#E2DBD2"),
+    # 4. BONE_RIB & SKULL_BONE (256x256 mỗi ô): Xương cổ hữu cơ có vân thớ xương, vết ố & khe nứt mảnh tự nhiên!
+    for key, seed_b, c_lo, c_mid_h, c_hi_h in (
+        ("BONE_RIB",   71, "#4A403A", "#988B7F", "#CFC3B6"),
+        ("SKULL_BONE", 72, "#625852", "#B2A69A", "#E4DBD0"),
     ):
         x0, y0, w, h = MAT[key]
         yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
-        cyl = 1.0 - np.abs((xx / w) * 2.0 - 1.0)
-        joint = 0.86 + 0.14 * np.sin((yy / h) * math.pi * 6.0)
+        rng_b = np.random.default_rng(seed_b)
+        mottle = np.repeat(np.repeat(rng_b.normal(0.0, 1.0, (h // 8, w // 8)).astype(np.float32), 8, axis=0), 8, axis=1)
+        striation = 0.90 + 0.10 * np.sin((xx / w) * math.pi * 22.0 + mottle * 1.2)
+        cyl = np.clip(1.0 - np.abs((xx / w) * 2.0 - 1.0) + 0.12 * mottle, 0.0, 1.0)
+        joint = 0.88 + 0.12 * np.sin((yy / h) * math.pi * 5.0)
         c_b0 = hex_arr(c_lo)
         c_b1 = hex_arr(c_mid_h)
         c_b2 = hex_arr(c_hi_h)
-        b_col = c_b0 * (1.0 - cyl[:, :, None]) + c_b1 * cyl[:, :, None] + (c_b2 - c_b1) * (cyl ** 1.9)[:, :, None]
-        b_col *= joint[:, :, None]
+        b_col = (c_b0 * (1.0 - cyl[:, :, None]) + c_b1 * cyl[:, :, None] + (c_b2 - c_b1) * (cyl ** 2.0)[:, :, None]) * joint[:, :, None] * striation[:, :, None]
         base[y0:y0 + h, x0:x0 + w, :3] = np.clip(b_col, 0, 255).astype(np.uint8)
-        enraged[y0:y0 + h, x0:x0 + w, :3] = np.clip(b_col * np.array([1.08, 0.94, 0.90]), 0, 255).astype(np.uint8)
+        enraged[y0:y0 + h, x0:x0 + w, :3] = np.clip(b_col * np.array([1.08, 0.93, 0.89]), 0, 255).astype(np.uint8)
 
     # 5. HORN_CRIMSON (256x256): Sừng đỏ thẫm dày có gân vòng ngang sắc nét
     x0, y0, w, h = MAT["HORN_CRIMSON"]
@@ -1332,13 +1499,44 @@ def build_textures() -> None:
         enraged_glow[y0:y0 + h, x0:x0 + w, :3] = np.clip(p2, 0, 255).astype(np.uint8)
         enraged_glow[y0:y0 + h, x0:x0 + w, 3] = 255
 
-    # 11. CLAW_BLOOD (256x128)
+    # 11. CLAW_BLOOD (128x128) + HEART_OUTER (64x128) + HEART_CORE (64x128 — Trái Tim Nightmare Core phát sáng fullbright!)
     x0, y0, w, h = MAT["CLAW_BLOOD"]
     yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
     ny = yy / h
     cl = hex_arr("#1E1216") * (1.0 - ny[:, :, None]) + hex_arr("#A81A28") * ny[:, :, None]
     base[y0:y0 + h, x0:x0 + w, :3] = np.clip(cl, 0, 255).astype(np.uint8)
     enraged[y0:y0 + h, x0:x0 + w, :3] = np.clip(cl + c_fire_mid * (ny ** 1.5 * 0.55)[:, :, None], 0, 255).astype(np.uint8)
+
+    # HEART_OUTER: Vỏ cơ tim đỏ huyết thẩm có gân mạch hữu cơ đập sáng nhẹ
+    x0, y0, w, h = MAT["HEART_OUTER"]
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    nx, ny = xx / w, yy / h
+    rr = np.sqrt(((nx - 0.5) * 1.9) ** 2 + ((ny - 0.5) * 1.7) ** 2)
+    vein = np.exp(-((np.sin((nx * 5.0 + ny * 3.5) * math.pi) * 5.5) ** 2))
+    pulse_c = np.clip(1.0 - rr * 0.85, 0.0, 1.0)
+    ho = hex_arr("#520818") * (1.0 - pulse_c[:, :, None]) + hex_arr("#C8183E") * pulse_c[:, :, None] + hex_arr("#FF5678") * (pulse_c ** 2.2)[:, :, None]
+    ho = ho * (1.0 - vein[:, :, None] * 0.35) + hex_arr("#2A040C") * (vein[:, :, None] * 0.35)
+    base[y0:y0 + h, x0:x0 + w, :3] = np.clip(ho, 0, 255).astype(np.uint8)
+    glow[y0:y0 + h, x0:x0 + w, :3] = np.clip(ho * 1.15, 0, 255).astype(np.uint8)
+    glow[y0:y0 + h, x0:x0 + w, 3] = np.clip(pulse_c * 210.0, 60, 230).astype(np.uint8)
+    enraged[y0:y0 + h, x0:x0 + w, :3] = np.clip(ho * 1.25 + c_fire_mid * 0.25, 0, 255).astype(np.uint8)
+    enraged_glow[y0:y0 + h, x0:x0 + w, :3] = np.clip(ho * 1.2 + c_fire_mid * 0.4, 0, 255).astype(np.uint8)
+    enraged_glow[y0:y0 + h, x0:x0 + w, 3] = 245
+
+    # HEART_CORE: Lõi Nightmare Core hồng san hô–trắng hồng mờ viền hữu cơ (chuyển êm về đỏ huyết ở mép -> KHÔNG viền vuông!)
+    x0, y0, w, h = MAT["HEART_CORE"]
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    nx, ny = xx / w, yy / h
+    rr = np.sqrt(((nx - 0.5) * 2.15) ** 2 + ((ny - 0.5) * 2.05) ** 2)
+    hc_t = np.clip(1.0 - rr, 0.0, 1.0) ** 1.35
+    hc = hex_arr("#981030") * (1.0 - hc_t[:, :, None]) + hex_arr("#FF7A84") * hc_t[:, :, None] + hex_arr("#FFF2E8") * (hc_t ** 2.1)[:, :, None]
+    base[y0:y0 + h, x0:x0 + w, :3] = np.clip(hc, 0, 255).astype(np.uint8)
+    glow[y0:y0 + h, x0:x0 + w, :3] = np.clip(hc * 1.12, 0, 255).astype(np.uint8)
+    glow[y0:y0 + h, x0:x0 + w, 3] = np.clip(145.0 + hc_t * 110.0, 0, 255).astype(np.uint8)
+    hc_p2 = hex_arr("#C81818") * (1.0 - hc_t[:, :, None]) + hex_arr("#FFECC8") * (hc_t ** 0.90)[:, :, None]
+    enraged[y0:y0 + h, x0:x0 + w, :3] = np.clip(hc_p2, 0, 255).astype(np.uint8)
+    enraged_glow[y0:y0 + h, x0:x0 + w, :3] = np.clip(hc_p2, 0, 255).astype(np.uint8)
+    enraged_glow[y0:y0 + h, x0:x0 + w, 3] = 255
 
     tex_dir = ASSETS / "textures" / "entity"
     tex_dir.mkdir(parents=True, exist_ok=True)
@@ -1359,101 +1557,157 @@ def kf(vec, easing="catmullrom"):
 
 def build_animations() -> dict:
     anims = {
-        # IDLE (4.00s): Thở chậm sâu 4s, hàm xương khẽ nhấp, gối & cổ chân chữ Z nhún đàn hồi, cánh trễ nhịp 0.2s, choàng 3 tầng lay gió!
+        # IDLE (4.00s): Thở sâu lan qua 3 đốt cột sống (`torso` -> `torso_upper` -> `chest`) + nhún vai + cổ/đầu + cánh + choàng 3 tầng!
         "animation.nightmare_knight.idle": {
             "loop": True,
             "animation_length": 4.00,
             "bones": {
                 "pelvis": {
                     "position": {"0.0": kf([0, 0, 0], "easeInOutSine"), "2.0": kf([0, -0.55, 0], "easeInOutSine"), "4.0": kf([0, 0, 0], "easeInOutSine")},
-                    "rotation": {"0.0": kf([0, -1, 0], "easeInOutSine"), "2.0": kf([1.5, 1, 0], "easeInOutSine"), "4.0": kf([0, -1, 0], "easeInOutSine")},
+                    "rotation": {"0.0": kf([0, -1, 0], "easeInOutSine"), "2.0": kf([1.2, 1, 0], "easeInOutSine"), "4.0": kf([0, -1, 0], "easeInOutSine")},
                 },
-                "chest": {"rotation": {"0.0": kf([1.5, 0, 0], "easeInOutSine"), "1.95": kf([5.5, 0, 0], "easeInOutSine"), "4.0": kf([1.5, 0, 0], "easeInOutSine")}},
-                "head": {"rotation": {"0.0": kf([1, -4, 0], "catmullrom"), "1.6": kf([3.5, 4.5, 1], "catmullrom"), "3.0": kf([2, -3, -1], "catmullrom"), "4.0": kf([1, -4, 0], "catmullrom")}},
-                "jaw": {"rotation": {"0.0": kf([4, 0, 0], "easeInOutSine"), "2.1": kf([12, 0, 0], "easeInOutSine"), "4.0": kf([4, 0, 0], "easeInOutSine")}},
-                # Nhún đàn hồi nhẹ khớp chân thú chữ Z giữ bàn chân bám đất phẳng
+                "torso": {"rotation": {"0.0": kf([0.5, 0, 0], "easeInOutSine"), "1.90": kf([2.2, 0, 0], "easeInOutSine"), "4.0": kf([0.5, 0, 0], "easeInOutSine")}},
+                "torso_upper": {"rotation": {"0.0": kf([0.5, 0, 0], "easeInOutSine"), "2.00": kf([2.4, 0, 0], "easeInOutSine"), "4.0": kf([0.5, 0, 0], "easeInOutSine")}},
+                "chest": {"rotation": {"0.0": kf([0.8, 0, 0], "easeInOutSine"), "2.10": kf([2.8, 0, 0], "easeInOutSine"), "4.0": kf([0.8, 0, 0], "easeInOutSine")}},
+                # Nhịp tim đập đôi (*lub-dub*) sống động cho Trái Tim Nightmare Core trong lồng ngực mở!
+                "heart": {
+                    "scale": {
+                        "0.0":  kf([1.00, 1.00, 1.00], "easeInOutSine"),
+                        "0.22": kf([1.12, 1.10, 1.14], "easeOutCubic"),
+                        "0.44": kf([0.96, 0.97, 0.96], "easeInOutSine"),
+                        "0.68": kf([1.08, 1.07, 1.10], "easeOutCubic"),
+                        "1.00": kf([1.00, 1.00, 1.00], "easeInOutSine"),
+                        "2.00": kf([1.00, 1.00, 1.00], "easeInOutSine"),
+                        "2.22": kf([1.12, 1.10, 1.14], "easeOutCubic"),
+                        "2.44": kf([0.96, 0.97, 0.96], "easeInOutSine"),
+                        "2.68": kf([1.08, 1.07, 1.10], "easeOutCubic"),
+                        "3.00": kf([1.00, 1.00, 1.00], "easeInOutSine"),
+                        "4.00": kf([1.00, 1.00, 1.00], "easeInOutSine"),
+                    },
+                },
+                "shoulder_l": {"rotation": {"0.0": kf([0, 0, 0], "easeInOutSine"), "2.05": kf([1.5, 0, -3.0], "easeInOutSine"), "4.0": kf([0, 0, 0], "easeInOutSine")}},
+                "shoulder_r": {"rotation": {"0.0": kf([0, 0, 0], "easeInOutSine"), "2.05": kf([1.5, 0, 3.0], "easeInOutSine"), "4.0": kf([0, 0, 0], "easeInOutSine")}},
+                "neck": {"rotation": {"0.0": kf([-0.5, -1.5, 0], "catmullrom"), "1.7": kf([1.2, 1.8, 0.5], "catmullrom"), "3.0": kf([0.5, -1.2, -0.5], "catmullrom"), "4.0": kf([-0.5, -1.5, 0], "catmullrom")}},
+                "head": {"rotation": {"0.0": kf([0.5, -2.5, 0], "catmullrom"), "1.7": kf([2.0, 2.8, 0.8], "catmullrom"), "3.0": kf([1.2, -2.0, -0.8], "catmullrom"), "4.0": kf([0.5, -2.5, 0], "catmullrom")}},
+                "jaw": {"rotation": {"0.0": kf([3, 0, 0], "easeInOutSine"), "2.1": kf([10, 0, 0], "easeInOutSine"), "4.0": kf([3, 0, 0], "easeInOutSine")}},
+                # Nhún nhẹ khớp gối chân thẳng giữ đế ủng phẳng mặt đất
                 "thigh_l": {"rotation": {"0.0": kf([0, 0, 0], "easeInOutSine"), "2.0": kf([-2.5, 0, 0], "easeInOutSine"), "4.0": kf([0, 0, 0], "easeInOutSine")}},
                 "shin_l": {"rotation": {"0.0": kf([0, 0, 0], "easeInOutSine"), "2.0": kf([5.0, 0, 0], "easeInOutSine"), "4.0": kf([0, 0, 0], "easeInOutSine")}},
-                "ankle_hock_l": {"rotation": {"0.0": kf([0, 0, 0], "easeInOutSine"), "2.0": kf([-2.5, 0, 0], "easeInOutSine"), "4.0": kf([0, 0, 0], "easeInOutSine")}},
+                "foot_l": {"rotation": {"0.0": kf([0, 0, 0], "easeInOutSine"), "2.0": kf([-2.5, 0, 0], "easeInOutSine"), "4.0": kf([0, 0, 0], "easeInOutSine")}},
                 "thigh_r": {"rotation": {"0.0": kf([0, 0, 0], "easeInOutSine"), "2.0": kf([-2.5, 0, 0], "easeInOutSine"), "4.0": kf([0, 0, 0], "easeInOutSine")}},
                 "shin_r": {"rotation": {"0.0": kf([0, 0, 0], "easeInOutSine"), "2.0": kf([5.0, 0, 0], "easeInOutSine"), "4.0": kf([0, 0, 0], "easeInOutSine")}},
-                "ankle_hock_r": {"rotation": {"0.0": kf([0, 0, 0], "easeInOutSine"), "2.0": kf([-2.5, 0, 0], "easeInOutSine"), "4.0": kf([0, 0, 0], "easeInOutSine")}},
-                "arm_r": {"rotation": {"0.0": kf([3, 0, 1], "easeInOutSine"), "2.1": kf([7, 0, 3], "easeInOutSine"), "4.0": kf([3, 0, 1], "easeInOutSine")}},
+                "foot_r": {"rotation": {"0.0": kf([0, 0, 0], "easeInOutSine"), "2.0": kf([-2.5, 0, 0], "easeInOutSine"), "4.0": kf([0, 0, 0], "easeInOutSine")}},
+                "arm_r": {"rotation": {"0.0": kf([2, 0, 1], "easeInOutSine"), "2.1": kf([6, 0, 3], "easeInOutSine"), "4.0": kf([2, 0, 1], "easeInOutSine")}},
+                "arm_r_lower": {"rotation": {"0.0": kf([-8, 0, 0], "easeInOutSine"), "2.15": kf([-13, 0, 0], "easeInOutSine"), "4.0": kf([-8, 0, 0], "easeInOutSine")}},
                 "arm_l": {"rotation": {"0.0": kf([-2, 0, -1], "easeInOutSine"), "2.1": kf([2, 0, -3], "easeInOutSine"), "4.0": kf([-2, 0, -1], "easeInOutSine")}},
-                "weapon": {"rotation": {"0.0": kf([1, 0, 0], "easeInOutSine"), "2.25": kf([5, 0, -1.5], "easeInOutSine"), "4.0": kf([1, 0, 0], "easeInOutSine")}},
-                # Cánh xòe ngang phập phồng trễ pha 0.2s sau nhịp ngực
+                "arm_l_lower": {"rotation": {"0.0": kf([-10, 0, 0], "easeInOutSine"), "2.15": kf([-15, 0, 0], "easeInOutSine"), "4.0": kf([-10, 0, 0], "easeInOutSine")}},
+                "weapon": {"rotation": {"0.0": kf([1, 0, 0], "easeInOutSine"), "2.25": kf([4, 0, -1.5], "easeInOutSine"), "4.0": kf([1, 0, 0], "easeInOutSine")}},
                 "wing_l": {"rotation": {"0.0": kf([0, 0, 0], "easeInOutSine"), "2.15": kf([2.5, -6, 3], "easeInOutSine"), "4.0": kf([0, 0, 0], "easeInOutSine")}},
                 "wing_r": {"rotation": {"0.0": kf([0, 0, 0], "easeInOutSine"), "2.15": kf([2.5, 6, -3], "easeInOutSine"), "4.0": kf([0, 0, 0], "easeInOutSine")}},
                 "wing_l_mid": {"rotation": {"0.0": kf([0, 0, 0], "easeInOutSine"), "2.35": kf([0, -5, 2.5], "easeInOutSine"), "4.0": kf([0, 0, 0], "easeInOutSine")}},
                 "wing_r_mid": {"rotation": {"0.0": kf([0, 0, 0], "easeInOutSine"), "2.35": kf([0, 5, -2.5], "easeInOutSine"), "4.0": kf([0, 0, 0], "easeInOutSine")}},
-                # Áo choàng 3 tầng + 2 vạt hông lượn sóng gió ngầm trễ pha từng tầng!
                 "cape_upper": {"rotation": {"0.0": kf([1.5, 0, 0], "easeInOutSine"), "2.1": kf([5.5, 0, 0], "easeInOutSine"), "4.0": kf([1.5, 0, 0], "easeInOutSine")}},
                 "cape_mid": {"rotation": {"0.0": kf([2.0, 0, 0], "easeInOutSine"), "2.35": kf([7.5, 0, 0], "easeInOutSine"), "4.0": kf([2.0, 0, 0], "easeInOutSine")}},
                 "cape_lower": {"rotation": {"0.0": kf([2.5, 0, 0], "easeInOutSine"), "2.60": kf([9.5, 0, 0], "easeInOutSine"), "4.0": kf([2.5, 0, 0], "easeInOutSine")}},
                 "cape_l": {"rotation": {"0.0": kf([1.5, 0, 1], "easeInOutSine"), "2.3": kf([5.5, -3, 4], "easeInOutSine"), "4.0": kf([1.5, 0, 1], "easeInOutSine")}},
                 "cape_r": {"rotation": {"0.0": kf([1.5, 0, -1], "easeInOutSine"), "2.3": kf([5.5, 3, -4], "easeInOutSine"), "4.0": kf([1.5, 0, -1], "easeInOutSine")}},
-                "tabard": {"rotation": {"0.0": kf([0, 0, 0], "easeInOutSine"), "2.25": kf([4, 0, 0], "easeInOutSine"), "4.0": kf([0, 0, 0], "easeInOutSine")}},
+                "tabard": {"rotation": {"0.0": kf([0, 0, 0], "easeInOutSine"), "2.20": kf([3.5, 0, 0], "easeInOutSine"), "4.0": kf([0, 0, 0], "easeInOutSine")}},
+                "tabard_lower": {"rotation": {"0.0": kf([1, 0, 0], "easeInOutSine"), "2.45": kf([6.0, 0, 0], "easeInOutSine"), "4.0": kf([1, 0, 0], "easeInOutSine")}},
             },
         },
-        # WALK (1.80s = 36t): Bước thú chữ Z đàn hồi cực tự nhiên (`thigh` -> `shin` -> `ankle_hock` -> `foot`) + dồn trọng tâm hông + sóng áo choàng 3 tầng!
+        # WALK (1.80s = 36t): Bước chân hiệp sĩ thẳng đầy uy lực (gối gập ngược tự nhiên + vặn 3 đốt cột sống + xoay vai + choàng/khố bay)!
         "animation.nightmare_knight.walk": {
             "loop": True,
             "animation_length": 1.80,
             "bones": {
                 "pelvis": {
                     "position": {
-                        "0.0":  kf([0.0, 0.3, 0.0], "catmullrom"),
-                        "0.45": kf([1.5, -1.6, 0.0], "easeOutCubic"),
-                        "0.90": kf([0.0, 0.3, 0.0], "catmullrom"),
-                        "1.35": kf([-1.5, -1.6, 0.0], "easeOutCubic"),
-                        "1.80": kf([0.0, 0.3, 0.0], "catmullrom"),
+                        "0.0":  kf([0.0, 0.4, 0.0], "catmullrom"),
+                        "0.45": kf([1.4, -1.6, 0.0], "easeOutCubic"),
+                        "0.90": kf([0.0, 0.4, 0.0], "catmullrom"),
+                        "1.35": kf([-1.4, -1.6, 0.0], "easeOutCubic"),
+                        "1.80": kf([0.0, 0.4, 0.0], "catmullrom"),
                     },
                     "rotation": {
                         "0.0":  kf([2, 6, 0], "catmullrom"),
-                        "0.45": kf([5, 8, -3.5], "easeOutCubic"),
+                        "0.45": kf([4, 8, -3.0], "easeOutCubic"),
                         "0.90": kf([2, -6, 0], "catmullrom"),
-                        "1.35": kf([5, -8, 3.5], "easeOutCubic"),
+                        "1.35": kf([4, -8, 3.0], "easeOutCubic"),
                         "1.80": kf([2, 6, 0], "catmullrom"),
+                    },
+                },
+                "torso": {
+                    "rotation": {
+                        "0.0":  kf([1.5, -2.5, 0], "catmullrom"),
+                        "0.45": kf([2.5, -3.5, 1.2], "easeOutCubic"),
+                        "0.90": kf([1.5, 2.5, 0], "catmullrom"),
+                        "1.35": kf([2.5, 3.5, -1.2], "easeOutCubic"),
+                        "1.80": kf([1.5, -2.5, 0], "catmullrom"),
+                    },
+                },
+                "torso_upper": {
+                    "rotation": {
+                        "0.0":  kf([1.5, -3.0, 0], "catmullrom"),
+                        "0.45": kf([3.0, -4.0, 1.2], "easeOutCubic"),
+                        "0.90": kf([1.5, 3.0, 0], "catmullrom"),
+                        "1.35": kf([3.0, 4.0, -1.2], "easeOutCubic"),
+                        "1.80": kf([1.5, -3.0, 0], "catmullrom"),
                     },
                 },
                 "chest": {
                     "rotation": {
-                        "0.0":  kf([5, -8, 0], "catmullrom"),
-                        "0.45": kf([9, -11, 3], "easeOutCubic"),
-                        "0.90": kf([5, 8, 0], "catmullrom"),
-                        "1.35": kf([9, 11, -3], "easeOutCubic"),
-                        "1.80": kf([5, -8, 0], "catmullrom"),
+                        "0.0":  kf([2.0, -3.5, 0], "catmullrom"),
+                        "0.45": kf([3.5, -4.5, 1.2], "easeOutCubic"),
+                        "0.90": kf([2.0, 3.5, 0], "catmullrom"),
+                        "1.35": kf([3.5, 4.5, -1.2], "easeOutCubic"),
+                        "1.80": kf([2.0, -3.5, 0], "catmullrom"),
                     },
                 },
+                "heart": {
+                    "scale": {
+                        "0.0":  kf([1.00, 1.00, 1.00], "easeInOutSine"),
+                        "0.25": kf([1.14, 1.12, 1.16], "easeOutCubic"),
+                        "0.55": kf([0.97, 0.97, 0.97], "easeInOutSine"),
+                        "0.90": kf([1.00, 1.00, 1.00], "easeInOutSine"),
+                        "1.15": kf([1.14, 1.12, 1.16], "easeOutCubic"),
+                        "1.45": kf([0.97, 0.97, 0.97], "easeInOutSine"),
+                        "1.80": kf([1.00, 1.00, 1.00], "easeInOutSine"),
+                    },
+                },
+                "shoulder_l": {"rotation": {"0.0": kf([3, 0, -2], "catmullrom"), "0.90": kf([-4, 0, -4], "catmullrom"), "1.80": kf([3, 0, -2], "catmullrom")}},
+                "shoulder_r": {"rotation": {"0.0": kf([-3, 0, 2], "catmullrom"), "0.90": kf([4, 0, 4], "catmullrom"), "1.80": kf([-3, 0, 2], "catmullrom")}},
+                "neck": {"rotation": {"0.0": kf([-1, 2, 0], "easeInOutSine"), "0.90": kf([-1, -2, 0], "easeInOutSine"), "1.80": kf([-1, 2, 0], "easeInOutSine")}},
                 "head": {
                     "rotation": {
-                        "0.0":  kf([-2, 4, 0], "easeInOutSine"),
-                        "0.55": kf([2, 6, -1], "easeInOutSine"),
-                        "1.45": kf([2, -6, 1], "easeInOutSine"),
-                        "1.80": kf([-2, 4, 0], "easeInOutSine"),
+                        "0.0":  kf([-1.5, 3, 0], "easeInOutSine"),
+                        "0.55": kf([1.5, 4.5, -0.8], "easeInOutSine"),
+                        "1.45": kf([1.5, -4.5, 0.8], "easeInOutSine"),
+                        "1.80": kf([-1.5, 3, 0], "easeInOutSine"),
                     },
                 },
-                # Chân trái chữ Z: bước tới (0.0 -> 0.45 đặt nặng) -> đẩy sau duỗi khớp cổ chân hock (0.90) -> nhấc gập chữ Z (1.35)
-                "leg_l": {"rotation": {"0.0": kf([-18, 0, 0], "catmullrom"), "0.45": kf([-10, 0, 0], "easeOutCubic"), "0.90": kf([18, 0, 0], "catmullrom"), "1.35": kf([10, 0, 0], "catmullrom"), "1.80": kf([-18, 0, 0], "catmullrom")}},
-                "shin_l": {"rotation": {"0.0": kf([14, 0, 0], "catmullrom"), "0.45": kf([10, 0, 0], "easeOutCubic"), "0.90": kf([-6, 0, 0], "catmullrom"), "1.35": kf([26, 0, 0], "catmullrom"), "1.80": kf([14, 0, 0], "catmullrom")}},
-                "ankle_hock_l": {"rotation": {"0.0": kf([-10, 0, 0], "catmullrom"), "0.45": kf([0, 0, 0], "easeOutCubic"), "0.90": kf([16, 0, 0], "catmullrom"), "1.35": kf([-24, 0, 0], "catmullrom"), "1.80": kf([-10, 0, 0], "catmullrom")}},
-                "foot_l": {"rotation": {"0.0": kf([12, 0, 0], "catmullrom"), "0.45": kf([0, 0, 0], "easeOutCubic"), "0.90": kf([-20, 0, 0], "catmullrom"), "1.35": kf([14, 0, 0], "catmullrom"), "1.80": kf([12, 0, 0], "catmullrom")}},
-                # Chân phải chữ Z đối pha hoàn hảo
-                "leg_r": {"rotation": {"0.0": kf([18, 0, 0], "catmullrom"), "0.45": kf([10, 0, 0], "catmullrom"), "0.90": kf([-18, 0, 0], "catmullrom"), "1.35": kf([-10, 0, 0], "easeOutCubic"), "1.80": kf([18, 0, 0], "catmullrom")}},
-                "shin_r": {"rotation": {"0.0": kf([-6, 0, 0], "catmullrom"), "0.45": kf([26, 0, 0], "catmullrom"), "0.90": kf([14, 0, 0], "catmullrom"), "1.35": kf([10, 0, 0], "easeOutCubic"), "1.80": kf([-6, 0, 0], "catmullrom")}},
-                "ankle_hock_r": {"rotation": {"0.0": kf([16, 0, 0], "catmullrom"), "0.45": kf([-24, 0, 0], "catmullrom"), "0.90": kf([-10, 0, 0], "catmullrom"), "1.35": kf([0, 0, 0], "easeOutCubic"), "1.80": kf([16, 0, 0], "catmullrom")}},
-                "foot_r": {"rotation": {"0.0": kf([-20, 0, 0], "catmullrom"), "0.45": kf([14, 0, 0], "catmullrom"), "0.90": kf([12, 0, 0], "catmullrom"), "1.35": kf([0, 0, 0], "easeOutCubic"), "1.80": kf([-20, 0, 0], "catmullrom")}},
-                "arm_l": {"rotation": {"0.0": kf([14, 0, -2], "catmullrom"), "0.90": kf([-16, 0, -4], "catmullrom"), "1.80": kf([14, 0, -2], "catmullrom")}},
-                "arm_r": {"rotation": {"0.0": kf([-4, 0, 3], "catmullrom"), "0.90": kf([12, 0, 5], "catmullrom"), "1.80": kf([-4, 0, 3], "catmullrom")}},
+                # Chân trái thẳng chuẩn giải phẫu: bước tới (-22°) -> đặt gót trụ (-8°, gối gập 14°) -> đẩy sau (+20°) -> nhấc gối gập mượt (+34°)!
+                "leg_l":        {"rotation": {"0.0": kf([-22, 0, 0], "catmullrom"), "0.45": kf([-8, 0, 0], "easeOutCubic"), "0.90": kf([20, 0, 0], "catmullrom"), "1.35": kf([-4, 0, 0], "catmullrom"), "1.80": kf([-22, 0, 0], "catmullrom")}},
+                "shin_l":       {"rotation": {"0.0": kf([10, 0, 0], "catmullrom"),  "0.45": kf([14, 0, 0], "easeOutCubic"), "0.90": kf([8, 0, 0], "catmullrom"),  "1.35": kf([34, 0, 0], "catmullrom"), "1.80": kf([10, 0, 0], "catmullrom")}},
+                "ankle_hock_l": {"rotation": {"0.0": kf([6, 0, 0], "catmullrom"),   "0.45": kf([-4, 0, 0], "easeOutCubic"), "0.90": kf([-14, 0, 0], "catmullrom"),"1.35": kf([-16, 0, 0], "catmullrom"),"1.80": kf([6, 0, 0], "catmullrom")}},
+                "foot_l":       {"rotation": {"0.0": kf([6, 0, 0], "catmullrom"),   "0.45": kf([-2, 0, 0], "easeOutCubic"), "0.90": kf([-14, 0, 0], "catmullrom"),"1.35": kf([4, 0, 0], "catmullrom"),  "1.80": kf([6, 0, 0], "catmullrom")}},
+                # Chân phải đối pha hoàn hảo
+                "leg_r":        {"rotation": {"0.0": kf([20, 0, 0], "catmullrom"),  "0.45": kf([-4, 0, 0], "catmullrom"),   "0.90": kf([-22, 0, 0], "catmullrom"),"1.35": kf([-8, 0, 0], "easeOutCubic"),"1.80": kf([20, 0, 0], "catmullrom")}},
+                "shin_r":       {"rotation": {"0.0": kf([8, 0, 0], "catmullrom"),   "0.45": kf([34, 0, 0], "catmullrom"),   "0.90": kf([10, 0, 0], "catmullrom"), "1.35": kf([14, 0, 0], "easeOutCubic"),"1.80": kf([8, 0, 0], "catmullrom")}},
+                "ankle_hock_r": {"rotation": {"0.0": kf([-14, 0, 0], "catmullrom"), "0.45": kf([-16, 0, 0], "catmullrom"),  "0.90": kf([6, 0, 0], "catmullrom"),  "1.35": kf([-4, 0, 0], "easeOutCubic"),"1.80": kf([-14, 0, 0], "catmullrom")}},
+                "foot_r":       {"rotation": {"0.0": kf([-14, 0, 0], "catmullrom"), "0.45": kf([4, 0, 0], "catmullrom"),    "0.90": kf([6, 0, 0], "catmullrom"),  "1.35": kf([-2, 0, 0], "easeOutCubic"),"1.80": kf([-14, 0, 0], "catmullrom")}},
+                "arm_l":       {"rotation": {"0.0": kf([16, 0, -2], "catmullrom"), "0.90": kf([-18, 0, -4], "catmullrom"), "1.80": kf([16, 0, -2], "catmullrom")}},
+                "arm_l_lower": {"rotation": {"0.0": kf([-10, 0, 0], "catmullrom"), "0.90": kf([-24, 0, 0], "catmullrom"), "1.80": kf([-10, 0, 0], "catmullrom")}},
+                "arm_r":       {"rotation": {"0.0": kf([-6, 0, 3], "catmullrom"), "0.90": kf([12, 0, 5], "catmullrom"), "1.80": kf([-6, 0, 3], "catmullrom")}},
+                "arm_r_lower": {"rotation": {"0.0": kf([-14, 0, 0], "catmullrom"), "0.90": kf([-8, 0, 0], "catmullrom"), "1.80": kf([-14, 0, 0], "catmullrom")}},
                 "wing_l": {"rotation": {"0.0": kf([4, -8, 3], "easeInOutSine"), "0.60": kf([8, -14, 5], "easeInOutSine"), "1.50": kf([8, -10, 4], "easeInOutSine"), "1.80": kf([4, -8, 3], "easeInOutSine")}},
                 "wing_r": {"rotation": {"0.0": kf([4, 8, -3], "easeInOutSine"), "0.60": kf([8, 10, -4], "easeInOutSine"), "1.50": kf([8, 14, -5], "easeInOutSine"), "1.80": kf([4, 8, -3], "easeInOutSine")}},
-                # Áo choàng rộng 3 tầng lướt sóng mềm về sau theo nhịp bước nặng
                 "cape_upper": {"rotation": {"0.0": kf([10, 0, 0], "easeInOutSine"), "0.55": kf([16, 0, 0], "easeInOutSine"), "1.45": kf([16, 0, 0], "easeInOutSine"), "1.80": kf([10, 0, 0], "easeInOutSine")}},
                 "cape_mid": {"rotation": {"0.0": kf([8, 0, 0], "easeInOutSine"), "0.70": kf([14, 0, 0], "easeInOutSine"), "1.60": kf([14, 0, 0], "easeInOutSine"), "1.80": kf([8, 0, 0], "easeInOutSine")}},
                 "cape_lower": {"rotation": {"0.0": kf([6, 0, 0], "easeInOutSine"), "0.85": kf([12, 0, 0], "easeInOutSine"), "1.75": kf([12, 0, 0], "easeInOutSine"), "1.80": kf([6, 0, 0], "easeInOutSine")}},
                 "cape_l": {"rotation": {"0.0": kf([10, -4, 4], "easeInOutSine"), "0.90": kf([16, -8, 7], "easeInOutSine"), "1.80": kf([10, -4, 4], "easeInOutSine")}},
                 "cape_r": {"rotation": {"0.0": kf([10, 4, -4], "easeInOutSine"), "0.90": kf([16, 8, -7], "easeInOutSine"), "1.80": kf([10, 4, -4], "easeInOutSine")}},
-                "tabard": {"rotation": {"0.0": kf([9, 0, 0], "easeInOutSine"), "0.90": kf([-5, 0, 0], "easeInOutSine"), "1.80": kf([9, 0, 0], "easeInOutSine")}},
+                "tabard": {"rotation": {"0.0": kf([10, 0, 0], "easeInOutSine"), "0.90": kf([-5, 0, 0], "easeInOutSine"), "1.80": kf([10, 0, 0], "easeInOutSine")}},
+                "tabard_lower": {"rotation": {"0.0": kf([14, 0, 0], "easeInOutSine"), "0.90": kf([4, 0, 0], "easeInOutSine"), "1.80": kf([14, 0, 0], "easeInOutSine")}},
             },
         },
         # 1. GREATSWORD_SLASH: total=32t (1.60s) | HitWindow=[18..21] (0.90..1.05s)
@@ -1461,13 +1715,15 @@ def build_animations() -> dict:
             "animation_length": 1.60,
             "bones": {
                 "pelvis": {
-                    "position": {"0.0": kf([0, 0, 0]), "0.65": kf([0, -1.4, 0.8], "easeInCubic"), "0.95": kf([0, -0.5, -1.5], "easeOutExpo"), "1.60": kf([0, 0, 0], "easeOutCubic")},
+                    "position": {"0.0": kf([0, 0, 0]), "0.65": kf([0, -1.5, 0.8], "easeInCubic"), "0.95": kf([0, -0.6, -1.6], "easeOutExpo"), "1.60": kf([0, 0, 0], "easeOutCubic")},
                     "rotation": {"0.0": kf([0, 0, 0]), "0.65": kf([4, 24, 0], "easeInCubic"), "0.90": kf([8, -22, 0], "easeOutExpo"), "1.12": kf([8, -28, 0], "easeOutCubic"), "1.60": kf([0, 0, 0], "easeInOutSine")},
                 },
-                "shin_r": {"rotation": {"0.0": kf([0, 0, 0]), "0.65": kf([10, 0, 0], "easeInCubic"), "0.95": kf([-4, 0, 0], "easeOutExpo"), "1.60": kf([0, 0, 0], "easeInOutSine")}},
-                "ankle_hock_r": {"rotation": {"0.0": kf([0, 0, 0]), "0.65": kf([-8, 0, 0], "easeInCubic"), "0.95": kf([6, 0, 0], "easeOutExpo"), "1.60": kf([0, 0, 0], "easeInOutSine")}},
-                "chest": {"rotation": {"0.0": kf([0, 0, 0]), "0.72": kf([8, 46, -4], "easeInCubic"), "0.90": kf([16, -24, 4], "easeOutExpo"), "1.08": kf([18, -56, 6], "easeOutBack"), "1.60": kf([0, 0, 0], "easeInOutSine")}},
-                "arm_r": {"rotation": {"0.0": kf([0, 0, 0]), "0.75": kf([-42, 34, -48], "easeInCubic"), "0.90": kf([-72, -22, -8], "easeOutExpo"), "1.08": kf([-58, -64, 24], "easeOutBack"), "1.60": kf([0, 0, 0], "easeInOutSine")}},
+                "torso_upper": {"rotation": {"0.0": kf([0, 0, 0]), "0.70": kf([4, 20, -2], "easeInCubic"), "0.90": kf([7, -12, 2], "easeOutExpo"), "1.08": kf([8, -24, 3], "easeOutBack"), "1.60": kf([0, 0, 0], "easeInOutSine")}},
+                "chest": {"rotation": {"0.0": kf([0, 0, 0]), "0.72": kf([4, 28, -2], "easeInCubic"), "0.90": kf([9, -14, 2], "easeOutExpo"), "1.08": kf([10, -34, 3], "easeOutBack"), "1.60": kf([0, 0, 0], "easeInOutSine")}},
+                "shoulder_r": {"rotation": {"0.0": kf([0, 0, 0]), "0.74": kf([-10, 12, -14], "easeInCubic"), "0.92": kf([8, -14, 10], "easeOutExpo"), "1.60": kf([0, 0, 0], "easeInOutSine")}},
+                "shin_r": {"rotation": {"0.0": kf([0, 0, 0]), "0.65": kf([12, 0, 0], "easeInCubic"), "0.95": kf([6, 0, 0], "easeOutExpo"), "1.60": kf([0, 0, 0], "easeInOutSine")}},
+                "arm_r": {"rotation": {"0.0": kf([0, 0, 0]), "0.75": kf([-40, 32, -46], "easeInCubic"), "0.90": kf([-72, -22, -8], "easeOutExpo"), "1.08": kf([-58, -64, 24], "easeOutBack"), "1.60": kf([0, 0, 0], "easeInOutSine")}},
+                "arm_r_lower": {"rotation": {"0.0": kf([0, 0, 0]), "0.75": kf([-24, 0, 0], "easeInCubic"), "0.96": kf([-6, 0, 0], "easeOutExpo"), "1.60": kf([0, 0, 0], "easeInOutSine")}},
                 "weapon": {"rotation": {"0.0": kf([0, 0, 0]), "0.75": kf([-18, 0, 22], "easeInCubic"), "0.96": kf([18, 0, -26], "easeOutExpo"), "1.18": kf([24, 0, -30], "easeOutCubic"), "1.60": kf([0, 0, 0], "easeInOutSine")}},
                 "wing_l": {"rotation": {"0.0": kf([0, 0, 0]), "0.72": kf([4, -18, 6], "easeInCubic"), "0.96": kf([-6, 16, -8], "easeOutExpo"), "1.60": kf([0, 0, 0], "easeInOutSine")}},
                 "wing_r": {"rotation": {"0.0": kf([0, 0, 0]), "0.72": kf([4, 18, -6], "easeInCubic"), "0.96": kf([-6, -16, 8], "easeOutExpo"), "1.60": kf([0, 0, 0], "easeInOutSine")}},
@@ -1480,16 +1736,22 @@ def build_animations() -> dict:
         "animation.nightmare_knight.overhead_smash": {
             "animation_length": 2.00,
             "bones": {
-                "pelvis": {"position": {"0.0": kf([0, 0, 0]), "1.00": kf([0, 0.8, 1.2], "easeInCubic"), "1.20": kf([0, -2.8, -1.5], "easeOutExpo"), "1.52": kf([0, -2.2, -1.2], "easeOutCubic"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
-                "shin_l": {"rotation": {"0.0": kf([0, 0, 0]), "1.00": kf([-8, 0, 0], "easeInCubic"), "1.20": kf([18, 0, 0], "easeOutExpo"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
-                "shin_r": {"rotation": {"0.0": kf([0, 0, 0]), "1.00": kf([-8, 0, 0], "easeInCubic"), "1.20": kf([18, 0, 0], "easeOutExpo"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
-                "ankle_hock_l": {"rotation": {"0.0": kf([0, 0, 0]), "1.20": kf([-14, 0, 0], "easeOutExpo"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
-                "ankle_hock_r": {"rotation": {"0.0": kf([0, 0, 0]), "1.20": kf([-14, 0, 0], "easeOutExpo"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
-                "chest": {"rotation": {"0.0": kf([0, 0, 0]), "1.02": kf([-28, 0, 0], "easeInCubic"), "1.20": kf([36, 0, 0], "easeOutExpo"), "1.48": kf([38, 0, 0], "easeOutCubic"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
-                "arm_r": {"rotation": {"0.0": kf([0, 0, 0]), "1.05": kf([-154, 0, -12], "easeInCubic"), "1.20": kf([28, 0, 0], "easeOutExpo"), "1.48": kf([32, 0, 0], "easeOutCubic"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
-                "arm_l": {"rotation": {"0.0": kf([0, 0, 0]), "1.05": kf([-126, 0, 12], "easeInCubic"), "1.20": kf([24, 0, 6], "easeOutExpo"), "1.48": kf([26, 0, 6], "easeOutCubic"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
-                "head": {"rotation": {"0.0": kf([0, 0, 0]), "1.05": kf([-22, 0, 0], "easeInCubic"), "1.22": kf([22, 0, 0], "easeOutExpo"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
-                "jaw": {"rotation": {"0.0": kf([0, 0, 0]), "1.05": kf([38, 0, 0], "easeInCubic"), "1.42": kf([28, 0, 0], "easeOutCubic"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
+                "pelvis": {"position": {"0.0": kf([0, 0, 0]), "1.00": kf([0, 0.8, 1.2], "easeInCubic"), "1.20": kf([0, -3.2, -1.6], "easeOutExpo"), "1.52": kf([0, -2.4, -1.2], "easeOutCubic"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
+                "thigh_l": {"rotation": {"0.0": kf([0, 0, 0]), "1.20": kf([-14, 0, 0], "easeOutExpo"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
+                "shin_l": {"rotation": {"0.0": kf([0, 0, 0]), "1.20": kf([26, 0, 0], "easeOutExpo"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
+                "foot_l": {"rotation": {"0.0": kf([0, 0, 0]), "1.20": kf([-12, 0, 0], "easeOutExpo"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
+                "thigh_r": {"rotation": {"0.0": kf([0, 0, 0]), "1.20": kf([-14, 0, 0], "easeOutExpo"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
+                "shin_r": {"rotation": {"0.0": kf([0, 0, 0]), "1.20": kf([26, 0, 0], "easeOutExpo"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
+                "foot_r": {"rotation": {"0.0": kf([0, 0, 0]), "1.20": kf([-12, 0, 0], "easeOutExpo"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
+                "torso_upper": {"rotation": {"0.0": kf([0, 0, 0]), "1.02": kf([-12, 0, 0], "easeInCubic"), "1.20": kf([16, 0, 0], "easeOutExpo"), "1.48": kf([17, 0, 0], "easeOutCubic"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
+                "chest": {"rotation": {"0.0": kf([0, 0, 0]), "1.02": kf([-16, 0, 0], "easeInCubic"), "1.20": kf([20, 0, 0], "easeOutExpo"), "1.48": kf([21, 0, 0], "easeOutCubic"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
+                "shoulder_r": {"rotation": {"0.0": kf([0, 0, 0]), "1.05": kf([-16, 0, -14], "easeInCubic"), "1.20": kf([12, 0, 6], "easeOutExpo"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
+                "shoulder_l": {"rotation": {"0.0": kf([0, 0, 0]), "1.05": kf([-14, 0, 14], "easeInCubic"), "1.20": kf([10, 0, -6], "easeOutExpo"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
+                "arm_r": {"rotation": {"0.0": kf([0, 0, 0]), "1.05": kf([-144, 0, -10], "easeInCubic"), "1.20": kf([24, 0, 0], "easeOutExpo"), "1.48": kf([28, 0, 0], "easeOutCubic"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
+                "arm_l": {"rotation": {"0.0": kf([0, 0, 0]), "1.05": kf([-116, 0, 10], "easeInCubic"), "1.20": kf([20, 0, 6], "easeOutExpo"), "1.48": kf([22, 0, 6], "easeOutCubic"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
+                "neck": {"rotation": {"0.0": kf([0, 0, 0]), "1.05": kf([-10, 0, 0], "easeInCubic"), "1.22": kf([10, 0, 0], "easeOutExpo"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
+                "head": {"rotation": {"0.0": kf([0, 0, 0]), "1.05": kf([-14, 0, 0], "easeInCubic"), "1.22": kf([14, 0, 0], "easeOutExpo"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
+                "jaw": {"rotation": {"0.0": kf([0, 0, 0]), "1.05": kf([36, 0, 0], "easeInCubic"), "1.42": kf([26, 0, 0], "easeOutCubic"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
                 "wing_l": {"rotation": {"0.0": kf([0, 0, 0]), "1.02": kf([-14, 22, -16], "easeInCubic"), "1.22": kf([16, -16, 10], "easeOutExpo"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
                 "wing_r": {"rotation": {"0.0": kf([0, 0, 0]), "1.02": kf([-14, -22, 16], "easeInCubic"), "1.22": kf([16, 16, -10], "easeOutExpo"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
                 "cape_upper": {"rotation": {"0.0": kf([0, 0, 0]), "1.05": kf([-10, 0, 0]), "1.28": kf([28, 0, 0], "easeOutExpo"), "2.00": kf([0, 0, 0], "easeInOutSine")}},
@@ -1535,13 +1797,13 @@ def build_animations() -> dict:
                 # Vỗ mạnh đôi cánh xòe ngang bốc người lên không!
                 "wing_l": {"rotation": {"0.0": kf([0, 0, 0]), "0.70": kf([-18, 22, -24], "easeInCubic"), "1.10": kf([22, -26, 26], "easeOutExpo"), "1.45": kf([-16, 20, -20], "easeInOutSine"), "1.70": kf([16, -16, 12], "easeOutExpo"), "2.40": kf([0, 0, 0], "easeInOutSine")}},
                 "wing_r": {"rotation": {"0.0": kf([0, 0, 0]), "0.70": kf([-18, -22, 24], "easeInCubic"), "1.10": kf([22, 26, -26], "easeOutExpo"), "1.45": kf([-16, -20, 20], "easeInOutSine"), "1.70": kf([16, 16, -12], "easeOutExpo"), "2.40": kf([0, 0, 0], "easeInOutSine")}},
-                # Chân thú chữ Z nén cực sâu -> duỗi tung trên không -> tiếp đất đàn hồi!
-                "leg_l": {"rotation": {"0.0": kf([0, 0, 0]), "0.70": kf([-24, 0, 0], "easeInCubic"), "1.25": kf([24, 0, 0], "easeOutCubic"), "1.70": kf([-18, 0, 0], "easeOutExpo"), "2.40": kf([0, 0, 0], "easeInOutSine")}},
-                "shin_l": {"rotation": {"0.0": kf([0, 0, 0]), "0.70": kf([32, 0, 0], "easeInCubic"), "1.25": kf([-14, 0, 0], "easeOutCubic"), "1.70": kf([24, 0, 0], "easeOutExpo"), "2.40": kf([0, 0, 0], "easeInOutSine")}},
-                "ankle_hock_l": {"rotation": {"0.0": kf([0, 0, 0]), "0.70": kf([-26, 0, 0], "easeInCubic"), "1.25": kf([22, 0, 0], "easeOutCubic"), "1.70": kf([-20, 0, 0], "easeOutExpo"), "2.40": kf([0, 0, 0], "easeInOutSine")}},
-                "leg_r": {"rotation": {"0.0": kf([0, 0, 0]), "0.70": kf([-24, 0, 0], "easeInCubic"), "1.25": kf([24, 0, 0], "easeOutCubic"), "1.70": kf([-18, 0, 0], "easeOutExpo"), "2.40": kf([0, 0, 0], "easeInOutSine")}},
-                "shin_r": {"rotation": {"0.0": kf([0, 0, 0]), "0.70": kf([32, 0, 0], "easeInCubic"), "1.25": kf([-14, 0, 0], "easeOutCubic"), "1.70": kf([24, 0, 0], "easeOutExpo"), "2.40": kf([0, 0, 0], "easeInOutSine")}},
-                "ankle_hock_r": {"rotation": {"0.0": kf([0, 0, 0]), "0.70": kf([-26, 0, 0], "easeInCubic"), "1.25": kf([22, 0, 0], "easeOutCubic"), "1.70": kf([-20, 0, 0], "easeOutExpo"), "2.40": kf([0, 0, 0], "easeInOutSine")}},
+                # Chân thẳng gập nhún bật nhảy -> duỗi trên không -> tiếp đất đàn hồi!
+                "leg_l":  {"rotation": {"0.0": kf([0, 0, 0]), "0.70": kf([-24, 0, 0], "easeInCubic"), "1.25": kf([16, 0, 0], "easeOutCubic"), "1.70": kf([-20, 0, 0], "easeOutExpo"), "2.40": kf([0, 0, 0], "easeInOutSine")}},
+                "shin_l": {"rotation": {"0.0": kf([0, 0, 0]), "0.70": kf([42, 0, 0], "easeInCubic"),  "1.25": kf([14, 0, 0], "easeOutCubic"), "1.70": kf([36, 0, 0], "easeOutExpo"),  "2.40": kf([0, 0, 0], "easeInOutSine")}},
+                "foot_l": {"rotation": {"0.0": kf([0, 0, 0]), "0.70": kf([-18, 0, 0], "easeInCubic"), "1.25": kf([20, 0, 0], "easeOutCubic"), "1.70": kf([-16, 0, 0], "easeOutExpo"), "2.40": kf([0, 0, 0], "easeInOutSine")}},
+                "leg_r":  {"rotation": {"0.0": kf([0, 0, 0]), "0.70": kf([-24, 0, 0], "easeInCubic"), "1.25": kf([16, 0, 0], "easeOutCubic"), "1.70": kf([-20, 0, 0], "easeOutExpo"), "2.40": kf([0, 0, 0], "easeInOutSine")}},
+                "shin_r": {"rotation": {"0.0": kf([0, 0, 0]), "0.70": kf([42, 0, 0], "easeInCubic"),  "1.25": kf([14, 0, 0], "easeOutCubic"), "1.70": kf([36, 0, 0], "easeOutExpo"),  "2.40": kf([0, 0, 0], "easeInOutSine")}},
+                "foot_r": {"rotation": {"0.0": kf([0, 0, 0]), "0.70": kf([-18, 0, 0], "easeInCubic"), "1.25": kf([20, 0, 0], "easeOutCubic"), "1.70": kf([-16, 0, 0], "easeOutExpo"), "2.40": kf([0, 0, 0], "easeInOutSine")}},
                 "cape_upper": {"rotation": {"0.0": kf([0, 0, 0]), "1.25": kf([26, 0, 0], "easeOutCubic"), "1.78": kf([36, 0, 0], "easeOutExpo"), "2.40": kf([0, 0, 0], "easeInOutSine")}},
                 "cape_mid": {"rotation": {"0.0": kf([0, 0, 0]), "1.35": kf([22, 0, 0]), "1.85": kf([26, 0, 0], "easeOutExpo"), "2.40": kf([0, 0, 0], "easeInOutSine")}},
             },
@@ -1652,6 +1914,7 @@ def build_animations() -> dict:
             "animation_length": 1.90,
             "bones": {
                 "chest": {"rotation": {"0.0": kf([0, 0, 0]), "0.80": kf([18, 0, 0], "easeInCubic"), "1.00": kf([-26, 0, 0], "easeOutExpo"), "1.90": kf([0, 0, 0], "easeInOutSine")}},
+                "heart": {"scale": {"0.0": kf([1.0, 1.0, 1.0]), "0.80": kf([0.92, 0.92, 0.92], "easeInCubic"), "1.00": kf([1.26, 1.24, 1.28], "easeOutExpo"), "1.90": kf([1.0, 1.0, 1.0], "easeInOutSine")}},
                 "arm_l": {"rotation": {"0.0": kf([0, 0, 0]), "0.80": kf([-24, 0, -16], "easeInCubic"), "1.00": kf([-78, 0, 68], "easeOutExpo"), "1.90": kf([0, 0, 0], "easeInOutSine")}},
                 "arm_r": {"rotation": {"0.0": kf([0, 0, 0]), "0.80": kf([-24, 0, 16], "easeInCubic"), "1.00": kf([-78, 0, -68], "easeOutExpo"), "1.90": kf([0, 0, 0], "easeInOutSine")}},
                 "head": {"rotation": {"0.0": kf([0, 0, 0]), "1.00": kf([-28, 0, 0], "easeOutExpo"), "1.90": kf([0, 0, 0], "easeInOutSine")}},
@@ -1667,6 +1930,7 @@ def build_animations() -> dict:
             "bones": {
                 "body": {"position": {"0.0": kf([0, 0, 0]), "2.20": kf([0, -2.8, 0], "easeInCubic"), "2.40": kf([0, 0.4, 0], "easeOutExpo"), "3.40": kf([0, -1.8, 0], "easeOutCubic"), "4.20": kf([0, 0, 0], "easeInOutSine")}},
                 "chest": {"rotation": {"0.0": kf([0, 0, 0]), "2.20": kf([-30, 0, 0], "easeInCubic"), "2.40": kf([38, 0, 0], "easeOutExpo"), "3.45": kf([34, 0, 0], "easeOutCubic"), "4.20": kf([0, 0, 0], "easeInOutSine")}},
+                "heart": {"scale": {"0.0": kf([1.0, 1.0, 1.0]), "1.10": kf([1.18, 1.16, 1.20], "easeInOutSine"), "2.20": kf([0.90, 0.90, 0.90], "easeInCubic"), "2.40": kf([1.28, 1.26, 1.32], "easeOutExpo"), "3.45": kf([1.18, 1.16, 1.20], "easeOutCubic"), "4.20": kf([1.0, 1.0, 1.0], "easeInOutSine")}},
                 "arm_r": {"rotation": {"0.0": kf([0, 0, 0]), "2.20": kf([-158, 0, -14], "easeInCubic"), "2.40": kf([28, 0, 0], "easeOutExpo"), "3.45": kf([28, 0, 0], "easeOutCubic"), "4.20": kf([0, 0, 0], "easeInOutSine")}},
                 "arm_l": {"rotation": {"0.0": kf([0, 0, 0]), "2.20": kf([-142, 0, 22], "easeInCubic"), "2.40": kf([24, 0, 14], "easeOutExpo"), "3.45": kf([24, 0, 14], "easeOutCubic"), "4.20": kf([0, 0, 0], "easeInOutSine")}},
                 "head": {"rotation": {"0.0": kf([0, 0, 0]), "2.20": kf([-26, 0, 0], "easeInCubic"), "2.40": kf([18, 0, 0], "easeOutExpo"), "4.20": kf([0, 0, 0], "easeInOutSine")}},
@@ -1680,14 +1944,32 @@ def build_animations() -> dict:
         "animation.nightmare_knight.phase_change": {
             "animation_length": 6.00,
             "bones": {
-                "body": {"position": {"0.0": kf([0, 0, 0]), "1.75": kf([0, -4.2, 0], "easeInCubic"), "2.20": kf([0, 0.8, 0], "easeOutExpo"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
-                "shin_l": {"rotation": {"0.0": kf([0, 0, 0]), "1.75": kf([26, 0, 0], "easeInCubic"), "2.20": kf([-4, 0, 0], "easeOutExpo"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
-                "shin_r": {"rotation": {"0.0": kf([0, 0, 0]), "1.75": kf([26, 0, 0], "easeInCubic"), "2.20": kf([-4, 0, 0], "easeOutExpo"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
-                "ankle_hock_l": {"rotation": {"0.0": kf([0, 0, 0]), "1.75": kf([-22, 0, 0], "easeInCubic"), "2.20": kf([4, 0, 0], "easeOutExpo"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
-                "ankle_hock_r": {"rotation": {"0.0": kf([0, 0, 0]), "1.75": kf([-22, 0, 0], "easeInCubic"), "2.20": kf([4, 0, 0], "easeOutExpo"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
-                "chest": {"rotation": {"0.0": kf([0, 0, 0]), "1.75": kf([26, 0, 0], "easeInCubic"), "2.20": kf([-30, 0, 0], "easeOutExpo"), "4.8": kf([-18, 0, 0], "easeInOutSine"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
-                "head": {"rotation": {"0.0": kf([0, 0, 0]), "1.75": kf([22, 0, 0], "easeInCubic"), "2.20": kf([-28, 0, 0], "easeOutExpo"), "4.8": kf([-22, 0, 0], "easeInOutSine"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
-                "jaw": {"rotation": {"0.0": kf([0, 0, 0]), "2.20": kf([44, 0, 0], "easeOutExpo"), "4.8": kf([38, 0, 0], "easeInOutSine"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
+                "body": {"position": {"0.0": kf([0, 0, 0]), "1.75": kf([0, -4.6, 0], "easeInCubic"), "2.20": kf([0, 1.0, 0], "easeOutExpo"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
+                "thigh_l": {"rotation": {"0.0": kf([0, 0, 0]), "1.75": kf([-20, 0, 0], "easeInCubic"), "2.20": kf([0, 0, 0], "easeOutExpo"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
+                "shin_l":  {"rotation": {"0.0": kf([0, 0, 0]), "1.75": kf([36, 0, 0], "easeInCubic"),  "2.20": kf([4, 0, 0], "easeOutExpo"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
+                "foot_l":  {"rotation": {"0.0": kf([0, 0, 0]), "1.75": kf([-16, 0, 0], "easeInCubic"), "2.20": kf([-4, 0, 0], "easeOutExpo"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
+                "thigh_r": {"rotation": {"0.0": kf([0, 0, 0]), "1.75": kf([-20, 0, 0], "easeInCubic"), "2.20": kf([0, 0, 0], "easeOutExpo"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
+                "shin_r":  {"rotation": {"0.0": kf([0, 0, 0]), "1.75": kf([36, 0, 0], "easeInCubic"),  "2.20": kf([4, 0, 0], "easeOutExpo"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
+                "foot_r":  {"rotation": {"0.0": kf([0, 0, 0]), "1.75": kf([-16, 0, 0], "easeInCubic"), "2.20": kf([-4, 0, 0], "easeOutExpo"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
+                "torso_upper": {"rotation": {"0.0": kf([0, 0, 0]), "1.75": kf([12, 0, 0], "easeInCubic"), "2.20": kf([-14, 0, 0], "easeOutExpo"), "4.8": kf([-8, 0, 0], "easeInOutSine"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
+                "chest": {"rotation": {"0.0": kf([0, 0, 0]), "1.75": kf([16, 0, 0], "easeInCubic"), "2.20": kf([-18, 0, 0], "easeOutExpo"), "4.8": kf([-12, 0, 0], "easeInOutSine"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
+                "heart": {
+                    "scale": {
+                        "0.0":  kf([1.00, 1.00, 1.00]),
+                        "0.60": kf([1.16, 1.14, 1.18], "easeOutCubic"),
+                        "1.10": kf([0.94, 0.94, 0.94], "easeInOutSine"),
+                        "1.65": kf([1.22, 1.20, 1.24], "easeInCubic"),
+                        "2.20": kf([1.34, 1.30, 1.36], "easeOutExpo"),
+                        "3.40": kf([1.18, 1.16, 1.20], "easeInOutSine"),
+                        "4.80": kf([1.12, 1.10, 1.14], "easeInOutSine"),
+                        "6.0":  kf([1.00, 1.00, 1.00], "easeInOutSine"),
+                    },
+                },
+                "neck": {"rotation": {"0.0": kf([0, 0, 0]), "1.75": kf([10, 0, 0], "easeInCubic"), "2.20": kf([-12, 0, 0], "easeOutExpo"), "4.8": kf([-10, 0, 0], "easeInOutSine"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
+                "head": {"rotation": {"0.0": kf([0, 0, 0]), "1.75": kf([14, 0, 0], "easeInCubic"), "2.20": kf([-18, 0, 0], "easeOutExpo"), "4.8": kf([-14, 0, 0], "easeInOutSine"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
+                "jaw": {"rotation": {"0.0": kf([0, 0, 0]), "2.20": kf([42, 0, 0], "easeOutExpo"), "4.8": kf([36, 0, 0], "easeInOutSine"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
+                "shoulder_l": {"rotation": {"0.0": kf([0, 0, 0]), "1.75": kf([8, 0, -10], "easeInCubic"), "2.20": kf([-10, 0, 14], "easeOutExpo"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
+                "shoulder_r": {"rotation": {"0.0": kf([0, 0, 0]), "1.75": kf([8, 0, 10], "easeInCubic"),  "2.20": kf([-10, 0, -14], "easeOutExpo"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
                 "arm_l": {"rotation": {"0.0": kf([0, 0, 0]), "1.75": kf([-25, 0, -16], "easeInCubic"), "2.20": kf([-72, 0, 64], "easeOutExpo"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
                 "arm_r": {"rotation": {"0.0": kf([0, 0, 0]), "1.75": kf([-25, 0, 16], "easeInCubic"), "2.20": kf([-90, 0, -54], "easeOutExpo"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
                 "wing_l": {"rotation": {"0.0": kf([0, 0, 0]), "1.75": kf([10, -34, 14], "easeInCubic"), "2.20": kf([-20, 28, -24], "easeOutExpo"), "4.8": kf([-14, 22, -18], "easeInOutSine"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
@@ -1695,15 +1977,18 @@ def build_animations() -> dict:
                 "cape_upper": {"rotation": {"0.0": kf([0, 0, 0]), "2.25": kf([34, 0, 0], "easeOutExpo"), "4.8": kf([24, 0, 0], "easeInOutSine"), "6.0": kf([0, 0, 0], "easeInOutSine")}},
             },
         },
-        # 15. DEATH: 2.40s — khuỵu chân chữ Z rồi đổ gục nặng nề
+        # 15. DEATH: 2.40s — khuỵu gối rồi đổ gục nặng nề
         "animation.nightmare_knight.death": {
             "loop": "hold_on_last_frame",
             "animation_length": 2.40,
             "bones": {
                 "body": {
-                    "position": {"0.0": kf([0, 0, 0]), "1.1": kf([0, -5.5, 0], "easeInCubic"), "2.4": kf([0, -13.0, 0], "easeOutBounce")},
+                    "position": {"0.0": kf([0, 0, 0]), "1.1": kf([0, -7.5, 0], "easeInCubic"), "2.4": kf([0, -17.5, 0], "easeOutBounce")},
                     "rotation": {"0.0": kf([0, 0, 0]), "1.1": kf([28, 0, 0], "easeInCubic"), "2.4": kf([86, 0, 0], "easeOutCubic")},
                 },
+                "shin_l": {"rotation": {"0.0": kf([0, 0, 0]), "1.1": kf([46, 0, 0], "easeInCubic"), "2.4": kf([24, 0, 0], "easeOutCubic")}},
+                "shin_r": {"rotation": {"0.0": kf([0, 0, 0]), "1.1": kf([46, 0, 0], "easeInCubic"), "2.4": kf([24, 0, 0], "easeOutCubic")}},
+                "torso_upper": {"rotation": {"0.0": kf([0, 0, 0]), "2.4": kf([14, 0, 0], "easeOutCubic")}},
                 "head": {"rotation": {"0.0": kf([0, 0, 0]), "2.4": kf([28, 0, 0], "easeOutCubic")}},
                 "arm_l": {"rotation": {"0.0": kf([0, 0, 0]), "2.4": kf([-40, 0, 32], "easeOutCubic")}},
                 "arm_r": {"rotation": {"0.0": kf([0, 0, 0]), "2.4": kf([-25, 0, -32], "easeOutCubic")}},
@@ -1888,12 +2173,12 @@ def render_previews(geo: dict) -> None:
     sc = (min(pw, ph) * 0.86) / max(1.0, span)
 
     specs = [
-        ("preview_front_full.png",    180,  4, sc * 1.15, center, d_norm, g_norm, "FRONT (BRIGHT SKULL, STEEL PLATES, BALANCED SWORD, WIDE A-STANCE)"),
-        ("preview_rear_full.png",       0,  4, sc * 1.15, center, d_norm, g_norm, "REAR (WIDE 3-TIER A-LINE RED CAPE, SWEPT BAT WINGS, CLAW HOOKS)"),
-        ("preview_side_left.png",     -90,  4, sc * 1.25, np.array([0.0, 23.0, 0.0]), d_norm, g_norm, "LEFT SIDE (Z-DIGITIGRADE LEGS, KNEE SPUR, HOCK, 24-DEG WINGS)"),
-        ("preview_side_right.png",     90,  4, sc * 1.25, np.array([0.0, 23.0, 0.0]), d_norm, g_norm, "RIGHT SIDE (Z-LEGS, NATURAL SWORD ANGLE, LONG SWEEPING CAPE)"),
-        ("preview_top_down.png",      180, 84, sc * 1.12, center, d_norm, g_norm, "TOP-DOWN (WIDE HORIZONTAL WING SPAN ~24 DEG RAKE, SWORD & CAPE)"),
-        ("preview_phase2_enraged.png", 150, 10, sc * 1.16, center, d_enr, g_enr, "PHASE 2 ENRAGED (MOLTEN ARMOR FISSURES, BLAZING BLOOD GREATSWORD)"),
+        ("preview_front_full.png",     180,  4, sc * 1.18, center, d_norm, g_norm, "FRONT V5 (ORGANIC FORGED ARMOR, OPEN RIBCAGE HEART, BALANCED LEGS)"),
+        ("preview_face_closeup.png",   180,  2, sc * 3.15, np.array([0.0, 42.5, -2.5]), d_norm, g_norm, "FACE & OPEN RIBCAGE HEART CLOSE-UP (PULSING NIGHTMARE CORE)"),
+        ("preview_side_left.png",      -90,  4, sc * 1.25, np.array([0.0, 26.5, 0.0]), d_norm, g_norm, "LEFT SIDE (ORGANIC CURVED ARMOR, NATURAL BENT ARMS, SHORTER LEGS)"),
+        ("preview_side_right.png",      90,  4, sc * 1.25, np.array([0.0, 26.5, 0.0]), d_norm, g_norm, "RIGHT SIDE (GREATSWORD, OPEN CHEST ARCH, FLOWING CAPE)"),
+        ("preview_rear_full.png",        0,  4, sc * 1.18, center, d_norm, g_norm, "REAR (WIDE 3-TIER A-LINE RED CAPE, SWEPT BAT WINGS)"),
+        ("preview_phase2_enraged.png", 152,  8, sc * 1.20, center, d_enr, g_enr, "PHASE 2 ENRAGED (BLAZING NIGHTMARE HEART & MOLTEN ARMOR FISSURES)"),
     ]
     imgs = []
     for fn, yw, pt, s_c, ctr, d_i, g_i, title in specs:
