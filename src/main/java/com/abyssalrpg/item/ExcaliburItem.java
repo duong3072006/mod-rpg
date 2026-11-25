@@ -44,7 +44,7 @@ import java.util.List;
  *   Instant 40% Max HP Heal + Regeneration II (5s), Status Immunity (Poison/Wither/Slowness/Weakness),
  *   and RMB `'EXCALIBUR MORGAN!'` Pitch-Black & Dark-Violet Energy Beam (18 blocks, wider AoE, Wither + Slowness).
  */
-public class ExcaliburItem extends Item implements GeoItem {
+public final class ExcaliburItem extends Item implements GeoItem {
     public static final double GOLDEN_ATTACK_DAMAGE = 36.0;
     public static final double MORGAN_ATTACK_DAMAGE = GOLDEN_ATTACK_DAMAGE * 1.40; // +40% Damage Surge = 50.4!
     public static final double ATTACK_SPEED = 1.8;

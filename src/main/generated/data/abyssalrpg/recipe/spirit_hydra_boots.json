@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "D": {
+      "item": "minecraft:diamond_boots"
+    },
+    "S": {
+      "item": "abyssalrpg:spirit_hydra_scale"
+    }
+  },
+  "pattern": [
+    "S S",
+    "SDS"
+  ],
+  "result": {
+    "count": 1,
+    "id": "abyssalrpg:spirit_hydra_boots"
+  }
+}

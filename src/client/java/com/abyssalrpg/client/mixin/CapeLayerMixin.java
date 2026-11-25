@@ -30,7 +30,9 @@ public abstract class CapeLayerMixin {
                                                             float partialTicks, float ageInTicks,
                                                             float netHeadYaw, float headPitch, CallbackInfo ci) {
         ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
-        if (chest.is(ModItems.CINDER_DRAGON_CHESTPLATE) || chest.is(ModItems.NIGHTMARE_CHESTPLATE)) {
+        if (chest.is(ModItems.CINDER_DRAGON_CHESTPLATE)
+                || chest.is(ModItems.NIGHTMARE_CHESTPLATE)
+                || chest.is(ModItems.SPIRIT_HYDRA_CHESTPLATE)) {
             ci.cancel();
         }
     }
