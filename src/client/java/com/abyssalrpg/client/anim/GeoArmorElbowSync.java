@@ -44,6 +44,9 @@ public final class GeoArmorElbowSync {
 
         if (entity instanceof Player player) {
             FullBodyPose pose = TogetsuAnimManager.getLastComputedPose(player.getId());
+            if (pose == null || pose.elbowWeight <= 0.003F) {
+                pose = SeaWeaponsAnimManager.getLastComputedPose(player.getId());
+            }
             if (pose != null && pose.elbowWeight > 0.003F) {
                 float ew = pose.elbowWeight;
                 rX = -(pose.rightElbowX * ew);
