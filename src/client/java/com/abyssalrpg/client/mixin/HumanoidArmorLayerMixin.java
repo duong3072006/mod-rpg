@@ -40,8 +40,9 @@ public abstract class HumanoidArmorLayerMixin<T extends LivingEntity, M extends 
         this.abyssalrpg$bentChestActive = false;
         this.abyssalrpg$bentArmorPose = null;
         if (slot == EquipmentSlot.CHEST && entity instanceof Player player) {
-            FullBodyPose pose = TogetsuAnimManager.getLastComputedPose(player.getId());
-            if (pose == null || pose.elbowWeight <= 0.003F) {
+            FullBodyPose pose = TogetsuAnimManager.isHoldingTogetsuReady(player)
+                    ? TogetsuAnimManager.getLastComputedPose(player.getId()) : null;
+            if ((pose == null || pose.elbowWeight <= 0.003F) && SeaWeaponsAnimManager.isHoldingSeaWeapons(player)) {
                 pose = SeaWeaponsAnimManager.getLastComputedPose(player.getId());
             }
             if (pose != null && pose.elbowWeight > 0.003F) {

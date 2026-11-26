@@ -119,19 +119,21 @@ public final class MuramasaGeoRenderer extends GeoItemRenderer<MuramasaItem> {
         poseStack.translate(0.5F, 0.5F, 0.5F);
         if (isFirstPerson) {
             if (isLeftHand) {
-                // Vỏ kiếm rồng đỏ nằm gọn góc dưới-trái, 0 che tâm ngắm!
-                poseStack.translate(-0.18F, -0.34F, -0.18F);
-                poseStack.mulPose(Axis.YP.rotationDegrees(164.0F));
-                poseStack.mulPose(Axis.XP.rotationDegrees(32.0F));
-                poseStack.mulPose(Axis.ZP.rotationDegrees(-24.0F));
-                poseStack.scale(0.84F, 0.84F, 0.84F);
+                // Vỏ kiếm rồng đỏ (đã lật đúng đầu 180° & hạ thấp ~30% góc dưới-trái!):
+                // Miệng sắt cổ Koiguchi + dây thắt đỏ-đen Sageo hướng lên trên-về trước, thân rồng đỏ xuôi gọn xuống dưới-trái!
+                poseStack.translate(-0.12F, 0.06F, -0.24F);
+                poseStack.mulPose(Axis.YP.rotationDegrees(-42.0F));
+                poseStack.mulPose(Axis.XP.rotationDegrees(-24.0F));
+                poseStack.mulPose(Axis.ZP.rotationDegrees(152.0F));
+                poseStack.scale(0.82F, 0.82F, 0.82F);
             } else {
-                // Katana góc nhìn thứ 1 (đã sửa hướng thuận): cạnh lưỡi sắc phát sáng vàng hướng về trước-trái (phía tâm ngắm/mục tiêu)!
-                poseStack.translate(0.24F, -0.24F, -0.28F);
-                poseStack.mulPose(Axis.YP.rotationDegrees(38.0F));
-                poseStack.mulPose(Axis.XP.rotationDegrees(-16.0F));
-                poseStack.mulPose(Axis.ZP.rotationDegrees(14.0F));
-                poseStack.scale(0.98F, 0.94F, 0.98F);
+                // Katana góc nhìn thứ 1 (khớp 1:1 vùng viền đỏ người chơi khoanh!):
+                // Chuôi & tsuba neo gọn góc dưới-phải, lưỡi sắc phát sáng vàng vươn chéo lên bầu trời trên-phải!
+                poseStack.translate(0.12F, -0.04F, -0.12F);
+                poseStack.mulPose(Axis.ZP.rotationDegrees(29.0F));
+                poseStack.mulPose(Axis.XP.rotationDegrees(-14.0F));
+                poseStack.mulPose(Axis.YP.rotationDegrees(44.0F));
+                poseStack.scale(0.96F, 0.90F, 0.96F);
             }
         }
         poseStack.translate(-0.5F, -0.5F, -0.5F);

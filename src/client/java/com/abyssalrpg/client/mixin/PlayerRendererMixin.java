@@ -6,10 +6,12 @@ import com.abyssalrpg.client.anim.ExcaliburAnimManager;
 import com.abyssalrpg.client.anim.MuramasaAnimManager;
 import com.abyssalrpg.client.anim.SeaWeaponsAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
+import com.abyssalrpg.registry.ModItems;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -29,7 +31,22 @@ public abstract class PlayerRendererMixin {
     private void abyssalrpg$applyEpicFightRootTransforms(AbstractClientPlayer player, PoseStack poseStack,
                                                          float bob, float yBodyRot, float partialTick,
                                                          float scale, CallbackInfo ci) {
-        FullBodyPose pose = DualBladeAnimManager.evaluatePose(player, partialTick, 0.0F, bob);
+        ItemStack heldMain = player.getMainHandItem();
+        FullBodyPose pose = null;
+        if (heldMain.is(ModItems.MURAMASA)) {
+            pose = MuramasaAnimManager.evaluatePose(player, partialTick, 0.0F, bob);
+        } else if (heldMain.is(ModItems.SEA_TRIDENT)) {
+            pose = SeaWeaponsAnimManager.evaluatePose(player, partialTick, 0.0F, bob);
+        } else if (heldMain.is(ModItems.EXCALIBUR)) {
+            pose = ExcaliburAnimManager.evaluatePose(player, partialTick, 0.0F, bob);
+        } else if (heldMain.is(ModItems.TOGETSU)) {
+            pose = TogetsuAnimManager.evaluatePose(player, partialTick, 0.0F, bob);
+        } else if (heldMain.is(ModItems.DUAL_KNIFE)) {
+            pose = DualBladeAnimManager.evaluatePose(player, partialTick, 0.0F, bob);
+        }
+        if (pose == null) {
+            pose = DualBladeAnimManager.evaluatePose(player, partialTick, 0.0F, bob);
+        }
         if (pose == null) {
             pose = TogetsuAnimManager.evaluatePose(player, partialTick, 0.0F, bob);
         }

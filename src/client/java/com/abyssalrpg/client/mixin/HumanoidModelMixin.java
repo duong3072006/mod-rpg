@@ -6,6 +6,7 @@ import com.abyssalrpg.client.anim.ExcaliburAnimManager;
 import com.abyssalrpg.client.anim.MuramasaAnimManager;
 import com.abyssalrpg.client.anim.SeaWeaponsAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
+import com.abyssalrpg.registry.ModItems;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.PlayerModel;
@@ -13,6 +14,7 @@ import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -115,7 +117,23 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
             return;
         }
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
-        FullBodyPose pose = DualBladeAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
+        // Ưu tiên tuyệt đối vũ khí ĐANG CẦM trên tay phải -> chuyển giữa 5 vũ khí hotbar tức thì, 0 lọt dáng cũ!
+        ItemStack heldMain = player.getMainHandItem();
+        FullBodyPose pose = null;
+        if (heldMain.is(ModItems.MURAMASA)) {
+            pose = MuramasaAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
+        } else if (heldMain.is(ModItems.SEA_TRIDENT)) {
+            pose = SeaWeaponsAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
+        } else if (heldMain.is(ModItems.EXCALIBUR)) {
+            pose = ExcaliburAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
+        } else if (heldMain.is(ModItems.TOGETSU)) {
+            pose = TogetsuAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
+        } else if (heldMain.is(ModItems.DUAL_KNIFE)) {
+            pose = DualBladeAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
+        }
+        if (pose == null) {
+            pose = DualBladeAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
+        }
         if (pose == null) {
             pose = TogetsuAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
         }

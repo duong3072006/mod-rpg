@@ -51,10 +51,14 @@ public final class TogetsuAnimManager {
     private static final float SPRINT_BLEND_IN = 0.22F;
     private static final float SPRINT_BLEND_OUT = 0.18F;
 
-    // Bộ góc lưỡi CHÍNH THỨC dáng thủ Sunraku chĩa thẳng 2 lưỡi ra trước (-Z) với TogetsuBentArmRig:
-    // 0 clipping giáp/thân (rBlade=0 lBlade=0), cả 2 lưỡi cầm thuận hướng thẳng ngang về trước (không chúc xuống hay quay ngang!):
-    // - Tay phải (-0.58, -0.06, +0.30, z=-0.3) + khuỷu mềm (-0.60, -0.06, -0.08): lưỡi Đen chĩa thẳng trước!
-    // - Tay trái (-0.44, +0.08, -0.42, z=-0.3) + khuỷu mềm (-0.66, +0.06, +0.08): lưỡi Trắng chĩa thẳng trước!
+    // Bộ góc lưỡi CHÍNH THỨC dáng thủ Sunraku chĩa thẳng 2 lưỡi ra trước (-Z) với
+    // TogetsuBentArmRig:
+    // 0 clipping giáp/thân (rBlade=0 lBlade=0), cả 2 lưỡi cầm thuận hướng thẳng
+    // ngang về trước (không chúc xuống hay quay ngang!):
+    // - Tay phải (-0.58, -0.06, +0.30, z=-0.3) + khuỷu mềm (-0.60, -0.06, -0.08):
+    // lưỡi Đen chĩa thẳng trước!
+    // - Tay trái (-0.44, +0.08, -0.42, z=-0.3) + khuỷu mềm (-0.66, +0.06, +0.08):
+    // lưỡi Trắng chĩa thẳng trước!
     private static final float SUNRAKU_LEFT_PITCH = 45.38F;
     private static final float SUNRAKU_LEFT_ROLL = -3.87F;
     private static final float SUNRAKU_LEFT_YAW = -145.30F;
@@ -69,7 +73,8 @@ public final class TogetsuAnimManager {
     private static final float SUNRAKU_RIGHT_OFF_Y = -0.1003F;
     private static final float SUNRAKU_RIGHT_OFF_Z = -0.0682F;
 
-    // Hằng số gốc cho dáng thủ Sunraku chĩa thẳng ra trước TOGETSU_DUAL_IDLE + TogetsuBentArmRig
+    // Hằng số gốc cho dáng thủ Sunraku chĩa thẳng ra trước TOGETSU_DUAL_IDLE +
+    // TogetsuBentArmRig
     private static final float SUNRAKU_R_ARM_X = -0.58F;
     private static final float SUNRAKU_R_ARM_Y = -0.06F;
     private static final float SUNRAKU_R_ARM_Z = 0.30F;
@@ -601,22 +606,24 @@ public final class TogetsuAnimManager {
     private static void buildIdlePose(FullBodyPose out, float stance, float fused, float sprint,
             float walkSpeed, float walkPhase, float ageInTicks, boolean crouching) {
         out.reset();
-        float breathe = Mth.sin(ageInTicks * 0.10F);
-        // Nhịp thở sống động phân tầng: thân nâng/hạ chậm + 2 cẳng tay đong đưa trễ pha
-        // tự nhiên!
-        float torsoBreath = Mth.sin(ageInTicks * 0.07F) * 0.02F;
-        float forearmSway = Mth.sin(ageInTicks * 0.07F - 0.5F) * 0.03F;
+        // Quy chuẩn Chống Rung 0%: giữ thân & vũ khí đứng im chắc tay khi idle (0 nhịp lắc rung!)
+        float breathe = 0.0F;
+        float torsoBreath = 0.0F;
+        float forearmSway = 0.0F;
         float moveWeight = Mth.clamp(walkSpeed * 1.35F, 0.0F, 1.0F);
         float strideCos = Mth.cos(walkPhase * 0.6662F);
         float strideSway = Mth.sin(walkPhase * 0.6662F) * moveWeight;
         float torsoTwist = strideCos * 0.08F * walkSpeed;
-        float strideBob = Math.abs(strideCos) * 0.022F * moveWeight;
+        float strideBob = 0.0F;
         float idleLeg = Mth.clamp(1.0F - moveWeight * 1.20F, 0.0F, 1.0F) * (1.0F - sprint);
         float crouchScale = crouching ? 0.55F : 1.0F;
 
-        // A. Tư thế thủ Sunraku chĩa thẳng 2 lưỡi ra trước (-Z) (TOGETSU_DUAL_IDLE -> TOGETSU_DUAL_RUN):
-        // - Thân hơi nghiêng năng động (rootYaw=-14°, body.xRot=0.14f, body.yRot=-0.08f), đầu phản xoay nhìn thẳng 0°!
-        // - Thế chân tấn rộng linh hoạt (rightLeg=(-0.18, 0, +0.12), leftLeg=(+0.20, 0, -0.12))!
+        // A. Tư thế thủ Sunraku chĩa thẳng 2 lưỡi ra trước (-Z) (TOGETSU_DUAL_IDLE ->
+        // TOGETSU_DUAL_RUN):
+        // - Thân hơi nghiêng năng động (rootYaw=-14°, body.xRot=0.14f,
+        // body.yRot=-0.08f), đầu phản xoay nhìn thẳng 0°!
+        // - Thế chân tấn rộng linh hoạt (rightLeg=(-0.18, 0, +0.12), leftLeg=(+0.20, 0,
+        // -0.12))!
         float dRootYaw = -14.0F * (1.0F - moveWeight * 0.45F);
         float dRootPitch = (-1.2F * moveWeight) * crouchScale;
         float dRootY = (-0.055F * (1.0F - moveWeight * 0.45F) + torsoBreath * 0.30F + strideBob) * crouchScale;
@@ -751,7 +758,8 @@ public final class TogetsuAnimManager {
 
         out.armWeight = stance;
 
-        // Thế chân tấn Sunraku linh hoạt (rightLeg=(-0.18, 0, +0.12), leftLeg=(+0.20, 0, -0.12)),
+        // Thế chân tấn Sunraku linh hoạt (rightLeg=(-0.18, 0, +0.12), leftLeg=(+0.20,
+        // 0, -0.12)),
         // trả 100% bước đi/chạy tự nhiên khi di chuyển!
         out.leftLegX = Mth.lerp(fused, 0.20F, -0.12F);
         out.leftLegY = Mth.lerp(fused, 0.0F, 0.10F);
@@ -807,8 +815,10 @@ public final class TogetsuAnimManager {
 
         switch (move) {
             case DUAL_1 -> {
-                // Nhát 1 Song Đao: CHÉM XUỐNG TAY PHẢI (Lưỡi Đen: Phải-Trên -> Giữa -> Trái-Dưới,
-                // cạnh sắc dẫn hướng chém xuống mượt tự nhiên!), tay trái giữ lưỡi chĩa thẳng về trước!
+                // Nhát 1 Song Đao: CHÉM XUỐNG TAY PHẢI (Lưỡi Đen: Phải-Trên -> Giữa ->
+                // Trái-Dưới,
+                // cạnh sắc dẫn hướng chém xuống mượt tự nhiên!), tay trái giữ lưỡi chĩa thẳng
+                // về trước!
                 float s = snappyStrikeSweep(alpha, 0.16F, 0.56F);
                 float rootYaw = Mth.lerp(s, -22.0F, 22.0F) * (0.76F + 0.24F * runDamp);
                 out.rootYawDeg = rootYaw;
@@ -849,8 +859,10 @@ public final class TogetsuAnimManager {
                 out.leftLegZ = -0.14F;
             }
             case DUAL_2 -> {
-                // Nhát 2 Song Đao: CHÉM XUỐNG TAY TRÁI (Lưỡi Trắng: Trái-Trên -> Giữa -> Phải-Dưới,
-                // cạnh sắc dẫn hướng chém xuống mượt đối xứng!), tay phải giữ lưỡi chĩa thẳng về trước!
+                // Nhát 2 Song Đao: CHÉM XUỐNG TAY TRÁI (Lưỡi Trắng: Trái-Trên -> Giữa ->
+                // Phải-Dưới,
+                // cạnh sắc dẫn hướng chém xuống mượt đối xứng!), tay phải giữ lưỡi chĩa thẳng
+                // về trước!
                 float s = snappyStrikeSweep(alpha, 0.16F, 0.56F);
                 float rootYaw = Mth.lerp(s, 22.0F, -22.0F) * (0.76F + 0.24F * runDamp);
                 out.rootYawDeg = rootYaw;
@@ -891,8 +903,10 @@ public final class TogetsuAnimManager {
                 out.leftLegZ = -0.14F;
             }
             case DUAL_3 -> {
-                // Nhát 3 Song Đao: CHÉM HẤT LÊN TAY PHẢI (Lưỡi Đen: Trái-Dưới -> Giữa -> Phải-Trên,
-                // lật cạnh sắc hướng LÊN TRÊN đúng chiều chém móc!), tay trái giữ lưỡi hướng trước!
+                // Nhát 3 Song Đao: CHÉM HẤT LÊN TAY PHẢI (Lưỡi Đen: Trái-Dưới -> Giữa ->
+                // Phải-Trên,
+                // lật cạnh sắc hướng LÊN TRÊN đúng chiều chém móc!), tay trái giữ lưỡi hướng
+                // trước!
                 float s = snappyStrikeSweep(alpha, 0.16F, 0.58F);
                 float rootYaw = Mth.lerp(s, 20.0F, -22.0F) * (0.76F + 0.24F * runDamp);
                 out.rootYawDeg = rootYaw;
@@ -931,8 +945,10 @@ public final class TogetsuAnimManager {
                 out.leftLegZ = -0.14F;
             }
             case DUAL_4 -> {
-                // Nhát 4 Song Đao: CHÉM HẤT LÊN TAY TRÁI (Lưỡi Trắng: Phải-Dưới -> Giữa -> Trái-Trên
-                // + gắn Moon Mark, lật cạnh sắc hướng LÊN TRÊN đúng chiều chém móc!), tay phải giữ lưỡi hướng trước!
+                // Nhát 4 Song Đao: CHÉM HẤT LÊN TAY TRÁI (Lưỡi Trắng: Phải-Dưới -> Giữa ->
+                // Trái-Trên
+                // + gắn Moon Mark, lật cạnh sắc hướng LÊN TRÊN đúng chiều chém móc!), tay phải
+                // giữ lưỡi hướng trước!
                 float s = snappyStrikeSweep(alpha, 0.16F, 0.58F);
                 float rootYaw = Mth.lerp(s, -20.0F, 22.0F) * (0.76F + 0.24F * runDamp);
                 out.rootYawDeg = rootYaw;

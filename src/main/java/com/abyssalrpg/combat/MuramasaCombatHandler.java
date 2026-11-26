@@ -268,7 +268,6 @@ public final class MuramasaCombatHandler {
         Vec3 anchor = player.position().add(0.0, player.getBbHeight() * 0.62, 0.0);
         if (move == MuramasaMoveType.COMBO_3) {
             performArcSlash(player, level, move, awakened, null);
-            ModNetworking.sendShakeNearby(level, anchor, 14.0, landedHit ? 0.42F : 0.24F, 5);
         }
 
         ModNetworking.sendMuramasaSyncNearby(level, player.position(), new MuramasaSyncPayload(

@@ -239,9 +239,9 @@ public final class SeaWeaponsAnimManager {
     private static void buildIdlePose(FullBodyPose out, float stance, float sprint, float walkSpeed,
                                       float walkPhase, boolean crouching, boolean hasLantern, float ageInTicks) {
         out.reset();
-        // Nhịp thở & độ trễ cẳng tay lệch pha (secondary motion) tạo cảm giác cầm mềm mại, sống động
-        float breathe = Mth.sin(ageInTicks * 0.065F);
-        float forearmLag = Mth.sin(ageInTicks * 0.065F - 0.55F);
+        // Quy chuẩn Chống Rung 0%: giữ tay & vũ khí đứng im chắc tay khi idle (0 lắc nhịp thở!)
+        float breathe = 0.0F;
+        float forearmLag = 0.0F;
         float walkBlend = walkSpeed * (1.0F - sprint);
         float strideR = Mth.cos(walkPhase * 0.6662F + Mth.PI) * 0.17F * walkBlend;
         float strideL = Mth.cos(walkPhase * 0.6662F) * 0.14F * walkBlend;

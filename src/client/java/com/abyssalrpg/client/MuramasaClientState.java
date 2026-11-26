@@ -207,13 +207,13 @@ public final class MuramasaClientState {
 
             Vec3 base, tip;
             if (player.isSprinting() && !swinging) {
-                // Verified SimMuramasaPreview SPRINT anchor: base=(r=0.73, y=0.78, f=-0.40) -> tip=(r=1.24, y=0.46, f=-1.45)
-                base = player.position().add(rightX * 0.73 - fwdX * 0.40, 0.78, rightZ * 0.73 - fwdZ * 0.40);
-                tip = player.position().add(rightX * 1.24 - fwdX * 1.45, 0.46, rightZ * 1.24 - fwdZ * 1.45);
+                // Raised rock-solid sprint anchor matching MuramasaAnimManager (forward-outward carry, zero blade flip!)
+                base = player.position().add(rightX * 0.68 + fwdX * 0.24, 0.84, rightZ * 0.68 + fwdZ * 0.24);
+                tip = player.position().add(rightX * 1.06 + fwdX * 1.38, 0.86, rightZ * 1.06 + fwdZ * 1.38);
             } else {
-                // Verified SimMuramasaPreview IDLE anchor: base=(r=0.67, y=0.74, f=0.30) -> tip=(r=1.08, y=0.45, f=1.40)
-                base = player.position().add(rightX * 0.67 + fwdX * 0.30, 0.74, rightZ * 0.67 + fwdZ * 0.30);
-                tip = player.position().add(rightX * 1.08 + fwdX * 1.40, 0.45, rightZ * 1.08 + fwdZ * 1.40);
+                // Verified SimMuramasaV2Preview raised IDLE anchor (lưỡi nâng cao gọn gàng trên cỏ!)
+                base = player.position().add(rightX * 0.66 + fwdX * 0.28, 0.88, rightZ * 0.66 + fwdZ * 0.28);
+                tip = player.position().add(rightX * 1.04 + fwdX * 1.42, 0.94, rightZ * 1.04 + fwdZ * 1.42);
             }
 
             if (awakened || (tick % 4L == 0L)) {

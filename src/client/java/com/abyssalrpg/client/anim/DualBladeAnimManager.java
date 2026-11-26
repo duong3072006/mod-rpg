@@ -258,14 +258,14 @@ public final class DualBladeAnimManager {
         FullBodyPose pose = st.reusablePose;
         pose.reset();
 
-        // --- A. TƯ THẾ SÁT THỦ VẮT CHÉO 2 TẦNG RÕ RỆT (`Combat Stance` — GIỮ NGUYÊN 100% POSE F5!) ---
-        float breath = Mth.sin(ageInTicks * 0.11F) * 0.028F;
+        // --- A. TƯ THẾ SÁT THỦ VẮT CHÉO 2 TẦNG RÕ RỆT (`Combat Stance` — 0 RUNG LẮC IDLE!) ---
+        float breath = 0.0F;
         // Dùng thống nhất `walkAnimation.speed(partialTick)` để cả PlayerRenderer, HumanoidModel & ItemInHandLayer nhận cùng moveWeight!
         float walkSpeed = player.walkAnimation.speed(partialTick);
         float moveWeight = Mth.clamp(walkSpeed * 1.35F, 0.0F, 1.0F);
         float walkPhase = player.walkAnimation.position(partialTick);
         float strideSway = Mth.sin(walkPhase * 0.6662F) * moveWeight;
-        float strideBob = Math.abs(Mth.cos(walkPhase * 0.6662F)) * 0.024F * moveWeight;
+        float strideBob = 0.0F;
 
         // Đầu cúi gằm +18.3° (`+0.32 rad`) gườm mắt sát khí; thân hơi gù (`+0.20 rad`), xoay hông ~12.6° (`+0.22 rad`)!
         pose.rootPitchDeg = (-6.0F - moveWeight * 3.0F) * smoothStance;

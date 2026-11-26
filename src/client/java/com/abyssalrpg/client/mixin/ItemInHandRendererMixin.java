@@ -48,35 +48,102 @@ public abstract class ItemInHandRendererMixin {
     private float oMainHandHeight;
 
     @Shadow
+    private float offHandHeight;
+
+    @Shadow
+    private float oOffHandHeight;
+
+    @Shadow
     private ItemStack mainHandItem;
 
     @Unique
-    private boolean abyssalrpg$wasHoldingExcalibur;
+    private boolean abyssalrpg$wasHoldingCustomWeapon;
 
     @Unique
-    private boolean abyssalrpg$wasHoldingSeaTrident;
+    private boolean abyssalrpg$savedBob;
 
     @Unique
-    private boolean abyssalrpg$wasHoldingMuramasa;
+    private float abyssalrpg$savedXBobO;
+
+    @Unique
+    private float abyssalrpg$savedXBob;
+
+    @Unique
+    private float abyssalrpg$savedYBobO;
+
+    @Unique
+    private float abyssalrpg$savedYBob;
+
+    @Unique
+    private static boolean abyssalrpg$isCustomWeapon(ItemStack stack) {
+        return stack.is(ModItems.DUAL_KNIFE)
+                || stack.is(ModItems.TOGETSU)
+                || stack.is(ModItems.EXCALIBUR)
+                || stack.is(ModItems.SEA_TRIDENT)
+                || stack.is(ModItems.MURAMASA);
+    }
 
     @org.spongepowered.asm.mixin.injection.Inject(method = "tick", at = @At("HEAD"))
     private void abyssalrpg$captureExcaliburBeforeTick(org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
-        this.abyssalrpg$wasHoldingExcalibur = this.mainHandItem.is(ModItems.EXCALIBUR);
-        this.abyssalrpg$wasHoldingSeaTrident = this.mainHandItem.is(ModItems.SEA_TRIDENT);
-        this.abyssalrpg$wasHoldingMuramasa = this.mainHandItem.is(ModItems.MURAMASA);
+        this.abyssalrpg$wasHoldingCustomWeapon = abyssalrpg$isCustomWeapon(this.mainHandItem);
     }
 
     @org.spongepowered.asm.mixin.injection.Inject(method = "tick", at = @At("TAIL"))
     private void abyssalrpg$stabilizeExcaliburHandHeight(
             org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
         net.minecraft.client.player.LocalPlayer lp = net.minecraft.client.Minecraft.getInstance().player;
-        if (lp != null && ((this.abyssalrpg$wasHoldingExcalibur && lp.getMainHandItem().is(ModItems.EXCALIBUR))
-                || (this.abyssalrpg$wasHoldingSeaTrident && lp.getMainHandItem().is(ModItems.SEA_TRIDENT))
-                || (this.abyssalrpg$wasHoldingMuramasa && lp.getMainHandItem().is(ModItems.MURAMASA)))) {
-            // Giữ vũ khí ĐỨNG IM 100% khi đang cầm (không tụt tay hay giật khi cooldown/energy cập nhật!)
+        if (lp != null && this.abyssalrpg$wasHoldingCustomWeapon
+                && abyssalrpg$isCustomWeapon(lp.getMainHandItem())
+                && lp.getMainHandItem().getItem() == this.mainHandItem.getItem()) {
+            // QUY TẮC CHỐNG RUNG 0%: Khóa cứng cả tay phải & tay phụ (0 tụt tay, 0 giật khi cập nhật cooldown/NBT!)
             this.mainHandItem = lp.getMainHandItem();
             this.mainHandHeight = 1.0F;
             this.oMainHandHeight = 1.0F;
+            if (lp.getOffhandItem().isEmpty()) {
+                this.offHandHeight = 1.0F;
+                this.oOffHandHeight = 1.0F;
+            }
+        }
+    }
+
+    /**
+     * QUY TẮC CHỐNG RUNG 0%: Triệt tiêu hoàn toàn độ trễ lắc chuột (`xBob/yBob`) của Vanilla trong
+     * `renderHandsWithItems` khi đang cầm vũ khí custom -> vũ khí đứng im chắc tay khi xoay góc nhìn!
+     */
+    @org.spongepowered.asm.mixin.injection.Inject(method = "renderHandsWithItems", at = @At("HEAD"))
+    private void abyssalrpg$lockCameraSwayBeforeHands(
+            float partialTicks, PoseStack poseStack,
+            net.minecraft.client.renderer.MultiBufferSource.BufferSource buffer,
+            net.minecraft.client.player.LocalPlayer player, int combinedLight,
+            org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
+        this.abyssalrpg$savedBob = false;
+        if (player != null && abyssalrpg$isCustomWeapon(player.getMainHandItem())) {
+            this.abyssalrpg$savedXBobO = player.xBobO;
+            this.abyssalrpg$savedXBob = player.xBob;
+            this.abyssalrpg$savedYBobO = player.yBobO;
+            this.abyssalrpg$savedYBob = player.yBob;
+            float vx = player.getViewXRot(partialTicks);
+            float vy = player.getViewYRot(partialTicks);
+            player.xBobO = vx;
+            player.xBob = vx;
+            player.yBobO = vy;
+            player.yBob = vy;
+            this.abyssalrpg$savedBob = true;
+        }
+    }
+
+    @org.spongepowered.asm.mixin.injection.Inject(method = "renderHandsWithItems", at = @At("RETURN"))
+    private void abyssalrpg$restoreCameraSwayAfterHands(
+            float partialTicks, PoseStack poseStack,
+            net.minecraft.client.renderer.MultiBufferSource.BufferSource buffer,
+            net.minecraft.client.player.LocalPlayer player, int combinedLight,
+            org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
+        if (this.abyssalrpg$savedBob && player != null) {
+            player.xBobO = this.abyssalrpg$savedXBobO;
+            player.xBob = this.abyssalrpg$savedXBob;
+            player.yBobO = this.abyssalrpg$savedYBobO;
+            player.yBob = this.abyssalrpg$savedYBob;
+            this.abyssalrpg$savedBob = false;
         }
     }
 
@@ -208,7 +275,8 @@ public abstract class ItemInHandRendererMixin {
                     poseStack.translate(-0.04F * sprint, -0.04F * sprint, 0.04F * sprint);
                 }
             }
-            float effectiveSwing = (alpha > 0.001F) ? 0.0F : (isOffhand ? 0.0F : swingProgress);
+            // Tắt hoàn toàn vanilla swingProgress & equip bob cho Muramasa -> 0 giật khung cuối đòn chém!
+            float effectiveSwing = 0.0F;
             float finalEquip = (alpha > 0.001F) ? 0.0F : effectiveEquip;
             MuramasaGeoRenderer.setCurrentRenderEntityId(player.getId());
             try {
@@ -277,11 +345,10 @@ public abstract class ItemInHandRendererMixin {
                         // Giơ Đinh Ba tay phải THẲNG LÊN TRỜI triệu hồi 5 Đinh Ba 3D rồi vung nhẹ chỉ lệnh!
                         float raise = DualBladeAnimState.easeOutCubic(Mth.clamp(alpha / 0.24F, 0.0F, 1.0F));
                         float cmd = DualBladeAnimState.easeOutQuart(Mth.clamp((alpha - 0.62F) / 0.20F, 0.0F, 1.0F));
-                        float pulse = (alpha > 0.20F && alpha < 0.64F) ? (Mth.sin(alpha * 42.0F) * 0.015F) : 0.0F;
                         if (!isOffhand) {
                             poseStack.translate(
                                     Mth.lerp(cmd, -0.16F * raise, -0.22F) * ret,
-                                    Mth.lerp(cmd, 0.44F * raise + pulse, -0.10F) * ret,
+                                    Mth.lerp(cmd, 0.44F * raise, -0.10F) * ret,
                                     Mth.lerp(cmd, -0.16F * raise, -0.44F) * ret);
                             poseStack.mulPose(Axis.ZP.rotationDegrees(Mth.lerp(cmd, -22.0F * raise, -8.0F) * ret));
                             poseStack.mulPose(Axis.XP.rotationDegrees(Mth.lerp(cmd, 24.0F * raise, -44.0F) * ret));
@@ -298,11 +365,12 @@ public abstract class ItemInHandRendererMixin {
                     poseStack.translate(-0.05F * sprint, -0.04F * sprint, -0.04F * sprint);
                 }
             }
-            float effectiveSwing = (alpha > 0.001F) ? 0.0F : (isOffhand ? 0.0F : swingProgress);
+            float effectiveSwing = 0.0F;
+            float finalEquip = (alpha > 0.001F) ? 0.0F : effectiveEquip;
             SeaTridentGeoRenderer.setCurrentRenderEntityId(player.getId());
             try {
                 original.call(instance, player, partialTicks, pitch, hand, effectiveSwing, effectiveStack,
-                        effectiveEquip, poseStack, buffer, combinedLight);
+                        finalEquip, poseStack, buffer, combinedLight);
             } finally {
                 SeaTridentGeoRenderer.setCurrentRenderEntityId(-1);
                 poseStack.popPose();
@@ -389,7 +457,7 @@ public abstract class ItemInHandRendererMixin {
                 poseStack.mulPose(Axis.XP.rotationDegrees(14.0F * sprint));
                 poseStack.mulPose(Axis.ZP.rotationDegrees(-10.0F * sprint));
             }
-            float effectiveSwing = (alpha > 0.001F) ? 0.0F : swingProgress;
+            float effectiveSwing = 0.0F;
             float effectiveEquip = (alpha > 0.001F || ExcaliburAnimManager.isChanneling(player.getId())) ? 0.0F
                     : equippedProgress;
             ExcaliburGeoRenderer.setCurrentRenderEntityId(player.getId());
@@ -452,11 +520,12 @@ public abstract class ItemInHandRendererMixin {
                     abyssalrpg$applyFirstPersonNarutoSprintTuck(poseStack, isOffhand, sprint);
                 }
             }
-            float effectiveSwing = (alpha > 0.001F) ? 0.0F : (isOffhand ? 0.0F : swingProgress);
+            float effectiveSwing = 0.0F;
+            float finalEquip = (alpha > 0.001F) ? 0.0F : effectiveEquip;
             TogetsuGeoRenderer.setCurrentRenderEntityId(player.getId());
             try {
                 original.call(instance, player, partialTicks, pitch, hand, effectiveSwing, effectiveStack,
-                        effectiveEquip, poseStack, buffer, combinedLight);
+                        finalEquip, poseStack, buffer, combinedLight);
             } finally {
                 TogetsuGeoRenderer.setCurrentRenderEntityId(-1);
                 poseStack.popPose();
@@ -490,10 +559,11 @@ public abstract class ItemInHandRendererMixin {
             abyssalrpg$applyFirstPersonNarutoSprintTuck(poseStack, isOffhand, narutoSprint);
         }
         // Khi đứng yên / đi bộ thường: giữ nguyên vị trí cầm kiếm cơ bản Vanilla gọn
-        // gàng ở 2 góc dưới!
-        float effectiveSwing = (comboAlpha > 0.001F) ? 0.0F : (isOffhand ? 0.0F : swingProgress);
+        // gàng ở 2 góc dưới (0 vanilla swing snap, 0 rung giật)!
+        float effectiveSwing = 0.0F;
+        float finalEquip = (comboAlpha > 0.001F) ? 0.0F : effectiveEquip;
         original.call(instance, player, partialTicks, pitch, hand, effectiveSwing, effectiveStack,
-                effectiveEquip, poseStack, buffer, combinedLight);
+                finalEquip, poseStack, buffer, combinedLight);
         poseStack.popPose();
     }
 

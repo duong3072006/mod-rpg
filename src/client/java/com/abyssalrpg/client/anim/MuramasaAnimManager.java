@@ -22,12 +22,13 @@ import java.util.Map;
  * - **Iaijutsu Blood-Oath Draw (RMB):** Thu người kéo katana ngang vỏ kiếm bên hông trái -> bung rút kiếm chém rộng 180°!
  */
 public final class MuramasaAnimManager {
-    // Verified 1:1 Euler constants solved by SimMuramasaPreview (exact Minecraft HumanoidModel + ItemInHandLayer math!)
-    private static final float IDLE_RP = -15.07F, IDLE_RR = -17.12F, IDLE_RY = 12.81F;
+    // Verified 1:1 Euler constants solved by SimMuramasaV2Preview (raised poise off grass, zero clipping, zero jitter!)
+    // Sprint keeps the exact raised forward-outward orientation (no 155° flip or gimbal shake when running/stopping!)
+    private static final float IDLE_RP = -6.00F, IDLE_RR = -20.00F, IDLE_RY = 14.00F;
     private static final float IDLE_LP = -145.69F, IDLE_LR = 1.97F, IDLE_LY = 15.57F;
 
-    private static final float SPRINT_RP = -128.24F, SPRINT_RR = -11.37F, SPRINT_RY = 169.87F;
-    private static final float SPRINT_LP = -144.28F, SPRINT_LR = 5.57F, SPRINT_LY = 18.94F;
+    private static final float SPRINT_RP = -10.00F, SPRINT_RR = -20.00F, SPRINT_RY = 14.00F;
+    private static final float SPRINT_LP = IDLE_LP, SPRINT_LR = IDLE_LR, SPRINT_LY = IDLE_LY;
 
     private static final class MuramasaState {
         float prevStance = 0.0F;
@@ -140,7 +141,13 @@ public final class MuramasaAnimManager {
             st.prevSprint = st.sprint;
 
             float targetStance = (holding && !player.isSleeping() && !player.isSwimming() && !player.isFallFlying()) ? 1.0F : 0.0F;
-            st.stance = Mth.clamp(st.stance + (targetStance > st.stance ? 0.24F : -0.22F), 0.0F, 1.0F);
+            if (targetStance >= 0.99F) {
+                // Khóa cứng stance = 1.0 ngay khi cầm Muramasa -> 0 lọt dao động vung tay vanilla ở khung đầu!
+                st.stance = 1.0F;
+                st.prevStance = 1.0F;
+            } else {
+                st.stance = Mth.clamp(st.stance - 0.25F, 0.0F, 1.0F);
+            }
 
             boolean movingFast = player.walkAnimation.speed() > 0.14F
                     || player.getDeltaMovement().horizontalDistanceSqr() > 0.004;
@@ -177,7 +184,14 @@ public final class MuramasaAnimManager {
     public static FullBodyPose evaluatePose(Player player, float partialTick, float limbSwingAmount, float ageInTicks) {
         MuramasaState st = STATES.get(player.getId());
         if (st == null) {
-            return null;
+            if (!isHoldingMuramasa(player) || player.isSleeping() || player.isSwimming() || player.isFallFlying()) {
+                return null;
+            }
+            st = new MuramasaState();
+            st.prevStance = 1.0F;
+            st.stance = 1.0F;
+            st.lastSeenTick = clientTickCounter;
+            STATES.put(player.getId(), st);
         }
         float stance = Mth.clamp(Mth.lerp(partialTick, st.prevStance, st.stance), 0.0F, 1.0F);
         if (stance <= 0.002F && !st.active) {
@@ -224,9 +238,9 @@ public final class MuramasaAnimManager {
         p.headAddX = -0.03F;
         p.headAddY = -0.10F;
 
-        p.rightArmX = 0.10F;
-        p.rightArmY = -0.06F;
-        p.rightArmZ = 0.34F;
+        p.rightArmX = -0.04F;
+        p.rightArmY = -0.08F;
+        p.rightArmZ = 0.36F;
 
         p.leftArmX = 0.16F;
         p.leftArmY = 0.10F;
@@ -245,21 +259,21 @@ public final class MuramasaAnimManager {
         p.leftBladeYawDeg = IDLE_LY;
     }
 
-    /** 100% Rock-solid Samurai Dash Sprint — ZERO arm/sword shake, ZERO body clipping! */
+    /** 100% Rock-solid Samurai Dash Sprint — ZERO 155° blade flip, ZERO arm/sword shake, ZERO body clipping! */
     private static void fillSprintPose(FullBodyPose p) {
         p.reset();
-        p.bodyX = 0.24F;
-        p.bodyY = 0.08F;
-        p.headAddX = -0.20F;
-        p.headAddY = -0.06F;
+        p.bodyX = 0.14F;
+        p.bodyY = 0.12F;
+        p.headAddX = -0.11F;
+        p.headAddY = -0.09F;
 
-        p.rightArmX = 0.48F;
-        p.rightArmY = -0.10F;
-        p.rightArmZ = 0.40F;
+        p.rightArmX = 0.04F;
+        p.rightArmY = -0.08F;
+        p.rightArmZ = 0.38F;
 
-        p.leftArmX = 0.28F;
+        p.leftArmX = 0.20F;
         p.leftArmY = 0.10F;
-        p.leftArmZ = -0.38F;
+        p.leftArmZ = -0.36F;
 
         p.rightBladePitchDeg = SPRINT_RP;
         p.rightBladeRollDeg = SPRINT_RR;
@@ -302,7 +316,7 @@ public final class MuramasaAnimManager {
                 p.leftBladePitchDeg = rotLerp3(s, -144.76F, -141.78F, -137.47F);
                 p.leftBladeRollDeg = rotLerp3(s, 2.50F, 4.53F, 8.68F);
                 p.leftBladeYawDeg = rotLerp3(s, 14.55F, 15.97F, 18.31F);
-                p.firstPersonCameraRollDeg = Mth.sin(s * Mth.PI) * -2.0F;
+                p.firstPersonCameraRollDeg = 0.0F;
             }
             case COMBO_2 -> {
                 // Gyaku-Kesa (Trái-Dưới -> Giữa -> Phải-Trên)
@@ -331,7 +345,7 @@ public final class MuramasaAnimManager {
                 p.leftBladePitchDeg = rotLerp3(s, -138.92F, -142.25F, -145.19F);
                 p.leftBladeRollDeg = rotLerp3(s, 8.10F, 3.06F, 0.02F);
                 p.leftBladeYawDeg = rotLerp3(s, 16.78F, 16.06F, 14.09F);
-                p.firstPersonCameraRollDeg = Mth.sin(s * Mth.PI) * +2.2F;
+                p.firstPersonCameraRollDeg = 0.0F;
             }
             case COMBO_3 -> {
                 // Demon Cross-Cleave Finisher (Quét ngang tia chớp cực rộng Phải -> Trái)

@@ -727,14 +727,14 @@ public class BuildMuramasaAssets {
                       "scale": [0.88, 0.84, 0.88]
                     },
                     "firstperson_righthand": {
-                      "rotation": [-10, 12, 8],
-                      "translation": [1.4, 0.4, -0.4],
-                      "scale": [0.88, 0.84, 0.88]
+                      "rotation": [0, 0, 0],
+                      "translation": [4.6, -1.2, -1.4],
+                      "scale": [0.90, 0.86, 0.90]
                     },
                     "firstperson_lefthand": {
-                      "rotation": [-10, 12, 8],
-                      "translation": [1.4, 0.4, -0.4],
-                      "scale": [0.88, 0.84, 0.88]
+                      "rotation": [0, 0, 0],
+                      "translation": [1.0, 1.6, -0.4],
+                      "scale": [0.84, 0.84, 0.84]
                     },
                     "ground": {
                       "rotation": [0, 0, 0],
