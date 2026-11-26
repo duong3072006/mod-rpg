@@ -3,6 +3,7 @@ package com.abyssalrpg.client.mixin;
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
 import com.abyssalrpg.client.anim.DualBladeAnimState.FullBodyPose;
 import com.abyssalrpg.client.anim.ExcaliburAnimManager;
+import com.abyssalrpg.client.anim.MuramasaAnimManager;
 import com.abyssalrpg.client.anim.SeaWeaponsAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -37,6 +38,9 @@ public abstract class PlayerRendererMixin {
         }
         if (pose == null) {
             pose = SeaWeaponsAnimManager.evaluatePose(player, partialTick, 0.0F, bob);
+        }
+        if (pose == null) {
+            pose = MuramasaAnimManager.evaluatePose(player, partialTick, 0.0F, bob);
         }
         if (pose == null) {
             return;

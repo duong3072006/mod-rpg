@@ -6,6 +6,7 @@ import com.abyssalrpg.combat.BossCombatEnhancer;
 import com.abyssalrpg.combat.CerberusArmorHandler;
 import com.abyssalrpg.combat.CinderDragonArmorHandler;
 import com.abyssalrpg.combat.DualBladeCombatHandler;
+import com.abyssalrpg.combat.MuramasaCombatHandler;
 import com.abyssalrpg.combat.SpiritHydraArmorHandler;
 import com.abyssalrpg.combat.TogetsuCombatHandler;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
@@ -59,7 +60,8 @@ public abstract class LivingEntityMixin {
                                                         CallbackInfoReturnable<Boolean> cir) {
         LivingEntity self = (LivingEntity) (Object) this;
         if (!self.level().isClientSide && (DualBladeCombatHandler.isDashInvulnerable(self, source)
-                || TogetsuCombatHandler.isPinInvulnerable(self, source))) {
+                || TogetsuCombatHandler.isPinInvulnerable(self, source)
+                || MuramasaCombatHandler.isDashInvulnerable(self, source))) {
             cir.setReturnValue(false);
         }
     }
@@ -79,7 +81,9 @@ public abstract class LivingEntityMixin {
                 Math.max(
                         DualBladeCombatHandler.getActiveArmorPierceFraction(self, source),
                         TogetsuCombatHandler.getActiveArmorPierceFraction(self, source)),
-                BossCombatEnhancer.getBossArmorPierceFraction(self, source));
+                Math.max(
+                        MuramasaCombatHandler.getActiveArmorPierceFraction(self, source),
+                        BossCombatEnhancer.getBossArmorPierceFraction(self, source)));
         float current = cir.getReturnValueF();
         if (pierce > 0.0f) {
             float armor = self.getArmorValue();

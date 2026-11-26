@@ -34,6 +34,9 @@ public final class ModCreativeTab {
                         if (ModItems.SEA_TRIDENT != null) {
                             output.accept(ModItems.SEA_TRIDENT);
                         }
+                        if (ModItems.MURAMASA != null) {
+                            output.accept(ModItems.MURAMASA);
+                        }
                         if (ModItems.NIGHTMARE_HELMET != null) {
                             output.accept(ModItems.NIGHTMARE_HELMET);
                             output.accept(ModItems.NIGHTMARE_CHESTPLATE);

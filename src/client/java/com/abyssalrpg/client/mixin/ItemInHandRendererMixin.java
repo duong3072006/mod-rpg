@@ -3,13 +3,16 @@ package com.abyssalrpg.client.mixin;
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
 import com.abyssalrpg.client.anim.DualBladeAnimState;
 import com.abyssalrpg.client.anim.ExcaliburAnimManager;
+import com.abyssalrpg.client.anim.MuramasaAnimManager;
 import com.abyssalrpg.client.anim.SeaWeaponsAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
 import com.abyssalrpg.client.renderer.ExcaliburGeoRenderer;
+import com.abyssalrpg.client.renderer.MuramasaGeoRenderer;
 import com.abyssalrpg.client.renderer.SeaTridentGeoRenderer;
 import com.abyssalrpg.client.renderer.TogetsuGeoRenderer;
 import com.abyssalrpg.combat.DualBladeMoveType;
 import com.abyssalrpg.combat.ExcaliburMoveType;
+import com.abyssalrpg.combat.MuramasaMoveType;
 import com.abyssalrpg.combat.SeaWeaponsMoveType;
 import com.abyssalrpg.combat.TogetsuMoveType;
 import com.abyssalrpg.registry.ModItems;
@@ -53,10 +56,14 @@ public abstract class ItemInHandRendererMixin {
     @Unique
     private boolean abyssalrpg$wasHoldingSeaTrident;
 
+    @Unique
+    private boolean abyssalrpg$wasHoldingMuramasa;
+
     @org.spongepowered.asm.mixin.injection.Inject(method = "tick", at = @At("HEAD"))
     private void abyssalrpg$captureExcaliburBeforeTick(org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
         this.abyssalrpg$wasHoldingExcalibur = this.mainHandItem.is(ModItems.EXCALIBUR);
         this.abyssalrpg$wasHoldingSeaTrident = this.mainHandItem.is(ModItems.SEA_TRIDENT);
+        this.abyssalrpg$wasHoldingMuramasa = this.mainHandItem.is(ModItems.MURAMASA);
     }
 
     @org.spongepowered.asm.mixin.injection.Inject(method = "tick", at = @At("TAIL"))
@@ -64,7 +71,8 @@ public abstract class ItemInHandRendererMixin {
             org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
         net.minecraft.client.player.LocalPlayer lp = net.minecraft.client.Minecraft.getInstance().player;
         if (lp != null && ((this.abyssalrpg$wasHoldingExcalibur && lp.getMainHandItem().is(ModItems.EXCALIBUR))
-                || (this.abyssalrpg$wasHoldingSeaTrident && lp.getMainHandItem().is(ModItems.SEA_TRIDENT)))) {
+                || (this.abyssalrpg$wasHoldingSeaTrident && lp.getMainHandItem().is(ModItems.SEA_TRIDENT))
+                || (this.abyssalrpg$wasHoldingMuramasa && lp.getMainHandItem().is(ModItems.MURAMASA)))) {
             // Giữ vũ khí ĐỨNG IM 100% khi đang cầm (không tụt tay hay giật khi cooldown/energy cập nhật!)
             this.mainHandItem = lp.getMainHandItem();
             this.mainHandHeight = 1.0F;
@@ -92,6 +100,126 @@ public abstract class ItemInHandRendererMixin {
         boolean excaliburActive = (hand == InteractionHand.MAIN_HAND) && stack.is(ModItems.EXCALIBUR);
         boolean seaActive = mainStack.is(ModItems.SEA_TRIDENT)
                 && (hand == InteractionHand.MAIN_HAND || player.getOffhandItem().isEmpty());
+        boolean muramasaActive = mainStack.is(ModItems.MURAMASA)
+                && (hand == InteractionHand.MAIN_HAND || player.getOffhandItem().isEmpty());
+
+        if (muramasaActive) {
+            boolean isOffhand = (hand == InteractionHand.OFF_HAND);
+            ItemStack effectiveStack = isOffhand ? mainStack : stack;
+            float effectiveEquip = isOffhand
+                    ? (1.0F - Mth.lerp(partialTicks, this.oMainHandHeight, this.mainHandHeight))
+                    : equippedProgress;
+            float alpha = MuramasaAnimManager.getActionProgress(player.getId(), partialTicks);
+            MuramasaMoveType move = MuramasaAnimManager.getMoveType(player.getId());
+            float sprint = MuramasaAnimManager.getSprintBlend(player.getId(), partialTicks);
+
+            poseStack.pushPose();
+            if (alpha > 0.001F) {
+                float ret = (alpha > 0.78F) ? (1.0F - DualBladeAnimState.easeInOutCubic((alpha - 0.78F) / 0.22F)) : 1.0F;
+                switch (move) {
+                    case COMBO_1 -> {
+                        if (!isOffhand) {
+                            float rise = DualBladeAnimState.easeOutCubic(Mth.clamp(alpha / 0.16F, 0.0F, 1.0F));
+                            float sweep = DualBladeAnimState.easeInOutCubic(Mth.clamp((alpha - 0.12F) / 0.44F, 0.0F, 1.0F));
+                            poseStack.translate(
+                                    Mth.lerp(sweep, 0.24F * rise, -0.74F) * ret,
+                                    Mth.lerp(sweep, 0.24F * rise, -0.26F) * ret,
+                                    Mth.lerp(sweep, -0.06F * rise, -0.34F) * ret);
+                            poseStack.mulPose(Axis.YP.rotationDegrees(Mth.lerp(sweep, -28.0F * rise, 80.0F) * ret));
+                            poseStack.mulPose(Axis.XP.rotationDegrees(Mth.lerp(sweep, 16.0F * rise, -64.0F) * ret));
+                            poseStack.mulPose(Axis.ZP.rotationDegrees(Mth.lerp(sweep, -18.0F * rise, 52.0F) * ret));
+                        } else {
+                            poseStack.translate(-0.08F * ret, -0.05F * ret, 0.08F * ret);
+                        }
+                    }
+                    case COMBO_2 -> {
+                        if (!isOffhand) {
+                            float enter = DualBladeAnimState.easeOutCubic(Mth.clamp(alpha / 0.10F, 0.0F, 1.0F));
+                            float sweep = DualBladeAnimState.easeInOutCubic(Mth.clamp((alpha - 0.08F) / 0.46F, 0.0F, 1.0F));
+                            float startScale = Mth.lerp(enter, 0.85F, 1.0F);
+                            poseStack.translate(
+                                    Mth.lerp(sweep, -0.74F * startScale, 0.38F) * ret,
+                                    Mth.lerp(sweep, -0.26F * startScale, 0.22F) * ret,
+                                    Mth.lerp(sweep, -0.34F * startScale, -0.24F) * ret);
+                            poseStack.mulPose(Axis.YP.rotationDegrees(Mth.lerp(sweep, 80.0F * startScale, -54.0F) * ret));
+                            poseStack.mulPose(Axis.XP.rotationDegrees(Mth.lerp(sweep, -64.0F * startScale, -22.0F) * ret));
+                            poseStack.mulPose(Axis.ZP.rotationDegrees(Mth.lerp(sweep, 52.0F * startScale, -62.0F) * ret));
+                        } else {
+                            poseStack.translate(-0.06F * ret, -0.04F * ret, 0.06F * ret);
+                        }
+                    }
+                    case COMBO_3 -> {
+                        if (!isOffhand) {
+                            float wind = DualBladeAnimState.easeOutCubic(Mth.clamp(alpha / 0.16F, 0.0F, 1.0F));
+                            float sweep = DualBladeAnimState.easeOutQuart(Mth.clamp((alpha - 0.14F) / 0.44F, 0.0F, 1.0F));
+                            poseStack.translate(
+                                    Mth.lerp(sweep, 0.34F * wind, -0.82F) * ret,
+                                    Mth.lerp(sweep, 0.06F * wind, -0.10F) * ret,
+                                    Mth.lerp(sweep, -0.10F * wind, -0.38F) * ret);
+                            poseStack.mulPose(Axis.YP.rotationDegrees(Mth.lerp(sweep, -46.0F * wind, 92.0F) * ret));
+                            poseStack.mulPose(Axis.XP.rotationDegrees(-74.0F * ret));
+                            poseStack.mulPose(Axis.ZP.rotationDegrees(Mth.lerp(sweep, -36.0F * wind, 78.0F) * ret));
+                        } else {
+                            poseStack.translate(-0.10F * ret, -0.08F * ret, 0.10F * ret);
+                        }
+                    }
+                    case IAIJUTSU_DRAW -> {
+                        if (alpha < 0.30F) {
+                            float c = DualBladeAnimState.easeOutCubic(alpha / 0.30F);
+                            if (!isOffhand) {
+                                poseStack.translate(-0.56F * c, -0.18F * c, -0.18F * c);
+                                poseStack.mulPose(Axis.YP.rotationDegrees(62.0F * c));
+                                poseStack.mulPose(Axis.XP.rotationDegrees(-46.0F * c));
+                                poseStack.mulPose(Axis.ZP.rotationDegrees(48.0F * c));
+                            } else {
+                                poseStack.translate(0.24F * c, 0.06F * c, -0.18F * c);
+                                poseStack.mulPose(Axis.YP.rotationDegrees(-24.0F * c));
+                            }
+                        } else {
+                            float draw = DualBladeAnimState.easeOutQuart(Mth.clamp((alpha - 0.30F) / 0.26F, 0.0F, 1.0F));
+                            if (!isOffhand) {
+                                poseStack.translate(
+                                        Mth.lerp(draw, -0.68F, 0.44F) * ret,
+                                        Mth.lerp(draw, -0.18F, 0.08F) * ret,
+                                        Mth.lerp(draw, -0.18F, -0.36F) * ret);
+                                poseStack.mulPose(Axis.YP.rotationDegrees(Mth.lerp(draw, 72.0F, -78.0F) * ret));
+                                poseStack.mulPose(Axis.XP.rotationDegrees(Mth.lerp(draw, -46.0F, -64.0F) * ret));
+                                poseStack.mulPose(Axis.ZP.rotationDegrees(Mth.lerp(draw, 48.0F, -76.0F) * ret));
+                            } else {
+                                poseStack.translate(
+                                        Mth.lerp(draw, 0.24F, -0.12F) * ret,
+                                        Mth.lerp(draw, 0.06F, -0.10F) * ret,
+                                        Mth.lerp(draw, -0.18F, 0.12F) * ret);
+                            }
+                        }
+                    }
+                    case BLOOD_OATH_AWAKEN -> {
+                        float b = DualBladeAnimState.easeOutQuart(Mth.clamp(alpha / 0.38F, 0.0F, 1.0F));
+                        float side = isOffhand ? -1.0F : 1.0F;
+                        poseStack.translate(side * 0.18F * b * ret, -0.10F * b * ret, -0.08F * ret);
+                        poseStack.mulPose(Axis.ZP.rotationDegrees(side * -22.0F * b * ret));
+                    }
+                }
+            } else if (sprint > 0.001F) {
+                if (!isOffhand) {
+                    poseStack.translate(0.06F * sprint, -0.06F * sprint, 0.06F * sprint);
+                    poseStack.mulPose(Axis.XP.rotationDegrees(14.0F * sprint));
+                } else {
+                    poseStack.translate(-0.04F * sprint, -0.04F * sprint, 0.04F * sprint);
+                }
+            }
+            float effectiveSwing = (alpha > 0.001F) ? 0.0F : (isOffhand ? 0.0F : swingProgress);
+            float finalEquip = (alpha > 0.001F) ? 0.0F : effectiveEquip;
+            MuramasaGeoRenderer.setCurrentRenderEntityId(player.getId());
+            try {
+                original.call(instance, player, partialTicks, pitch, hand, effectiveSwing, effectiveStack,
+                        finalEquip, poseStack, buffer, combinedLight);
+            } finally {
+                MuramasaGeoRenderer.setCurrentRenderEntityId(-1);
+                poseStack.popPose();
+            }
+            return;
+        }
 
         if (seaActive) {
             boolean isOffhand = (hand == InteractionHand.OFF_HAND);

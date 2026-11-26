@@ -242,5 +242,19 @@
   "message.abyssalrpg.sea_trident.whirlpool_cd": "5-Trident Sky Volley recharging (%ss)",
   "message.abyssalrpg.sea_trident.cast_wave": "Sea Lantern: COLOSSAL TSUNAMI!",
   "message.abyssalrpg.sea_trident.cast_whirlpool": "Sea Trident: SKYWARD 5-TRIDENT VOLLEY!",
-  "message.abyssalrpg.sea_trident.maelstrom_synergy": "ABYSSAL CATACLYSM! Tsunami × 5-Trident Detonation!"
+  "message.abyssalrpg.sea_trident.maelstrom_synergy": "ABYSSAL CATACLYSM! Tsunami × 5-Trident Detonation!",
+  "item.abyssalrpg.muramasa": "Muramasa Katana",
+  "item.abyssalrpg.muramasa.awakened": "Muramasa Katana — Blood Oath Awakened",
+  "tooltip.abyssalrpg.muramasa.subtitle": "Cursed Blade 村正 — Dark Damascus Steel · Glowing Yellow Edge · Crimson Dragon Scabbard",
+  "tooltip.abyssalrpg.muramasa.subtitle_awakened": "Blood Oath Active — Demon Blade Unleashed (+35% DMG · 15% Lifesteal)",
+  "tooltip.abyssalrpg.muramasa.combo": "[LMB] 3-Hit Katana Combo: Kesagiri · Gyaku-Kesa · Demon Cross-Cleave (+1.0 Reach)",
+  "tooltip.abyssalrpg.muramasa.iaijutsu": "[RMB] Iaijutsu Blood-Oath Draw (5.5s CD): 14-Block Wave (2.2× DMG, 35% Pierce) + 10s White-Screen Flash Blindness!",
+  "tooltip.abyssalrpg.muramasa.blood_oath": "[%s] / [Shift+RMB] Demon Blood Oath (12s · 28s CD): Sacrifice 2 Hearts -> +35%% DMG, Speed II & 15%% Lifesteal",
+  "tooltip.abyssalrpg.muramasa.scabbard_hint": "Keep your offhand empty to hold the Crimson Dragon Scabbard (Saya) in your left hand!",
+  "message.abyssalrpg.muramasa.iai_cd": "Iaijutsu Draw recharging (%ss)",
+  "message.abyssalrpg.muramasa.cast_iai": "村正 · IAIJUTSU DRAW — 10s WHITE-FLASH BLINDNESS!",
+  "message.abyssalrpg.muramasa.oath_active": "Blood Oath already active (%ss remaining)",
+  "message.abyssalrpg.muramasa.oath_cd": "Blood Oath recharging (%ss)",
+  "message.abyssalrpg.muramasa.oath_awaken": "村正 · BLOOD OATH AWAKENED (12s)! +35% DMG · Speed II · 15% Lifesteal!",
+  "message.abyssalrpg.muramasa.oath_end": "Muramasa's Blood Oath has subsided."
 }

@@ -2,6 +2,7 @@ package com.abyssalrpg.mixin;
 
 import com.abyssalrpg.combat.DualBladeCombatHandler;
 import com.abyssalrpg.combat.ExcaliburCombatHandler;
+import com.abyssalrpg.combat.MuramasaCombatHandler;
 import com.abyssalrpg.combat.SeaWeaponsCombatHandler;
 import com.abyssalrpg.combat.TogetsuCombatHandler;
 import net.minecraft.world.entity.Entity;
@@ -30,6 +31,9 @@ public abstract class PlayerMixin {
     @Unique
     private SeaWeaponsCombatHandler.ActiveHitContext abyssalrpg$activeSeaHit;
 
+    @Unique
+    private MuramasaCombatHandler.ActiveHitContext abyssalrpg$activeMuramasaHit;
+
     @Inject(method = "attack", at = @At("HEAD"))
     private void abyssalrpg$beginDualBladeAttack(Entity target, CallbackInfo ci) {
         Player self = (Player) (Object) this;
@@ -37,6 +41,7 @@ public abstract class PlayerMixin {
         this.abyssalrpg$activeTogetsuHit = TogetsuCombatHandler.beginPlayerAttack(self, target);
         this.abyssalrpg$activeExcaliburHit = ExcaliburCombatHandler.beginPlayerAttack(self, target);
         this.abyssalrpg$activeSeaHit = SeaWeaponsCombatHandler.beginPlayerAttack(self, target);
+        this.abyssalrpg$activeMuramasaHit = MuramasaCombatHandler.beginPlayerAttack(self, target);
     }
 
     @ModifyArg(
@@ -59,6 +64,9 @@ public abstract class PlayerMixin {
         }
         if (this.abyssalrpg$activeSeaHit != null) {
             return SeaWeaponsCombatHandler.modifyAttackDamage(amount);
+        }
+        if (this.abyssalrpg$activeMuramasaHit != null) {
+            return MuramasaCombatHandler.modifyAttackDamage(amount);
         }
         return amount;
     }
@@ -84,6 +92,11 @@ public abstract class PlayerMixin {
             SeaWeaponsCombatHandler.ActiveHitContext ctx = this.abyssalrpg$activeSeaHit;
             this.abyssalrpg$activeSeaHit = null;
             SeaWeaponsCombatHandler.finishPlayerAttack(ctx);
+        }
+        if (this.abyssalrpg$activeMuramasaHit != null) {
+            MuramasaCombatHandler.ActiveHitContext ctx = this.abyssalrpg$activeMuramasaHit;
+            this.abyssalrpg$activeMuramasaHit = null;
+            MuramasaCombatHandler.finishPlayerAttack(ctx);
         }
     }
 }

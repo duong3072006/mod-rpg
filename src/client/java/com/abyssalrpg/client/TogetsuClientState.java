@@ -173,6 +173,8 @@ public final class TogetsuClientState {
                     ExcaliburClientState.onTransformKeyPressed(player);
                 } else if (player.getMainHandItem().is(ModItems.SEA_TRIDENT)) {
                     SeaWeaponsClientState.onWhirlpoolKeyPressed(player);
+                } else if (player.getMainHandItem().is(ModItems.MURAMASA)) {
+                    MuramasaClientState.onBloodOathKeyPressed(player);
                 }
             }
         }

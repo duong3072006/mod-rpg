@@ -5,6 +5,7 @@ import com.abyssalrpg.combat.CerberusArmorHandler;
 import com.abyssalrpg.combat.CinderDragonArmorHandler;
 import com.abyssalrpg.combat.DualBladeCombatHandler;
 import com.abyssalrpg.combat.ExcaliburCombatHandler;
+import com.abyssalrpg.combat.MuramasaCombatHandler;
 import com.abyssalrpg.combat.NightmareArmorHandler;
 import com.abyssalrpg.combat.SeaWeaponsCombatHandler;
 import com.abyssalrpg.combat.SpiritHydraArmorHandler;
@@ -75,6 +76,7 @@ public class AbyssalRpgMod implements ModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(TogetsuCombatHandler::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(ExcaliburCombatHandler::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(SeaWeaponsCombatHandler::tickServer);
+        ServerTickEvents.END_SERVER_TICK.register(MuramasaCombatHandler::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(NightmareArmorHandler::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(CinderDragonArmorHandler::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(SpiritHydraArmorHandler::tickServer);

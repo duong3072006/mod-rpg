@@ -2,6 +2,7 @@ package com.abyssalrpg.network;
 
 import com.abyssalrpg.combat.DualBladeCombatHandler;
 import com.abyssalrpg.combat.ExcaliburCombatHandler;
+import com.abyssalrpg.combat.MuramasaCombatHandler;
 import com.abyssalrpg.combat.SeaWeaponsCombatHandler;
 import com.abyssalrpg.combat.TogetsuCombatHandler;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -28,6 +29,7 @@ public final class ModNetworking {
         PayloadTypeRegistry.playS2C().register(TogetsuSyncPayload.TYPE, TogetsuSyncPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(ExcaliburSyncPayload.TYPE, ExcaliburSyncPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(SeaWeaponsSyncPayload.TYPE, SeaWeaponsSyncPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(MuramasaSyncPayload.TYPE, MuramasaSyncPayload.CODEC);
 
         PayloadTypeRegistry.playC2S().register(DualBladeSlashC2SPayload.TYPE, DualBladeSlashC2SPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(DualBladeSlashC2SPayload.TYPE, (payload, context) ->
@@ -48,6 +50,10 @@ public final class ModNetworking {
         PayloadTypeRegistry.playC2S().register(SeaWeaponsActionC2SPayload.TYPE, SeaWeaponsActionC2SPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(SeaWeaponsActionC2SPayload.TYPE, (payload, context) ->
                 context.server().execute(() -> SeaWeaponsCombatHandler.handleActionPacket(context.player(), payload)));
+
+        PayloadTypeRegistry.playC2S().register(MuramasaActionC2SPayload.TYPE, MuramasaActionC2SPayload.CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(MuramasaActionC2SPayload.TYPE, (payload, context) ->
+                context.server().execute(() -> MuramasaCombatHandler.handleActionPacket(context.player(), payload)));
     }
 
     public static void sendShakeNearby(ServerLevel level, Vec3 center, double radius, float intensity, int ticks) {
@@ -206,6 +212,18 @@ public final class ModNetworking {
     /** Gửi gói tin đồng bộ animation, Sóng Triều (Đèn Lồng) & Xoáy Nước (Đinh Ba) trong bán kính 72 block. */
     public static void sendSeaWeaponsSyncNearby(ServerLevel level, Vec3 center, SeaWeaponsSyncPayload payload) {
         double syncDist = 72.0;
+        AABB box = new AABB(center.x - syncDist, center.y - 32.0, center.z - syncDist,
+                center.x + syncDist, center.y + 32.0, center.z + syncDist);
+        for (ServerPlayer p : level.getEntitiesOfClass(ServerPlayer.class, box)) {
+            if (p.position().distanceToSqr(center) <= syncDist * syncDist) {
+                ServerPlayNetworking.send(p, payload);
+            }
+        }
+    }
+
+    /** Gửi gói tin đồng bộ animation, vệt chém vàng-đỏ, sóng Iaijutsu & Huyết Thệ Muramasa trong bán kính 64 block. */
+    public static void sendMuramasaSyncNearby(ServerLevel level, Vec3 center, MuramasaSyncPayload payload) {
+        double syncDist = 64.0;
         AABB box = new AABB(center.x - syncDist, center.y - 32.0, center.z - syncDist,
                 center.x + syncDist, center.y + 32.0, center.z + syncDist);
         for (ServerPlayer p : level.getEntitiesOfClass(ServerPlayer.class, box)) {

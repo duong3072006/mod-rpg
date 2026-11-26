@@ -2,6 +2,7 @@ package com.abyssalrpg.client.mixin;
 
 import com.abyssalrpg.client.DualBladeClientState;
 import com.abyssalrpg.client.ExcaliburClientState;
+import com.abyssalrpg.client.MuramasaClientState;
 import com.abyssalrpg.client.SeaWeaponsClientState;
 import com.abyssalrpg.client.TogetsuClientState;
 import com.abyssalrpg.registry.ModItems;
@@ -39,7 +40,8 @@ public abstract class MinecraftAttackMixin {
         boolean isTogetsu = this.player.getMainHandItem().is(ModItems.TOGETSU);
         boolean isExcalibur = this.player.getMainHandItem().is(ModItems.EXCALIBUR);
         boolean isSeaTrident = this.player.getMainHandItem().is(ModItems.SEA_TRIDENT);
-        if (!isDualKnife && !isTogetsu && !isExcalibur && !isSeaTrident) {
+        boolean isMuramasa = this.player.getMainHandItem().is(ModItems.MURAMASA);
+        if (!isDualKnife && !isTogetsu && !isExcalibur && !isSeaTrident && !isMuramasa) {
             return;
         }
         if (this.hitResult == null || this.hitResult.getType() == HitResult.Type.MISS) {
@@ -49,8 +51,10 @@ public abstract class MinecraftAttackMixin {
                 TogetsuClientState.onClientAirSwing((Minecraft) (Object) this);
             } else if (isExcalibur) {
                 ExcaliburClientState.onClientAirSwing((Minecraft) (Object) this);
-            } else {
+            } else if (isSeaTrident) {
                 SeaWeaponsClientState.onClientAirSwing((Minecraft) (Object) this);
+            } else {
+                MuramasaClientState.onClientAirSwing((Minecraft) (Object) this);
             }
         }
     }

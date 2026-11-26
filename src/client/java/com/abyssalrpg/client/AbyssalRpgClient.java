@@ -2,6 +2,7 @@ package com.abyssalrpg.client;
 
 import com.abyssalrpg.client.hud.BossBarHudRenderer;
 import com.abyssalrpg.client.hud.ExcaliburHudRenderer;
+import com.abyssalrpg.client.hud.MuramasaFlashHudRenderer;
 import com.abyssalrpg.client.hud.SeaWeaponsHudRenderer;
 import com.abyssalrpg.client.hud.TogetsuHudRenderer;
 import com.abyssalrpg.client.renderer.AltarEyeRenderer;
@@ -18,6 +19,7 @@ import com.abyssalrpg.client.renderer.HydraHitboxPartRenderer;
 import com.abyssalrpg.client.renderer.JormungandrGeoRenderer;
 import com.abyssalrpg.client.renderer.JormungandrHitboxPartRenderer;
 import com.abyssalrpg.client.renderer.LeviathanGeoRenderer;
+import com.abyssalrpg.client.renderer.MuramasaGeoRenderer;
 import com.abyssalrpg.client.renderer.NightmareArmorRenderer;
 import com.abyssalrpg.client.renderer.NightmareHitboxPartRenderer;
 import com.abyssalrpg.client.renderer.NightmareKnightGeoRenderer;
@@ -27,6 +29,7 @@ import com.abyssalrpg.client.renderer.SpiritHydraGeoRenderer;
 import com.abyssalrpg.client.renderer.TogetsuGeoRenderer;
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
 import com.abyssalrpg.client.anim.ExcaliburAnimManager;
+import com.abyssalrpg.client.anim.MuramasaAnimManager;
 import com.abyssalrpg.client.anim.SeaWeaponsAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
 import com.abyssalrpg.client.renderer.vfx.AbyssalOrbRenderer;
@@ -35,6 +38,7 @@ import com.abyssalrpg.client.renderer.vfx.EnergySlashRenderer;
 import com.abyssalrpg.client.renderer.vfx.ExcaliburVfxRenderer;
 import com.abyssalrpg.client.renderer.vfx.LaserBeamRenderer;
 import com.abyssalrpg.client.renderer.vfx.MagicCircleRenderer;
+import com.abyssalrpg.client.renderer.vfx.MuramasaVfxRenderer;
 import com.abyssalrpg.client.renderer.vfx.NightmareBoneSpikeRenderer;
 import com.abyssalrpg.client.renderer.vfx.SeaWeaponsVfxRenderer;
 import com.abyssalrpg.client.renderer.vfx.SeveredHydraHeadRenderer;
@@ -51,6 +55,7 @@ import com.abyssalrpg.entity.mythic.cerberus.CerberusForm;
 import com.abyssalrpg.item.CerberusArmorItem;
 import com.abyssalrpg.item.CinderDragonArmorItem;
 import com.abyssalrpg.item.DualBladeItem;
+import com.abyssalrpg.item.MuramasaItem;
 import com.abyssalrpg.item.NightmareArmorItem;
 import com.abyssalrpg.item.SeaTridentItem;
 import com.abyssalrpg.item.SpiritHydraArmorItem;
@@ -64,6 +69,7 @@ import com.abyssalrpg.network.ExcaliburSyncPayload;
 import com.abyssalrpg.network.HydraVfxPayload;
 import com.abyssalrpg.network.JormungandrPathSyncPayload;
 import com.abyssalrpg.network.LeviathanVfxPayload;
+import com.abyssalrpg.network.MuramasaSyncPayload;
 import com.abyssalrpg.network.NightmareVfxPayload;
 import com.abyssalrpg.network.ScreenShakePayload;
 import com.abyssalrpg.network.SeaWeaponsSyncPayload;
@@ -138,6 +144,7 @@ public class AbyssalRpgClient implements ClientModInitializer {
         HudRenderCallback.EVENT.register(TogetsuHudRenderer::render);
         HudRenderCallback.EVENT.register(ExcaliburHudRenderer::render);
         HudRenderCallback.EVENT.register(SeaWeaponsHudRenderer::render);
+        HudRenderCallback.EVENT.register(MuramasaFlashHudRenderer::render);
         TogetsuClientState.initKeybinds();
 
         // Đăng ký GeoItemRenderer 3D fullbright qua Fabric BuiltinItemRendererRegistry
@@ -177,12 +184,23 @@ public class AbyssalRpgClient implements ClientModInitializer {
                     }
                     seaTridentRendererHolder[0].renderByItem(stack, mode, matrices, vertexConsumers, light, overlay);
                 });
+
+        final MuramasaGeoRenderer[] muramasaRendererHolder = new MuramasaGeoRenderer[1];
+        BuiltinItemRendererRegistry.INSTANCE.register(ModItems.MURAMASA,
+                (stack, mode, matrices, vertexConsumers, light, overlay) -> {
+                    if (muramasaRendererHolder[0] == null) {
+                        muramasaRendererHolder[0] = new MuramasaGeoRenderer();
+                    }
+                    muramasaRendererHolder[0].renderByItem(stack, mode, matrices, vertexConsumers, light, overlay);
+                });
         DualBladeItem.clientIsOffhandOccupied = () -> {
             LocalPlayer p = Minecraft.getInstance().player;
             return p != null && !p.getOffhandItem().isEmpty();
         };
         SeaTridentItem.clientIsOffhandOccupied = DualBladeItem.clientIsOffhandOccupied;
         SeaTridentItem.clientWhirlpoolKeyName = TogetsuClientState::getFuseKeyDisplayName;
+        MuramasaItem.clientIsOffhandOccupied = DualBladeItem.clientIsOffhandOccupied;
+        MuramasaItem.clientAwakenKeyName = TogetsuClientState::getFuseKeyDisplayName;
         TogetsuItem.clientSkillKeyName = TogetsuClientState::getSkillKeyDisplayName;
         TogetsuItem.clientFuseKeyName = TogetsuClientState::getFuseKeyDisplayName;
         TogetsuItem.clientColorKeyName = TogetsuClientState::getColorKeyDisplayName;
@@ -260,6 +278,7 @@ public class AbyssalRpgClient implements ClientModInitializer {
             TogetsuVfxRenderer.renderWorld(context, TogetsuAnimManager.getClientTick());
             ExcaliburVfxRenderer.renderWorld(context, ExcaliburAnimManager.getClientTick());
             SeaWeaponsVfxRenderer.renderWorld(context, SeaWeaponsAnimManager.getClientTick());
+            MuramasaVfxRenderer.renderWorld(context, MuramasaAnimManager.getClientTick());
         });
 
         ClientPlayNetworking.registerGlobalReceiver(TogetsuSyncPayload.TYPE,
@@ -280,6 +299,13 @@ public class AbyssalRpgClient implements ClientModInitializer {
                 (payload, context) -> context.client().execute(() -> {
                     if (context.client().level != null) {
                         SeaWeaponsClientState.handleSyncPayload(context.client().level, payload);
+                    }
+                }));
+
+        ClientPlayNetworking.registerGlobalReceiver(MuramasaSyncPayload.TYPE,
+                (payload, context) -> context.client().execute(() -> {
+                    if (context.client().level != null) {
+                        MuramasaClientState.handleSyncPayload(context.client().level, payload);
                     }
                 }));
 
@@ -358,6 +384,7 @@ public class AbyssalRpgClient implements ClientModInitializer {
             TogetsuClientState.tickClient(client);
             ExcaliburClientState.tickClient(client);
             SeaWeaponsClientState.tickClient(client);
+            MuramasaClientState.tickClient(client);
 
             LocalPlayer player = client.player;
             if (player == null || client.isPaused() || client.level == null)

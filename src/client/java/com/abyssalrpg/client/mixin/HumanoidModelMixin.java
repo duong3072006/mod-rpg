@@ -3,6 +3,7 @@ package com.abyssalrpg.client.mixin;
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
 import com.abyssalrpg.client.anim.DualBladeAnimState.FullBodyPose;
 import com.abyssalrpg.client.anim.ExcaliburAnimManager;
+import com.abyssalrpg.client.anim.MuramasaAnimManager;
 import com.abyssalrpg.client.anim.SeaWeaponsAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
 import net.minecraft.client.Minecraft;
@@ -91,7 +92,8 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
             if (DualBladeAnimManager.isDualBladeAttacking(player)
                     || TogetsuAnimManager.isHoldingTogetsuReady(player)
                     || ExcaliburAnimManager.isHoldingExcalibur(player)
-                    || SeaWeaponsAnimManager.isHoldingSeaWeapons(player)) {
+                    || SeaWeaponsAnimManager.isHoldingSeaWeapons(player)
+                    || MuramasaAnimManager.isHoldingMuramasa(player)) {
                 HumanoidModel<?> self = (HumanoidModel<?>) (Object) this;
                 this.abyssalrpg$savedAttackTime = self.attackTime;
                 self.attackTime = 0.0F;
@@ -122,6 +124,9 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
         }
         if (pose == null) {
             pose = SeaWeaponsAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
+        }
+        if (pose == null) {
+            pose = MuramasaAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
         }
         if (pose == null) {
             return;
@@ -160,7 +165,15 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
             this.leftArm.zRot = pose.leftArmZ;
         } else {
             float aw = pose.armWeight;
-            if (aw > 0.001F) {
+            if (aw >= 0.99F) {
+                this.rightArm.xRot = pose.rightArmX;
+                this.rightArm.yRot = pose.rightArmY;
+                this.rightArm.zRot = pose.rightArmZ;
+
+                this.leftArm.xRot = pose.leftArmX;
+                this.leftArm.yRot = pose.leftArmY;
+                this.leftArm.zRot = pose.leftArmZ;
+            } else if (aw > 0.001F) {
                 this.rightArm.xRot = Mth.lerp(aw, this.rightArm.xRot, pose.rightArmX);
                 this.rightArm.yRot = Mth.lerp(aw, this.rightArm.yRot, pose.rightArmY);
                 this.rightArm.zRot = Mth.lerp(aw, this.rightArm.zRot, pose.rightArmZ);

@@ -273,5 +273,19 @@
   "message.abyssalrpg.sea_trident.whirlpool_cd": "Ngũ Thần Kích (5 Đinh Ba) đang hồi (%ss)",
   "message.abyssalrpg.sea_trident.cast_wave": "Đèn Lồng Biển: TRIỆU HỒI SÓNG THẦN!",
   "message.abyssalrpg.sea_trident.cast_whirlpool": "Đinh Ba Biển: NGŨ THẦN KÍCH — 5 ĐINH BA PHÓNG MỤC TIÊU!",
-  "message.abyssalrpg.sea_trident.maelstrom_synergy": "CỘNG HƯỞNG HẢI THẦN! Đại Hồng Thủy Bùng Nổ!"
+  "message.abyssalrpg.sea_trident.maelstrom_synergy": "CỘNG HƯỞNG HẢI THẦN! Đại Hồng Thủy Bùng Nổ!",
+  "item.abyssalrpg.muramasa": "Yêu Đao Muramasa Katana",
+  "item.abyssalrpg.muramasa.awakened": "Yêu Đao Muramasa — Huyết Thệ Thức Tỉnh",
+  "tooltip.abyssalrpg.muramasa.subtitle": "Danh Kiếm 村正 — Thép Đen Damascus · Cạnh Lưỡi Vàng Phát Sáng · Vỏ Kiếm Rồng Đỏ",
+  "tooltip.abyssalrpg.muramasa.subtitle_awakened": "Huyết Thệ Đang Kích Hoạt — Yêu Quỷ Muramasa Giải Phóng (+35% DMG · 15% Hút Máu)",
+  "tooltip.abyssalrpg.muramasa.combo": "[Chuột Trái] Combo 3 Nhịp Katana: Kesagiri · Gyaku-Kesa · Demon Cross-Cleave (+1.0 Tầm Đánh)",
+  "tooltip.abyssalrpg.muramasa.iaijutsu": "[Chuột Phải] Nhất Đao Huyết Nguyện (hồi 5.5s): Lướt chém 14 block (2.2× DMG, xuyên 35% giáp) + Mù Lòa Flash Trắng 10s!",
+  "tooltip.abyssalrpg.muramasa.blood_oath": "[%s] / [Shift+Chuột Phải] Huyết Thệ Yêu Đao (12s · hồi 28s): Hiến 2 tim -> +35%% Sát Thương, Tốc Độ II & 15%% Hút Máu",
+  "tooltip.abyssalrpg.muramasa.scabbard_hint": "Hãy để trống ô tay phụ để cầm Vỏ Kiếm Rồng Đỏ (Saya) ở tay trái!",
+  "message.abyssalrpg.muramasa.iai_cd": "Nhất Đao Huyết Nguyện đang hồi (%ss)",
+  "message.abyssalrpg.muramasa.cast_iai": "村正 · Nhất Đao Huyết Nguyện — FLASH TRẮNG MÙ LÒA 10s!",
+  "message.abyssalrpg.muramasa.oath_active": "Huyết Thệ Yêu Đao đang kích hoạt (còn %ss)",
+  "message.abyssalrpg.muramasa.oath_cd": "Huyết Thệ Yêu Đao đang hồi (%ss)",
+  "message.abyssalrpg.muramasa.oath_awaken": "村正 · HUYẾT THỆ THỨC TỈNH (12s)! +35% Sát Thương · Tốc Độ II · 15% Hút Máu!",
+  "message.abyssalrpg.muramasa.oath_end": "Huyết Thệ Muramasa đã lắng dịu."
 }

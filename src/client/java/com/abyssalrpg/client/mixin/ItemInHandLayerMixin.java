@@ -3,9 +3,11 @@ package com.abyssalrpg.client.mixin;
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
 import com.abyssalrpg.client.anim.DualBladeAnimState.FullBodyPose;
 import com.abyssalrpg.client.anim.ExcaliburAnimManager;
+import com.abyssalrpg.client.anim.MuramasaAnimManager;
 import com.abyssalrpg.client.anim.SeaWeaponsAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
 import com.abyssalrpg.client.renderer.ExcaliburGeoRenderer;
+import com.abyssalrpg.client.renderer.MuramasaGeoRenderer;
 import com.abyssalrpg.client.renderer.SeaTridentGeoRenderer;
 import com.abyssalrpg.client.renderer.TogetsuGeoRenderer;
 import com.abyssalrpg.registry.ModItems;
@@ -46,6 +48,8 @@ public abstract class ItemInHandLayerMixin {
                 ExcaliburGeoRenderer.setCurrentRenderEntityId(player.getId());
             } else if (player.getMainHandItem().is(ModItems.SEA_TRIDENT)) {
                 SeaTridentGeoRenderer.setCurrentRenderEntityId(player.getId());
+            } else if (player.getMainHandItem().is(ModItems.MURAMASA)) {
+                MuramasaGeoRenderer.setCurrentRenderEntityId(player.getId());
             }
         }
     }
@@ -62,6 +66,7 @@ public abstract class ItemInHandLayerMixin {
             TogetsuGeoRenderer.setCurrentRenderEntityId(-1);
             ExcaliburGeoRenderer.setCurrentRenderEntityId(-1);
             SeaTridentGeoRenderer.setCurrentRenderEntityId(-1);
+            MuramasaGeoRenderer.setCurrentRenderEntityId(-1);
         }
     }
 
@@ -89,6 +94,10 @@ public abstract class ItemInHandLayerMixin {
                     && SeaWeaponsAnimManager.shouldMirrorLanternOffhand(player)) {
                 return main;
             }
+            if (main.is(ModItems.MURAMASA) && entity instanceof Player player
+                    && MuramasaAnimManager.shouldMirrorScabbardOffhand(player)) {
+                return main;
+            }
         }
         return realOffhand;
     }
@@ -108,7 +117,8 @@ public abstract class ItemInHandLayerMixin {
         boolean isTogetsu = stack.is(ModItems.TOGETSU);
         boolean isExcalibur = stack.is(ModItems.EXCALIBUR);
         boolean isSeaTrident = stack.is(ModItems.SEA_TRIDENT);
-        if ((!isDualKnife && !isTogetsu && !isExcalibur && !isSeaTrident) || !(entity instanceof Player player)) {
+        boolean isMuramasa = stack.is(ModItems.MURAMASA);
+        if ((!isDualKnife && !isTogetsu && !isExcalibur && !isSeaTrident && !isMuramasa) || !(entity instanceof Player player)) {
             return;
         }
         if ((isDualKnife || isTogetsu) && !player.getOffhandItem().isEmpty()) {
@@ -117,12 +127,17 @@ public abstract class ItemInHandLayerMixin {
         if (isExcalibur && arm != HumanoidArm.RIGHT) {
             return;
         }
+        if (isMuramasa && arm == HumanoidArm.LEFT && !player.getOffhandItem().isEmpty()) {
+            return;
+        }
         if (isTogetsu) {
             TogetsuGeoRenderer.setCurrentRenderEntityId(player.getId());
         } else if (isExcalibur) {
             ExcaliburGeoRenderer.setCurrentRenderEntityId(player.getId());
         } else if (isSeaTrident) {
             SeaTridentGeoRenderer.setCurrentRenderEntityId(player.getId());
+        } else if (isMuramasa) {
+            MuramasaGeoRenderer.setCurrentRenderEntityId(player.getId());
         }
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
         FullBodyPose pose;
@@ -132,8 +147,10 @@ public abstract class ItemInHandLayerMixin {
             pose = TogetsuAnimManager.evaluatePose(player, partialTick, 0.0F, player.tickCount + partialTick);
         } else if (isExcalibur) {
             pose = ExcaliburAnimManager.evaluatePose(player, partialTick, 0.0F, player.tickCount + partialTick);
-        } else {
+        } else if (isSeaTrident) {
             pose = SeaWeaponsAnimManager.evaluatePose(player, partialTick, 0.0F, player.tickCount + partialTick);
+        } else {
+            pose = MuramasaAnimManager.evaluatePose(player, partialTick, 0.0F, player.tickCount + partialTick);
         }
         if (pose == null) {
             return;

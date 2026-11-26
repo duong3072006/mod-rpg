@@ -7,6 +7,7 @@ import com.abyssalrpg.item.CinderDragonArmorItem;
 import com.abyssalrpg.item.CinderDragonHeartItem;
 import com.abyssalrpg.item.DualBladeItem;
 import com.abyssalrpg.item.ExcaliburItem;
+import com.abyssalrpg.item.MuramasaItem;
 import com.abyssalrpg.item.NightmareArmorItem;
 import com.abyssalrpg.item.NightmareCoreItem;
 import com.abyssalrpg.item.SeaTridentItem;
@@ -87,11 +88,12 @@ public final class ModItems {
     public static Item CERBERUS_LEGGINGS;
     public static Item CERBERUS_BOOTS;
 
-    // Signature Two-Handed Weapons (`abyssalrpg:dual_knife`, `abyssalrpg:togetsu`, `abyssalrpg:excalibur`, & `abyssalrpg:sea_trident`)
+    // Signature Two-Handed Weapons (`abyssalrpg:dual_knife`, `abyssalrpg:togetsu`, `abyssalrpg:excalibur`, `abyssalrpg:sea_trident`, & `abyssalrpg:muramasa`)
     public static Item DUAL_KNIFE;
     public static Item TOGETSU;
     public static Item EXCALIBUR;
     public static Item SEA_TRIDENT;
+    public static Item MURAMASA;
 
     // Boss Spawn Eggs (8 Colossal & Mid-Tier GeckoLib Bosses)
     public static Item CINDER_DRAGON_SPAWN_EGG;
@@ -133,6 +135,7 @@ public final class ModItems {
         TOGETSU = register("togetsu", new TogetsuItem());
         EXCALIBUR = register("excalibur", new ExcaliburItem());
         SEA_TRIDENT = register("sea_trident", new SeaTridentItem());
+        MURAMASA = register("muramasa", new MuramasaItem());
 
         CINDER_DRAGON_SPAWN_EGG = register("cinder_dragon_spawn_egg",
                 new SpawnEggItem(ModEntities.CINDER_DRAGON, 0x3D3530, 0xD43818, new Item.Properties()));
