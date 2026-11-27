@@ -25,7 +25,6 @@ public record ExcaliburSyncPayload(
     public static final byte EVENT_ULT_START = 1;
     public static final byte EVENT_BEAM_FIRE = 2;
     public static final byte EVENT_HIT_STOP = 3;
-    public static final byte EVENT_AVALON_REVIVE = 4;
     public static final byte EVENT_SEAL_UNLOCK = 5;
     public static final byte EVENT_STRIKE_AIR_BLAST = 6;
     public static final byte EVENT_GROUND_WAVE = 7;

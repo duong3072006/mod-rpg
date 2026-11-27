@@ -155,12 +155,4 @@ public abstract class LivingEntityMixin {
             ExcaliburCombatHandler.onLivingHurtReturn(self, source);
         }
     }
-
-    @Inject(method = "checkTotemDeathProtection", at = @At("HEAD"), cancellable = true)
-    private void abyssalrpg$triggerAvalonImmortality(DamageSource source, CallbackInfoReturnable<Boolean> cir) {
-        LivingEntity self = (LivingEntity) (Object) this;
-        if (!self.level().isClientSide && ExcaliburCombatHandler.tryTriggerAvalonImmortality(self, source)) {
-            cir.setReturnValue(true);
-        }
-    }
 }

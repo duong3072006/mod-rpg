@@ -283,18 +283,6 @@ public final class ExcaliburVfxRenderer {
         }
     }
 
-    private static final class AvalonSanctuary {
-        final int playerId;
-        final long startTick;
-        final float durationTicks;
-
-        AvalonSanctuary(int playerId, long startTick, float durationTicks) {
-            this.playerId = playerId;
-            this.startTick = startTick;
-            this.durationTicks = durationTicks;
-        }
-    }
-
     private static final class StarSparkle {
         final double ox, oy, oz;
         final float vx, vy, vz, size;
@@ -326,7 +314,6 @@ public final class ExcaliburVfxRenderer {
     private static final List<FlatMagicCircle> FLAT_MAGIC_CIRCLES = new ArrayList<>();
     private static final List<VerticalMagicCircle> VERT_MAGIC_CIRCLES = new ArrayList<>();
     private static final List<ExcaliburBeam> BEAMS = new ArrayList<>();
-    private static final List<AvalonSanctuary> SANCTUARIES = new ArrayList<>();
     private static final List<StarSparkle> SPARKLES = new ArrayList<>();
 
     private ExcaliburVfxRenderer() {}
@@ -339,7 +326,6 @@ public final class ExcaliburVfxRenderer {
         FLAT_MAGIC_CIRCLES.clear();
         VERT_MAGIC_CIRCLES.clear();
         BEAMS.clear();
-        SANCTUARIES.clear();
         SPARKLES.clear();
     }
 
@@ -448,12 +434,6 @@ public final class ExcaliburVfxRenderer {
         BEAMS.add(new ExcaliburBeam(origin, yawDeg, pitchDeg, range, clientTick, dur));
     }
 
-    public static void spawnAvalonSanctuary(int playerId, long clientTick, float durationTicks) {
-        if (!WeaponsConfig.get().enableSlashVfx) return;
-        SANCTUARIES.removeIf(s -> s.playerId == playerId);
-        SANCTUARIES.add(new AvalonSanctuary(playerId, clientTick, durationTicks));
-    }
-
     public static void spawnSparkle(double x, double y, double z, float vx, float vy, float vz,
                                     float size, int r, int g, int b, long clientTick, float durTicks) {
         if (!WeaponsConfig.get().enableSlashVfx || SPARKLES.size() >= 140) {
@@ -465,7 +445,7 @@ public final class ExcaliburVfxRenderer {
     public static void renderWorld(WorldRenderContext context, long clientTick) {
         if (SLASHES.isEmpty() && THRUST_RINGS.isEmpty() && STRIKE_AIR_RINGS.isEmpty()
                 && CRESCENT_WAVES.isEmpty() && FLAT_MAGIC_CIRCLES.isEmpty() && VERT_MAGIC_CIRCLES.isEmpty()
-                && BEAMS.isEmpty() && SANCTUARIES.isEmpty() && SPARKLES.isEmpty()) {
+                && BEAMS.isEmpty() && SPARKLES.isEmpty()) {
             return;
         }
         PoseStack poseStack = context.matrixStack();
@@ -485,7 +465,6 @@ public final class ExcaliburVfxRenderer {
         FLAT_MAGIC_CIRCLES.removeIf(c -> (now - c.startTick) >= c.durationTicks);
         VERT_MAGIC_CIRCLES.removeIf(c -> (now - c.startTick) >= c.durationTicks);
         BEAMS.removeIf(b -> (now - b.startTick) >= b.durationTicks);
-        SANCTUARIES.removeIf(s -> (now - s.startTick) >= s.durationTicks);
         SPARKLES.removeIf(sp -> (now - sp.startTick) >= sp.durationTicks);
 
         // PASS 1: VÒNG PHÉP THUẬT 2D FAIRY TAIL (Outer Ring + Counter-Rotating Inner Hexagram!)
@@ -511,14 +490,13 @@ public final class ExcaliburVfxRenderer {
 
         // PASS 3: ADDITIVE GLOW (Lõi trắng sắc nét, Vòng xung kích mảnh)
         if (!SLASHES.isEmpty() || !THRUST_RINGS.isEmpty() || !STRIKE_AIR_RINGS.isEmpty()
-                || !CRESCENT_WAVES.isEmpty() || !BEAMS.isEmpty() || !SANCTUARIES.isEmpty()) {
+                || !CRESCENT_WAVES.isEmpty() || !BEAMS.isEmpty()) {
             VertexConsumer glowVc = consumers.getBuffer(ExcaliburRenderTypes.GLOW);
             renderSlashesPass(poseStack, glowVc, camPos, now, partialTick, true);
             renderThrustRingsPass(poseStack, glowVc, camPos, now, partialTick);
             renderStrikeAirRingsPass(poseStack, glowVc, camPos, now);
             renderCrescentWavesPass(poseStack, glowVc, camPos, now, true);
             renderBeamsPass(poseStack, glowVc, camPos, now, true);
-            renderSanctuariesPass(poseStack, glowVc, camPos, now, partialTick);
         }
 
         // PASS 4: SPARKLES (Đốm sáng nhỏ tinh tế)
@@ -873,33 +851,6 @@ public final class ExcaliburVfxRenderer {
                         endW * 0.44F, endH * 0.44F,
                         curLen * 0.99F, spin * 1.4F, 255, 255, 255, Math.round(255 * fade), Math.round(205 * fade));
             }
-            poseStack.popPose();
-        }
-    }
-
-    private static void renderSanctuariesPass(PoseStack poseStack, VertexConsumer vc, Vec3 camPos,
-                                              double now, float partialTick) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null) return;
-        for (AvalonSanctuary s : SANCTUARIES) {
-            Entity ent = mc.level.getEntity(s.playerId);
-            if (ent == null || !ent.isAlive()) continue;
-            float t = Mth.clamp((float) ((now - s.startTick) / s.durationTicks), 0.0F, 1.0F);
-            float fade = (t < 0.15F) ? (t / 0.15F) : (1.0F - (t - 0.15F) / 0.85F);
-            double px = Mth.lerp(partialTick, ent.xo, ent.getX());
-            double py = Mth.lerp(partialTick, ent.yo, ent.getY());
-            double pz = Mth.lerp(partialTick, ent.zo, ent.getZ());
-
-            poseStack.pushPose();
-            poseStack.translate(px - camPos.x, py - camPos.y, pz - camPos.z);
-            poseStack.mulPose(Axis.XP.rotationDegrees(-90.0F));
-            Matrix4f mat = poseStack.last().pose();
-
-            float rad = 1.40F + 0.45F * Mth.sin(t * Mth.PI);
-            float spin = (float) (now * 0.35);
-            drawEllipticalCone(vc, mat, 12, rad, rad, rad, rad, 2.6F, spin, 110, 238, 255, Math.round(135 * fade), Math.round(135 * fade));
-            drawEllipticalCone(vc, mat, 12, rad * 0.72F, rad * 0.72F, rad * 0.72F, rad * 0.72F, 3.0F, -spin * 1.4F,
-                    255, 226, 115, Math.round(160 * fade), Math.round(160 * fade));
             poseStack.popPose();
         }
     }

@@ -15,12 +15,10 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.Locale;
-
 /**
- * HUD tổng hợp gọn đẹp cho **Excalibur** (đã gỡ bỏ trạng thái tàng hình):
- * - Thanh năng lượng (`0–100`): `+2`/đòn, `+5`/mục tiêu hạ gục, đủ `100` nhận Sức Mạnh IV & sẵn sàng `[RMB]`!
- * - Dưới `100` năng lượng: nhắc trạng thái **Đỡ Hoàng Gia `[RMB]`** & đếm ngược **Khóa năng lượng `45s`** + **Avalon**.
+ * HUD tổng hợp gọn đẹp cho **Excalibur**:
+ * - Thanh năng lượng (`0–100`): `+2`/đòn, `+5`/mục tiêu hạ gục, đủ `100` nhận Sức Mạnh IV & sẵn sàng `[R]`!
+ * - Dưới `100` năng lượng: nhắc trạng thái **Đỡ Hoàng Gia `[RMB]`** & đếm ngược hồi chiêu Tuyệt kỹ `25s`.
  */
 public final class ExcaliburHudRenderer {
     private static float displayedFill = 0.0F;
@@ -115,13 +113,6 @@ public final class ExcaliburHudRenderer {
         } else {
             int rem = Math.max(0, Math.round(ExcaliburItem.MAX_ENERGY - energy));
             status.append("ĐỠ HOÀNG GIA [RMB] · CÒN ").append(rem).append(" NL");
-        }
-        if (snap.avalonLinked) {
-            if (snap.avalonCdTicks > 0) {
-                status.append(" · AV ").append(String.format(Locale.ROOT, "%.0fs", snap.avalonCdTicks / 20.0F));
-            } else {
-                status.append(" · ✦AVALON");
-            }
         }
 
         int pillBg = ready ? 0xCC2C2208 : (onUltCd ? 0xCC241512 : 0xCC241808);

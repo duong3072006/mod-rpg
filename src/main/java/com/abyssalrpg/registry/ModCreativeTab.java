@@ -31,9 +31,6 @@ public final class ModCreativeTab {
                         if (ModItems.EXCALIBUR != null) {
                             output.accept(ModItems.EXCALIBUR);
                         }
-                        if (ModItems.AVALON != null) {
-                            output.accept(ModItems.AVALON);
-                        }
                         if (ModItems.KATANA != null) {
                             output.accept(ModItems.KATANA);
                         }

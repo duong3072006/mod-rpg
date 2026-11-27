@@ -261,8 +261,6 @@ public final class ExcaliburItem extends Item implements GeoItem {
                 .withStyle(ChatFormatting.GOLD));
         tooltip.add(Component.translatable("tooltip.abyssalrpg.excalibur.ult_pierce")
                 .withStyle(ChatFormatting.YELLOW));
-        tooltip.add(Component.translatable("tooltip.abyssalrpg.excalibur.avalon_hint")
-                .withStyle(ChatFormatting.LIGHT_PURPLE));
     }
 
     @Override

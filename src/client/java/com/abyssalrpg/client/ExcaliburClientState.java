@@ -38,10 +38,8 @@ public final class ExcaliburClientState {
         public float energy = 0.0F;
         public int sealMask = 0;
         public int unlockedSeals = 0;
-        public boolean avalonLinked = false;
         public boolean unsheathed = false;
         public int ultCooldownTicks = 0;
-        public int avalonCdTicks = 0;
         public long receivedClientTick = 0L;
     }
 
@@ -147,10 +145,8 @@ public final class ExcaliburClientState {
         snap.energy = Mth.clamp(p.energy(), 0.0F, ExcaliburItem.MAX_ENERGY);
         snap.sealMask = p.sealMask() & 0x1FFF;
         snap.unlockedSeals = p.unlockedSeals();
-        snap.avalonLinked = p.avalonLinked();
         snap.unsheathed = p.unsheathed();
         snap.ultCooldownTicks = Math.max(0, p.ultCooldownTicks());
-        snap.avalonCdTicks = Math.max(0, p.avalonCdTicks());
         snap.receivedClientTick = ExcaliburAnimManager.getClientTick();
         ExcaliburAnimManager.setUnsheathed(p.playerId(), p.unsheathed());
     }
@@ -290,7 +286,6 @@ public final class ExcaliburClientState {
 
         for (PassiveSnapshot snap : PASSIVE_STATES.values()) {
             if (snap.ultCooldownTicks > 0) snap.ultCooldownTicks--;
-            if (snap.avalonCdTicks > 0) snap.avalonCdTicks--;
         }
 
         if (WeaponsConfig.get().enableSlashVfx) {
@@ -471,19 +466,6 @@ public final class ExcaliburClientState {
                             (float) (Math.cos(ang) * 0.025), 0.024F + rng.nextFloat() * 0.015F, (float) (Math.sin(ang) * 0.025),
                             0.105F + rng.nextFloat() * 0.035F,
                             255, 240, 130, tick, 6.0F);
-                }
-            }
-            case ExcaliburSyncPayload.EVENT_AVALON_REVIVE -> {
-                ExcaliburVfxRenderer.spawnAvalonSanctuary(p.playerId(), tick, 24.0F);
-                RandomSource rng = level.random;
-                for (int i = 0; i < 24; i++) {
-                    double ang = rng.nextDouble() * Mth.TWO_PI;
-                    double rad = 0.6 + rng.nextDouble() * 1.2;
-                    ExcaliburVfxRenderer.spawnSparkle(
-                            pos.x + Math.cos(ang) * rad, pos.y + 0.3 + rng.nextDouble() * 1.6, pos.z + Math.sin(ang) * rad,
-                            0.0F, 0.055F + rng.nextFloat() * 0.04F, 0.0F,
-                            0.14F + rng.nextFloat() * 0.08F,
-                            (i & 1) == 0 ? 120 : 255, (i & 1) == 0 ? 245 : 230, (i & 1) == 0 ? 255 : 120, tick, 16.0F);
                 }
             }
             case ExcaliburSyncPayload.EVENT_SEAL_UNLOCK -> {

@@ -1,6 +1,5 @@
 package com.abyssalrpg.combat;
 
-import com.abyssalrpg.item.AvalonItem;
 import com.abyssalrpg.item.ExcaliburItem;
 import com.abyssalrpg.network.ExcaliburActionC2SPayload;
 import com.abyssalrpg.network.ExcaliburPassiveSyncPayload;
@@ -75,7 +74,6 @@ public final class ExcaliburCombatHandler {
     public static final int FULL_ENERGY_STRENGTH_AMP = 3;
     public static final int FULL_ENERGY_STRENGTH_TICKS = 80;
     public static final int ULT_COOLDOWN_TICKS = 500;      // Hồi chiêu 25 giây sau khi dùng Tuyệt kỹ Excalibur!
-    public static final int AVALON_REVIVE_CD_TICKS = 300;
 
     public static final long DELAY_CRESCENT_MIN_TICKS = 7L;   // 0.30s+ sau Hit 1
     public static final long DELAY_CRESCENT_MAX_TICKS = 26L;
@@ -93,8 +91,6 @@ public final class ExcaliburCombatHandler {
             new DustParticleOptions(new Vector3f(1.00F, 0.90F, 0.40F), 0.95F);
     private static final DustParticleOptions WHITE_HOLY =
             new DustParticleOptions(new Vector3f(1.00F, 0.99F, 0.92F), 0.88F);
-    private static final DustParticleOptions AVALON_CYAN_GOLD =
-            new DustParticleOptions(new Vector3f(0.45F, 0.95F, 1.00F), 1.25F);
     private static final ProjectileDeflection CLIENT_ARROW_DEFLECT_SENTINEL = (proj, deflectedBy, random) -> {};
 
     private static final Map<UUID, PlayerExcaliburState> PLAYER_STATES = new HashMap<>();
@@ -121,8 +117,6 @@ public final class ExcaliburCombatHandler {
         int sealMask = 0;
         int unlockedSeals = 0;
         boolean wasUnsealed = false;
-        boolean avalonLinked = false;
-        int avalonReviveCdTicks = 0;
         int ultCooldownTicks = 0;
         boolean ultCooldownInit = false;
         boolean appliedFullEnergyStrength = false;
@@ -922,7 +916,7 @@ public final class ExcaliburCombatHandler {
     }
 
     public static void onLivingHurtReturn(LivingEntity victim, DamageSource source) {
-        if (victim instanceof ServerPlayer sp && (isHoldingExcalibur(sp) || AvalonItem.isAvalonActive(sp))) {
+        if (victim instanceof ServerPlayer sp && isHoldingExcalibur(sp)) {
             PlayerExcaliburState st = stateOf(sp, sp.getMainHandItem());
             st.lastCombatTick = sp.serverLevel().getGameTime();
         }
@@ -938,56 +932,6 @@ public final class ExcaliburCombatHandler {
                 st.lastDishonorTick = now;
             }
         }
-    }
-
-    public static boolean tryTriggerAvalonImmortality(LivingEntity entity, DamageSource source) {
-        if (!(entity instanceof ServerPlayer player) || !(player.level() instanceof ServerLevel level)) {
-            return false;
-        }
-        if (source != null && source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
-            return false;
-        }
-        if (!AvalonItem.isAvalonActive(player)) {
-            return false;
-        }
-        PlayerExcaliburState st = stateOf(player, player.getMainHandItem());
-        if (st.avalonReviveCdTicks > 0) {
-            return false;
-        }
-
-        player.setHealth(player.getMaxHealth());
-        player.clearFire();
-        player.removeEffect(MobEffects.WITHER);
-        player.removeEffect(MobEffects.POISON);
-        player.removeEffect(MobEffects.HUNGER);
-        player.removeEffect(MobEffects.WEAKNESS);
-        player.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
-        player.removeEffect(MobEffects.BLINDNESS);
-        player.removeEffect(MobEffects.DARKNESS);
-        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 50, 3, false, true, true));
-        player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 80, 2, false, true, true));
-        player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 120, 2, false, true, true));
-        player.invulnerableTime = 50;
-
-        st.avalonReviveCdTicks = AVALON_REVIVE_CD_TICKS;
-
-        level.playSound(null, player.getX(), player.getY() + 1.0, player.getZ(),
-                SoundEvents.TOTEM_USE, SoundSource.PLAYERS, 1.15F, 1.32F);
-        level.playSound(null, player.getX(), player.getY() + 1.0, player.getZ(),
-                SoundEvents.BEACON_POWER_SELECT, SoundSource.PLAYERS, 1.35F, 1.45F);
-        level.sendParticles(AVALON_CYAN_GOLD, player.getX(), player.getY() + 1.0, player.getZ(),
-                24, 0.9, 0.9, 0.9, 0.06);
-        level.sendParticles(GOLD_SPARK, player.getX(), player.getY() + 1.0, player.getZ(),
-                18, 0.8, 0.9, 0.8, 0.06);
-
-        player.displayClientMessage(Component.literal("§b§l✦ AVALON — TÁI TẠO TOÀN VẸN SINH LỰC! ✦"), true);
-
-        ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
-                ExcaliburSyncPayload.EVENT_AVALON_REVIVE, player.getId(), (byte) 0,
-                22.0F, player.getX(), player.getY(), player.getZ(),
-                player.getYRot(), player.getXRot(), 3.6F, 1.0F));
-        sendPassiveSync(player, level, st, true);
-        return true;
     }
 
     /** Phân nhánh chuẩn (Aerial Judgment -> Delay Golden Crescent Wave -> Royal Swordplay 4-Hit). */
@@ -1639,12 +1583,10 @@ public final class ExcaliburCombatHandler {
             long now = level.getGameTime();
             boolean holdingExcalibur = isHoldingExcalibur(player);
             boolean holdingOffhandExcalibur = player.getOffhandItem().is(ModItems.EXCALIBUR);
-            boolean avalonActive = AvalonItem.isAvalonActive(player);
 
             PlayerExcaliburState existing = PLAYER_STATES.get(player.getUUID());
             boolean ultCooldownJustFinished = false;
             if (existing != null) {
-                if (existing.avalonReviveCdTicks > 0) existing.avalonReviveCdTicks--;
                 if (existing.ultCooldownTicks > 0) {
                     existing.ultCooldownTicks--;
                     if (existing.ultCooldownTicks == 0) {
@@ -1665,21 +1607,12 @@ public final class ExcaliburCombatHandler {
                 }
             }
 
-            if (!holdingExcalibur && !holdingOffhandExcalibur && !avalonActive) {
+            if (!holdingExcalibur && !holdingOffhandExcalibur) {
                 continue;
             }
 
             ItemStack held = holdingExcalibur ? player.getMainHandItem() : player.getOffhandItem();
             PlayerExcaliburState st = stateOf(player, held);
-            st.avalonLinked = avalonActive;
-
-            if (avalonActive && (now % 10L) == 0L) {
-                tickAvalonPassive(player, level, st);
-            }
-
-            if (!holdingExcalibur && !holdingOffhandExcalibur) {
-                continue;
-            }
 
             if (holdingExcalibur) {
                 if (st.royalCounterBeat2Tick > 0L && now >= st.royalCounterBeat2Tick) {
@@ -1876,25 +1809,6 @@ public final class ExcaliburCombatHandler {
         sendPassiveSync(player, level, st, true);
     }
 
-    private static void tickAvalonPassive(ServerPlayer player, ServerLevel level, PlayerExcaliburState st) {
-        if (player.hasEffect(MobEffects.WITHER)) player.removeEffect(MobEffects.WITHER);
-        if (player.hasEffect(MobEffects.POISON)) player.removeEffect(MobEffects.POISON);
-        if (player.hasEffect(MobEffects.HUNGER)) player.removeEffect(MobEffects.HUNGER);
-        if (player.hasEffect(MobEffects.DIG_SLOWDOWN)) player.removeEffect(MobEffects.DIG_SLOWDOWN);
-        if (player.hasEffect(MobEffects.WEAKNESS)) {
-            player.removeEffect(MobEffects.WEAKNESS);
-        }
-        if (player.getFoodData().getFoodLevel() < 18) {
-            player.getFoodData().setFoodLevel(18);
-            player.getFoodData().setSaturation(Math.max(player.getFoodData().getSaturationLevel(), 6.0F));
-        }
-        if (player.getHealth() < player.getMaxHealth()) {
-            player.heal(2.0F);
-            level.sendParticles(AVALON_CYAN_GOLD, player.getX(), player.getY() + 1.0, player.getZ(),
-                    2, 0.40, 0.50, 0.40, 0.02);
-        }
-    }
-
     private static void applyKingsInspirationAura(ServerPlayer wielder, ServerLevel level, boolean unsealed) {
         AABB box = wielder.getBoundingBox().inflate(14.0);
         List<LivingEntity> allies = level.getEntitiesOfClass(LivingEntity.class, box,
@@ -1932,12 +1846,11 @@ public final class ExcaliburCombatHandler {
                                         PlayerExcaliburState st, boolean force) {
         long now = level.getGameTime();
         byte flags = 0;
-        if (st.avalonLinked) flags |= ExcaliburPassiveSyncPayload.FLAG_AVALON;
         if (st.unsheathed) flags |= ExcaliburPassiveSyncPayload.FLAG_UNSHEATHED;
 
         int roundedEnergy = Math.round(st.energy);
         boolean visualChanged = (flags != st.lastBroadcastVisualFlags);
-        boolean anyTimerActive = st.avalonReviveCdTicks > 0 || st.ultCooldownTicks > 0;
+        boolean anyTimerActive = st.ultCooldownTicks > 0;
         int hash = ((roundedEnergy * 31 + st.sealMask) * 31 + flags);
         long ticksSinceSync = now - st.lastPassiveSyncTick;
         if (!force && !visualChanged && hash == st.lastSyncedHash && (!anyTimerActive || ticksSinceSync < 20L)) {
@@ -1951,8 +1864,7 @@ public final class ExcaliburCombatHandler {
                 st.energy,
                 (short) (st.sealMask & 0x1FFF),
                 flags,
-                (short) Mth.clamp(st.ultCooldownTicks, 0, 30000),
-                (short) Mth.clamp(st.avalonReviveCdTicks, 0, 30000));
+                (short) Mth.clamp(st.ultCooldownTicks, 0, 30000));
         if (force || visualChanged) {
             st.lastBroadcastVisualFlags = flags;
             ModNetworking.sendExcaliburPassiveNearby(level, player.position(), payload);
