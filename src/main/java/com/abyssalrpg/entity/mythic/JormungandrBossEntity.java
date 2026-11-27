@@ -59,7 +59,6 @@ import software.bernie.geckolib.animation.RawAnimation;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -930,12 +929,13 @@ public class JormungandrBossEntity extends AbstractGeoMythicBoss {
         if (this.venomPuddles.isEmpty())
             return;
         int poisonTicks = Math.min(80, cfg.venomDurationTicks / 2);
-        Iterator<VenomPuddle> it = this.venomPuddles.iterator();
-        while (it.hasNext()) {
-            VenomPuddle puddle = it.next();
+        List<VenomPuddle> snapshot = new ArrayList<>(this.venomPuddles);
+        for (VenomPuddle puddle : snapshot) {
+            if (!this.venomPuddles.contains(puddle))
+                continue;
             puddle.ticksLeft--;
             if (puddle.ticksLeft <= 0) {
-                it.remove();
+                this.venomPuddles.remove(puddle);
                 continue;
             }
             if (puddle.ticksLeft % 4 == 0) {
@@ -950,7 +950,8 @@ public class JormungandrBossEntity extends AbstractGeoMythicBoss {
                 for (Player p : level.getEntitiesOfClass(Player.class, box,
                         pl -> pl.isAlive() && !pl.isCreative() && !pl.isSpectator())) {
                     if (Math.hypot(p.getX() - puddle.pos.x, p.getZ() - puddle.pos.z) <= puddle.radius) {
-                        p.hurt(level.damageSources().mobAttack(this), puddle.tickDamage);
+                        com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                                p.hurt(level.damageSources().mobAttack(this), puddle.tickDamage));
                         p.addEffect(new MobEffectInstance(MobEffects.POISON, poisonTicks, 1));
                     }
                 }

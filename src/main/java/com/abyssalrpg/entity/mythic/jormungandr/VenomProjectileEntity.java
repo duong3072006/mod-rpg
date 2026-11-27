@@ -112,17 +112,19 @@ public class VenomProjectileEntity extends Entity {
         }
 
         if (directHit != null) {
-            directHit.hurt(owner instanceof LivingEntity l
-                    ? level.damageSources().mobAttack(l)
-                    : level.damageSources().magic(), impactDamage);
+            com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                    directHit.hurt(owner instanceof LivingEntity l
+                            ? level.damageSources().mobAttack(l)
+                            : level.damageSources().magic(), impactDamage));
             directHit.addEffect(new MobEffectInstance(MobEffects.POISON, venomTicks, 1));
         } else {
             AABB splash = new AABB(pos.x - 2.2, pos.y - 1.0, pos.z - 2.2, pos.x + 2.2, pos.y + 2.2, pos.z + 2.2);
             for (Player p : level.getEntitiesOfClass(Player.class, splash,
                     pl -> pl.isAlive() && !pl.isCreative() && !pl.isSpectator())) {
-                p.hurt(owner instanceof LivingEntity l
-                        ? level.damageSources().mobAttack(l)
-                        : level.damageSources().magic(), impactDamage * 0.85f);
+                com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                        p.hurt(owner instanceof LivingEntity l
+                                ? level.damageSources().mobAttack(l)
+                                : level.damageSources().magic(), impactDamage * 0.85f));
                 p.addEffect(new MobEffectInstance(MobEffects.POISON, venomTicks, 1));
             }
         }

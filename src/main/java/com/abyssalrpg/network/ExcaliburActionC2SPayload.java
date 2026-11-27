@@ -6,17 +6,16 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
 /**
- * Gói C2S gửi hành động Excalibur / Excalibur Morgan từ Client lên Server:
- * - {@link #ACTION_AIR_SLASH}: LMB chém gió / giữ chuột chém liên hoàn 3 nhịp.
- * - {@link #ACTION_ULTIMATE}: RMB kích hoạt tuyệt kỹ chùm sáng EXCALIBUR! / EXCALIBUR MORGAN!.
- * - {@link #ACTION_CHARGE_START}: Bắt đầu gồng 4.0s Dark Mana [R] (hỗ trợ cả nhấn giữ & bấm kích hoạt).
- * - {@link #ACTION_CHARGE_CANCEL}: Hủy gồng Dark Mana (nếu người chơi bấm hủy / đổi vũ khí).
+ * Gói C2S gửi hành động Excalibur từ Client lên Server:
+ * - {@link #ACTION_AIR_SLASH}: LMB đánh thường / tự phân nhánh Golden Crescent Wave (Delay 0.3s) & Aerial Judgment.
+ * - {@link #ACTION_ULTIMATE}: RMB kích hoạt tuyệt kỹ EXCALIBUR! khi tích đủ 100 năng lượng.
+ * - {@link #ACTION_STRIKE_AIR}: Giữ chuột trái sau Hit 1 hoặc Hit 2 -> Strike Air Thrust (5 blocks, phá khiên).
  */
 public record ExcaliburActionC2SPayload(byte actionId, int targetEntityId) implements CustomPacketPayload {
     public static final byte ACTION_AIR_SLASH = 0;
     public static final byte ACTION_ULTIMATE = 1;
-    public static final byte ACTION_CHARGE_START = 2;
-    public static final byte ACTION_CHARGE_CANCEL = 3;
+    public static final byte ACTION_STRIKE_AIR = 2;
+    public static final byte ACTION_SHEATHE = 3;
 
     public static final Type<ExcaliburActionC2SPayload> TYPE =
             new Type<>(AbyssalRpgMod.id("excalibur_action_c2s"));

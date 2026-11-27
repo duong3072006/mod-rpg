@@ -91,11 +91,17 @@ public final class ModSounds {
     public static final SoundEvent DUAL_BLADE_DASH_WHOOSH = register("item.dual_knife.dash_whoosh");
     public static final SoundEvent DUAL_BLADE_DASH_FLURRY = register("item.dual_knife.dash_flurry");
 
-    // Excalibur & Excalibur Morgan SoundEvents (defined in assets/abyssalrpg/sounds.json)
+    // Excalibur SoundEvents (defined in assets/abyssalrpg/sounds.json)
     public static final SoundEvent EXCALIBUR_SLASH = register("item.excalibur.slash");
     public static final SoundEvent EXCALIBUR_CHARGE = register("item.excalibur.charge");
     public static final SoundEvent EXCALIBUR_BEAM = register("item.excalibur.beam");
     public static final SoundEvent MORGAN_TRANSFORM = register("item.excalibur.morgan_transform");
+
+    // Sci-Fi Katana SoundEvents (defined in assets/abyssalrpg/sounds.json)
+    public static final SoundEvent KATANA_SLASH = register("item.katana.slash");
+    public static final SoundEvent KATANA_DRAW = register("item.katana.draw");
+    public static final SoundEvent KATANA_SHEATH = register("item.katana.sheath");
+    public static final SoundEvent KATANA_PARRY = register("item.katana.parry");
 
     private static SoundEvent register(String path) {
         ResourceLocation id = AbyssalRpgMod.id(path);

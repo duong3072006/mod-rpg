@@ -307,7 +307,8 @@ public final class CinderDragonSkillGoals {
                         double len = toP.length();
                         if (len > range || len < 0.5) continue;
                         if (toP.normalize().dot(dir) >= cosCone && hasLineOfSight(level, mouth, eye)) {
-                            p.hurt(boss.damageSources().mobAttack(boss), tickDmg);
+                            com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                                    p.hurt(boss.damageSources().mobAttack(boss), tickDmg));
                             p.igniteForSeconds(4);
                         }
                     }
@@ -374,7 +375,8 @@ public final class CinderDragonSkillGoals {
                     this.detonated[i] = true;
                     Vec3 spot = this.targetSpots.get(i);
                     float dmg = boss.scaleSkillDamage(CinderDragonConfig.get().magmaFireballDamage);
-                    damageRadius(level, spot, 4.8 * s, dmg, 0.35, true, false);
+                    com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                            damageRadius(level, spot, 4.8 * s, dmg, 0.35, true, false));
                     boss.addFirePatch(spot, (float) (3.8 * s), 70, boss.scaleSkillDamage(CinderDragonConfig.get().firePatchTickDamage));
                     level.playSound(null, spot.x, spot.y, spot.z, ModSounds.CINDER_SLAM, SoundSource.HOSTILE, 2.0f, 0.80f);
                     ModNetworking.sendCinderDragonVfxNearby(level, CinderDragonVfxPayload.KIND_FIREBALL_IMPACT,
@@ -648,7 +650,8 @@ public final class CinderDragonSkillGoals {
                         this.lastStrafeBucket = bucket;
                         Vec3 groundSpot = new Vec3(boss.getX(), this.landPos.y, boss.getZ());
                         float tickDmg = boss.scaleSkillDamage(CinderDragonConfig.get().skyfallInfernoTickDamage);
-                        damageRadius(level, groundSpot, 6.4 * s, tickDmg, 0.15, true, false);
+                        com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                                damageRadius(level, groundSpot, 6.4 * s, tickDmg, 0.15, true, false));
                         boss.addFirePatch(groundSpot, (float) (5.0 * s), 80, boss.scaleSkillDamage(CinderDragonConfig.get().firePatchTickDamage));
                         level.playSound(null, groundSpot.x, groundSpot.y, groundSpot.z, ModSounds.CINDER_BREATH, SoundSource.HOSTILE, 2.5f, 0.74f);
                         ModNetworking.sendCinderDragonVfxNearby(level, CinderDragonVfxPayload.KIND_BREATH_CONE,
@@ -764,7 +767,8 @@ public final class CinderDragonSkillGoals {
                         if (proj < 0.0 || proj > len) continue;
                         Vec3 closest = mouth.add(this.lockedBeamDir.scale(proj));
                         if (closest.distanceTo(p.position().add(0, 1.0, 0)) <= beamRadius && hasLineOfSight(level, mouth, closest)) {
-                            p.hurt(boss.damageSources().mobAttack(boss), tickDmg);
+                            com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                                    p.hurt(boss.damageSources().mobAttack(boss), tickDmg));
                             p.igniteForSeconds(5);
                         }
                     }
@@ -937,7 +941,8 @@ public final class CinderDragonSkillGoals {
                 this.burstFired = true;
                 float burstDmg = boss.scaleSkillDamage(CinderDragonConfig.get().ashenSupernovaDamage);
                 double burstRad = 23.5 * s;
-                damageRadius(level, boss.position(), burstRad, burstDmg, 1.0, true, false);
+                com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                        damageRadius(level, boss.position(), burstRad, burstDmg, 1.0, true, false));
                 level.playSound(null, boss.blockPosition(), ModSounds.CINDER_ROAR, SoundSource.HOSTILE, 3.8f, 0.72f);
                 if (CinderDragonConfig.get().enableFootstepShake) {
                     ModNetworking.sendShakeNearby(level, boss.position(), 108.0 * s, 3.0f, 30);
@@ -960,7 +965,8 @@ public final class CinderDragonSkillGoals {
             double s = boss.getScaleRatio();
             for (int i = from; i < Math.min(to, this.emberSpots.size()); i++) {
                 Vec3 sp = this.emberSpots.get(i);
-                damageRadius(level, sp, 5.2 * s, dmg, 0.45, true, false);
+                com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                        damageRadius(level, sp, 5.2 * s, dmg, 0.45, true, false));
                 boss.addFirePatch(sp, (float) (4.2 * s), 75, boss.scaleSkillDamage(CinderDragonConfig.get().firePatchTickDamage));
                 level.playSound(null, sp.x, sp.y, sp.z, ModSounds.CINDER_SLAM, SoundSource.HOSTILE, 2.2f, 0.78f);
                 ModNetworking.sendCinderDragonVfxNearby(level, CinderDragonVfxPayload.KIND_FIREBALL_IMPACT,

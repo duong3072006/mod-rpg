@@ -224,7 +224,7 @@ public class NightmareBoneSpikeEntity extends Entity {
                 DamageSource src = (owner instanceof LivingEntity l)
                         ? level.damageSources().mobAttack(l)
                         : level.damageSources().magic();
-                p.hurt(src, this.damage);
+                com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() -> p.hurt(src, this.damage));
                 double up = isCageMode() ? 0.25 : 0.72;
                 p.setDeltaMovement(p.getDeltaMovement().add(0.0, up, 0.0));
                 p.hurtMarked = true;

@@ -5,6 +5,7 @@ import com.abyssalrpg.combat.CerberusArmorHandler;
 import com.abyssalrpg.combat.CinderDragonArmorHandler;
 import com.abyssalrpg.combat.DualBladeCombatHandler;
 import com.abyssalrpg.combat.ExcaliburCombatHandler;
+import com.abyssalrpg.combat.KatanaCombatHandler;
 import com.abyssalrpg.combat.MuramasaCombatHandler;
 import com.abyssalrpg.combat.NightmareArmorHandler;
 import com.abyssalrpg.combat.SeaWeaponsCombatHandler;
@@ -32,6 +33,7 @@ import com.abyssalrpg.registry.ModStructures;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -75,6 +77,7 @@ public class AbyssalRpgMod implements ModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(DualBladeCombatHandler::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(TogetsuCombatHandler::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(ExcaliburCombatHandler::tickServer);
+        ServerTickEvents.END_SERVER_TICK.register(KatanaCombatHandler::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(SeaWeaponsCombatHandler::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(MuramasaCombatHandler::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(NightmareArmorHandler::tickServer);
@@ -83,6 +86,12 @@ public class AbyssalRpgMod implements ModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(CerberusArmorHandler::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(BossCombatEnhancer::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(AbyssCommands::tickActiveAudits);
+
+        ServerLivingEntityEvents.AFTER_DEATH.register(ExcaliburCombatHandler::onEntityKilled);
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            ExcaliburCombatHandler.onPlayerDisconnect(handler.getPlayer());
+            KatanaCombatHandler.onPlayerDisconnect(handler.getPlayer());
+        });
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             NightmareArmorHandler.syncPlayerImmediate(handler.getPlayer());

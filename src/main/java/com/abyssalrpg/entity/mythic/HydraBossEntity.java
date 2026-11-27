@@ -2029,7 +2029,8 @@ public class HydraBossEntity extends AbstractGeoMythicBoss {
                         if (hd > 0.5 && hd <= coneLen) {
                             Vec3 hDir = new Vec3(toP.x, 0, toP.z).normalize();
                             if (hDir.dot(sweepDir) >= halfAngleCos) {
-                                p.hurt(boss.damageSources().mobAttack(boss), tickDmg);
+                                com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                                        p.hurt(boss.damageSources().mobAttack(boss), tickDmg));
                             }
                         }
                     }
@@ -2330,7 +2331,8 @@ public class HydraBossEntity extends AbstractGeoMythicBoss {
                     boolean inRing = hd >= Math.max(0.0, prevR - 1.6 * eff) && hd <= curR + 1.6 * eff;
                     boolean jumpedOver = !p.onGround() && (p.getY() - boss.getY()) > 1.05;
                     if (inRing && !jumpedOver && hit.add(p.getUUID())) {
-                        p.hurt(boss.damageSources().mobAttack(boss), dmg);
+                        com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                                p.hurt(boss.damageSources().mobAttack(boss), dmg));
                         Vec3 push = p.position().subtract(boss.position());
                         Vec3 n = push.horizontalDistanceSqr() > 1e-4 ? new Vec3(push.x, 0, push.z).normalize() : new Vec3(1, 0, 0);
                         p.setDeltaMovement(p.getDeltaMovement().add(n.x * 1.25, 0.55, n.z * 1.25));
@@ -2389,7 +2391,8 @@ public class HydraBossEntity extends AbstractGeoMythicBoss {
                 if (boss.distanceTo(p) <= 24.0 * eff) {
                     chainedPlayerId = p.getUUID();
                     float pullDmg = SpiritHydraConfig.get().soulChainPullDamage * boss.skillDamageScale();
-                    p.hurt(boss.damageSources().mobAttack(boss), pullDmg);
+                    com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                            p.hurt(boss.damageSources().mobAttack(boss), pullDmg));
                     p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 1));
                     level.playSound(null, p.blockPosition(), SoundEvents.CHAIN_BREAK, SoundSource.HOSTILE, 2.4f, 0.68f);
                 }

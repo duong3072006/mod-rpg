@@ -39,7 +39,6 @@ import software.bernie.geckolib.animation.AnimationController;
 import software.bernie.geckolib.animation.RawAnimation;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -316,7 +315,8 @@ public class FenrirBossEntity extends AbstractGeoMythicBoss {
                     ShockwaveRingEntity.spawn(sl, this.position().add(0, 0.35, 0), 16.5f, COLOR_DIVINE_GALE, 18);
                     ShockwaveRingEntity.spawn(sl, this.position().add(0, 0.75, 0), 12.0f, COLOR_CRIMSON_CLAW, 14);
                     ModNetworking.sendShakeNearby(sl, this.position(), 44.0, 2.5f, 18);
-                    damagePlayersInRadius(sl, this.position(), 11.5, (float) this.getAttributeValue(Attributes.ATTACK_DAMAGE) * 1.15f, 1.4);
+                    com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                            damagePlayersInRadius(sl, this.position(), 11.5, (float) this.getAttributeValue(Attributes.ATTACK_DAMAGE) * 1.15f, 1.4));
                     // Gọi ngay 2 cột lốc xoáy hộ vệ khi thức tỉnh Phase 2!
                     spawnTwinTornadoes(sl, this.getTarget(), (float) this.getAttributeValue(Attributes.ATTACK_DAMAGE) * 0.45f, true);
                 }
@@ -344,13 +344,13 @@ public class FenrirBossEntity extends AbstractGeoMythicBoss {
         if (this.activeTornadoes.isEmpty()) return;
 
         LivingEntity focusTarget = this.getTarget();
-        Iterator<ActiveWindTornado> it = this.activeTornadoes.iterator();
-        while (it.hasNext()) {
-            ActiveWindTornado t = it.next();
+        List<ActiveWindTornado> snapshot = new ArrayList<>(this.activeTornadoes);
+        for (ActiveWindTornado t : snapshot) {
+            if (!this.activeTornadoes.contains(t)) continue;
             t.ticksLeft--;
             if (t.ticksLeft <= 0) {
                 ShockwaveRingEntity.spawn(level, t.pos.add(0, 0.4, 0), 5.2f, COLOR_ICE_WHITE, 8);
-                it.remove();
+                this.activeTornadoes.remove(t);
                 continue;
             }
 
@@ -441,7 +441,8 @@ public class FenrirBossEntity extends AbstractGeoMythicBoss {
                 victim.hasImpulse = true;
 
                 if (t.ticksLeft % 12 == 0) {
-                    victim.hurt(this.damageSources().mobAttack(this), t.sliceDamage);
+                    com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                            victim.hurt(this.damageSources().mobAttack(this), t.sliceDamage));
                     level.playSound(null, victim.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP,
                             SoundSource.HOSTILE, 1.0f, 1.35f);
                 }

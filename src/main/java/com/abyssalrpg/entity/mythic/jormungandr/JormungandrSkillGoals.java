@@ -607,7 +607,8 @@ public final class JormungandrSkillGoals {
                     double dist = Math.hypot(pl.getX() - c.x, pl.getZ() - c.z);
                     // Sóng tầm thấp (<= 1.45 block trên mặt đất) -> người chơi NHẢY ĐÚNG LÚC sẽ né hoàn toàn!
                     if (Math.abs(dist - r) <= 1.8 && pl.getY() <= c.y + 1.15 && hit.add(pl.getUUID())) {
-                        pl.hurt(level.damageSources().mobAttack(boss), dmg);
+                        com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                                pl.hurt(level.damageSources().mobAttack(boss), dmg));
                         applyVenom(pl, 80); // Poison II ngắn (4 giây)
                     }
                 }

@@ -53,7 +53,6 @@ import software.bernie.geckolib.animation.RawAnimation;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -876,12 +875,12 @@ public class NightmareKnightBossEntity extends AbstractGeoMythicBoss {
 
     private void tickFlamePatches(ServerLevel level) {
         if (this.flamePatches.isEmpty()) return;
-        Iterator<FlameTrailPatch> it = this.flamePatches.iterator();
-        while (it.hasNext()) {
-            FlameTrailPatch patch = it.next();
+        List<FlameTrailPatch> snapshot = new ArrayList<>(this.flamePatches);
+        for (FlameTrailPatch patch : snapshot) {
+            if (!this.flamePatches.contains(patch)) continue;
             patch.ticksLeft--;
             if (patch.ticksLeft <= 0) {
-                it.remove();
+                this.flamePatches.remove(patch);
                 continue;
             }
             if (patch.ticksLeft % 14 == 0) {
@@ -894,7 +893,8 @@ public class NightmareKnightBossEntity extends AbstractGeoMythicBoss {
                         patch.pos.x + patch.radius, patch.pos.y + 2.2, patch.pos.z + patch.radius);
                 for (Player p : level.getEntitiesOfClass(Player.class, box,
                         pl -> pl.isAlive() && !pl.isCreative() && !pl.isSpectator())) {
-                    p.hurt(level.damageSources().mobAttack(this), patch.damage);
+                    com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                            p.hurt(level.damageSources().mobAttack(this), patch.damage));
                     p.igniteForSeconds(3);
                 }
             }

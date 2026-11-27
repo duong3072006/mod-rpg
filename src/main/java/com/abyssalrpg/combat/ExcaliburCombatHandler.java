@@ -1,13 +1,13 @@
 package com.abyssalrpg.combat;
 
-import com.abyssalrpg.AbyssalRpgMod;
+import com.abyssalrpg.item.AvalonItem;
 import com.abyssalrpg.item.ExcaliburItem;
 import com.abyssalrpg.network.ExcaliburActionC2SPayload;
+import com.abyssalrpg.network.ExcaliburPassiveSyncPayload;
 import com.abyssalrpg.network.ExcaliburSyncPayload;
 import com.abyssalrpg.network.ModNetworking;
 import com.abyssalrpg.registry.ModItems;
 import com.abyssalrpg.registry.ModSounds;
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -16,124 +16,156 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.entity.projectile.ProjectileDeflection;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 /**
- * Trung tâm chiến đấu Server-authoritative cho **Excalibur & Excalibur Morgan**:
- * 1. **3-Hit Knight Combo (Golden / Morgan):**
- *    - Hit 1 (0.35s): Diagonal Cleave + crescent slash trail (1.8 blocks ahead).
- *    - Hit 2 (0.35s): Horizontal Knight Sweep + torso twist.
- *    - Hit 3 (0.45s): Heavy Overhead Judgment Slam + 0.08s hit-stop + AoE shockwave!
- * 2. **Normal Ultimate (RMB — 'EXCALIBUR!'):**
- *    - 0.65s Two-Handed Skyward Charge + 0.10s Apex Flash + Vertical Overhead Slam firing a 14-block Golden Holy Beam!
- * 3. **4.0s Dark Mana Charge & 'Excalibur Morgan' Awakening ([R], 20s Duration, 35s Cooldown):**
- *    - 4.0s (80 ticks) channel with smooth Action Bar progress (`§5[Charging Dark Mana: X%...]`) + rising hum.
- *    - At 4.0s: thunderous dark explosion, Instant Heal 40% Max HP + Regeneration II (5s),
- *      +40% Damage Surge, Resistance II (20s), 100% Knockback Resistance, and cleanse/block Poison, Wither, Slowness, Weakness!
- *    - Morgan RMB ('EXCALIBUR MORGAN!'): massive 18-block pitch-black & dark-purple beam, wider AoE, heavy knockback,
- *      scorched ground particles, Wither II + Slowness II on hit!
+ * Trung tâm chiến đấu **Royal Swordplay + Vòng Phép Fairy Tail 2D** cho **Excalibur**:
+ * - **Chuỗi 4 đòn thường:** `HIT_1_SWEEP` (0.35s) → `HIT_2_RISING` (0.35s) → `HIT_3_THRUST` (0.40s) → `HIT_4_SLAM` (0.50s).
+ * - **3 Nhánh Combo Mở Rộng (Tối giản VFX — không khói bụi):**
+ *   1. **Strike Air Thrust (`STRIKE_AIR`):** Hold Attack sau Hit 1/2 → Lấy đà (0.20s) + Đâm bộc phá (dash 0.6b) phóng 1 vòng xung kích bay 5 blocks, đẩy lùi & phá khiên.
+ *   2. **Golden Crescent Wave (`GOLDEN_CRESCENT`):** Delay Combo (Hit 1 → Đợi 0.30s → Đánh) → Quét tròn 360° (0.28s) + Bổ phóng 1 lưỡi liềm vàng mảnh trượt mặt đất 7 blocks.
+ *   3. **Aerial Judgment (`AIR_1_DIAG` → `AIR_2_DIAG` → `AIR_3_FALLING_STAR`):** 2 nhịp chém chéo giữ độ cao (`motionY = 0.05`) → Chĩa mũi kiếm xuống (`Pitch -10°`) lao cắm đất (`motionY = -1.3`) bật 1 vòng phép 2D vàng 0.3s.
+ * - **Hệ thống Đỡ Kiếm & Phản Đòn Hoàng Gia (Guard & Royal Counter):**
+ *   - Đỡ Trực Diện (`Hold RMB`): Giảm `70%` sát thương phía trước.
+ *   - Đỡ Trên Cao (`Hold RMB + Pitch < -30°`): Chặn `100%` đòn bổ từ trên cao.
+ *   - **Royal Parry Counter (`<= 0.18s` / `4 ticks` trước khi trúng đòn):**
+ *     Nhịp 1 (`0.00–0.15s`) gạt chệch `+35°` lóe vòng phép vàng 2D + tiếng "Klang!" → Nhịp 2 (`0.15–0.40s`) tự động vặn ngược `-40°` chém ngang gây `200%` sát thương & làm choáng `0.8s` (`16 ticks`)!
+ * - **Tuyệt kỹ `[Chuột Phải]` (đủ `100/100` năng lượng):**
+ *   GĐ 1 (`0.00–0.90s` / 0–18t) tụ lực + vòng phép 2D dưới chân → GĐ 2 (`0.90–1.20s` / 18–24t) ngả kiếm `-125°` mở rộng vòng phép `+20%`
+ *   → GĐ 3 (`1.20–2.30s` / 24–46t) bổ ngang `-85°` + 3 vòng phép đứng dọc trục bắn chùm tia vàng lõi trắng `20 blocks` (`1500%` sát thương chuẩn) → Thu thế (`2.30–2.60s` / 46–52t).
  */
 public final class ExcaliburCombatHandler {
-    public static final int CHARGE_DURATION_TICKS = 80;     // 4.0 seconds
-    public static final int MORGAN_DURATION_TICKS = 400;    // 20.0 seconds
-    public static final int MORGAN_COOLDOWN_TICKS = 700;    // 35.0 seconds
-    public static final int ULT_COOLDOWN_TICKS = 160;       // 8.0 seconds
-    public static final int ULT_BEAM_FIRE_TICK = 15;        // 0.65s charge + 0.10s apex flash -> fire at 0.75s!
-    public static final int ULT_TOTAL_TICKS = 24;           // 1.20s total including follow-through hold
-    public static final float GOLDEN_BEAM_RANGE = 14.0F;
-    public static final float MORGAN_BEAM_RANGE = 18.0F;
-    private static final int COMBO_RESET_TICKS = 44;
+    public static final int ULT_TILT_START_TICK = 18;      // 0.90s
+    public static final int ULT_CLEAVE_START_TICK = 24;    // 1.20s
+    public static final int ULT_BEAM_FIRE_TICK = 27;       // 1.35s
+    public static final int ULT_BEAM_END_TICK = 46;        // 2.30s
+    public static final int ULT_TOTAL_TICKS = 52;          // 2.60s
+    public static final float BEAM_RANGE = 20.0F;
+    public static final float BEAM_START_HALF_W = 0.50F;
+    public static final float BEAM_START_HALF_H = 0.60F;
+    public static final float BEAM_END_HALF_W = 1.95F;
+    public static final float BEAM_END_HALF_H = 2.35F;
+    public static final float ULT_DAMAGE_MULTIPLIER = 15.0F;
+    public static final int FULL_ENERGY_STRENGTH_AMP = 3;
+    public static final int FULL_ENERGY_STRENGTH_TICKS = 80;
+    public static final int ULT_COOLDOWN_TICKS = 500;      // Hồi chiêu 25 giây sau khi dùng Tuyệt kỹ Excalibur!
+    public static final int AVALON_REVIVE_CD_TICKS = 300;
 
-    private static final DustParticleOptions GOLD_SHOCK =
-            new DustParticleOptions(new Vector3f(1.00F, 0.86F, 0.28F), 1.55F);
+    public static final long DELAY_CRESCENT_MIN_TICKS = 7L;   // 0.30s+ sau Hit 1
+    public static final long DELAY_CRESCENT_MAX_TICKS = 26L;
+    public static final long PERFECT_PARRY_WINDOW_TICKS = 4L; // 0.18s–0.20s cửa sổ Royal Parry Counter!
+    public static final int PARRY_STUN_TICKS = 16;            // 0.80s làm choáng mục tiêu ở Nhịp 2!
+    public static final int AVALON_PARRY_WINDOW_TICKS = 4;    // 0.20s (4 ticks) cửa sổ Parry bằng vỏ Avalon khi kiếm trong vỏ!
+    public static final int AVALON_PARRY_STUN_TICKS = 20;     // 1.00s làm choáng khi rút kiếm phản công từ vỏ Avalon!
+    public static final float AVALON_PARRY_ENERGY_GAIN = 15.0F; // Hồi +15 Năng Lượng khi Parry & Rút kiếm phản công!
+    public static final long AUTO_SHEATHE_IDLE_TICKS = 80L;   // 4.0s không đánh/đỡ -> tự động tra kiếm vào vỏ Avalon!
+    public static final long SHEATHE_CLINK_DELAY_TICKS = 8L;  // Mốc 0.40s: phát tiếng "Clink!" + 3 đốm sáng vàng tại miệng vỏ!
+    public static final long SHEATHE_TOTAL_TICKS = 11L;       // Tổng thời lượng animation cất kiếm: 0.55s (11 ticks)
+    private static final int COMBO_RESET_TICKS = 36;
+
+    private static final DustParticleOptions GOLD_SPARK =
+            new DustParticleOptions(new Vector3f(1.00F, 0.90F, 0.40F), 0.95F);
     private static final DustParticleOptions WHITE_HOLY =
-            new DustParticleOptions(new Vector3f(1.00F, 0.99F, 0.90F), 1.40F);
-    private static final DustParticleOptions MORGAN_VOID =
-            new DustParticleOptions(new Vector3f(0.10F, 0.03F, 0.06F), 1.65F);
-    private static final DustParticleOptions MORGAN_CRIMSON =
-            new DustParticleOptions(new Vector3f(0.98F, 0.12F, 0.18F), 1.55F);
-    private static final DustParticleOptions MORGAN_BEAM_PURPLE =
-            new DustParticleOptions(new Vector3f(0.70F, 0.18F, 1.00F), 1.65F);
+            new DustParticleOptions(new Vector3f(1.00F, 0.99F, 0.92F), 0.88F);
+    private static final DustParticleOptions AVALON_CYAN_GOLD =
+            new DustParticleOptions(new Vector3f(0.45F, 0.95F, 1.00F), 1.25F);
+    private static final ProjectileDeflection CLIENT_ARROW_DEFLECT_SENTINEL = (proj, deflectedBy, random) -> {};
 
     private static final Map<UUID, PlayerExcaliburState> PLAYER_STATES = new HashMap<>();
     private static final Map<UUID, ActiveUltimateCast> ACTIVE_ULTIMATES = new HashMap<>();
-    private static final Map<UUID, ActiveMorganChannel> ACTIVE_CHANNELS = new HashMap<>();
     private static final ThreadLocal<ActiveHitContext> ACTIVE_HIT = new ThreadLocal<>();
+    private static final ThreadLocal<Boolean> TRUE_DAMAGE_ACTIVE = ThreadLocal.withInitial(() -> Boolean.FALSE);
+    private static final ThreadLocal<Boolean> SHIELD_BREAK_ACTIVE = ThreadLocal.withInitial(() -> Boolean.FALSE);
+    private static final ThreadLocal<Float> OVERRIDE_ARMOR_PIERCE = new ThreadLocal<>();
+    private static final ThreadLocal<Boolean> REENTRANT_GUARD_DAMAGE = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
     private ExcaliburCombatHandler() {}
 
     private static final class PlayerExcaliburState {
         int nextComboStep = 0;
+        ExcaliburMoveType lastMove = ExcaliburMoveType.HIT_1_SWEEP;
         long lastSwingTick = -1000L;
-        float energy = -1.0F; // -1 = chưa khởi tạo từ ItemStack
-    }
+        long lastCombatTick = -1000L;
+        long lastDishonorTick = -10000L;
 
-    private static float getOrInitEnergy(ServerPlayer player, ItemStack stack) {
-        PlayerExcaliburState st = PLAYER_STATES.computeIfAbsent(player.getUUID(), k -> new PlayerExcaliburState());
-        if (st.energy < 0.0F) {
-            st.energy = ExcaliburItem.getEnergy(stack);
-        }
-        return st.energy;
-    }
+        float energy = -1.0F;
+        long lastDamagedEnemyTick = -100L;
+        long lastKillEnergyTick = -100L;
 
-    private static void setAndSyncEnergy(ServerPlayer player, ServerLevel level, ItemStack stack, float value, boolean persistToStack) {
-        PlayerExcaliburState st = PLAYER_STATES.computeIfAbsent(player.getUUID(), k -> new PlayerExcaliburState());
-        float clamped = Mth.clamp(value, 0.0F, 100.0F);
-        boolean changed = Math.abs(st.energy - clamped) >= 0.05F;
-        st.energy = clamped;
-        if (persistToStack) {
-            ExcaliburItem.setEnergy(stack, clamped);
-        }
-        if (changed || persistToStack) {
-            // Đồng bộ thanh năng lượng thuần mạng (0 ghi đè ItemStack khi đứng yên -> 0 bao giờ giật tay/tụt kiếm!)
-            ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
-                    ExcaliburSyncPayload.EVENT_ENERGY_SYNC, player.getId(), (byte) 0, ExcaliburItem.isMorgan(stack),
-                    0.0F, player.getX(), player.getY(), player.getZ(),
-                    player.getYRot(), player.getXRot(), 0.0F, clamped / 100.0F));
-        }
+        int sealMask = 0;
+        int unlockedSeals = 0;
+        boolean wasUnsealed = false;
+        boolean avalonLinked = false;
+        int avalonReviveCdTicks = 0;
+        int ultCooldownTicks = 0;
+        boolean ultCooldownInit = false;
+        boolean appliedFullEnergyStrength = false;
+
+        // 3 Nhánh Combo Mở Rộng + Royal Parry Counter 2 nhịp tự động
+        long strikeAirFireTick = -1000L;       // Nhánh A: Giải phóng vòng xung kích 5 blocks ở 0.20s (Tick 4)
+        long crescentWaveFireTick = -1000L;    // Nhánh B: Phóng lưỡi liềm vàng mảnh 7 blocks ở 0.40s (Tick 8)
+        int airComboStep = 0;                  // Nhánh C: 0 -> Air1, 1 -> Air2, 2 -> Air3 Plunge
+        long lastAirHitTick = -1000L;
+        long airHoverUntilTick = -1000L;
+        boolean fallingStarDiving = false;
+        long fallingStarStartTick = -1000L;
+        long guardStartTick = -1000L;
+        long lastRoyalParryTick = -1000L;
+        long royalCounterBeat2Tick = -1000L;   // Nhịp 2 (0.15s = Tick 3): Tự động chém ngang 200% ST & choáng 0.8s!
+        int royalParryAttackerId = -1;
+
+        long lastPassiveSyncTick = -100L;
+        int lastSyncedHash = 0;
+        byte lastBroadcastVisualFlags = -1;
+
+        boolean unsheathed = false;
+        boolean unsheathedInit = false;
+        long lastActiveCombatOrGuardTick = -1000L;
+        long sheatheClinkTick = -1000L;
+        long sheatheEndTick = -1000L;
+        int sheathedParryTicks = 0;
+        long lastAvalonParryTick = -1000L;
     }
 
     private static final class ActiveUltimateCast {
         final ServerPlayer player;
         final ServerLevel level;
-        final boolean morgan;
+        final float lockedBaseAttack;
+        final ItemStack weaponSnapshot;
         int tick = 0;
         boolean fired = false;
 
-        ActiveUltimateCast(ServerPlayer player, ServerLevel level, boolean morgan) {
+        ActiveUltimateCast(ServerPlayer player, ServerLevel level, float lockedBaseAttack, ItemStack weaponSnapshot) {
             this.player = player;
             this.level = level;
-            this.morgan = morgan;
-        }
-    }
-
-    private static final class ActiveMorganChannel {
-        final ServerPlayer player;
-        final ServerLevel level;
-        int tick = 0;
-
-        ActiveMorganChannel(ServerPlayer player, ServerLevel level) {
-            this.player = player;
-            this.level = level;
+            this.lockedBaseAttack = lockedBaseAttack;
+            this.weaponSnapshot = weaponSnapshot;
         }
     }
 
@@ -143,17 +175,14 @@ public final class ExcaliburCombatHandler {
         @Nullable
         public final LivingEntity realTarget;
         public final ItemStack stack;
-        public final boolean morgan;
         public final ExcaliburMoveType moveType;
-        public boolean hitLanded;
 
         ActiveHitContext(Player player, Entity rawTarget, @Nullable LivingEntity realTarget,
-                         ItemStack stack, boolean morgan, ExcaliburMoveType moveType) {
+                         ItemStack stack, ExcaliburMoveType moveType) {
             this.player = player;
             this.rawTarget = rawTarget;
             this.realTarget = realTarget;
             this.stack = stack;
-            this.morgan = morgan;
             this.moveType = moveType;
         }
     }
@@ -163,30 +192,921 @@ public final class ExcaliburCombatHandler {
     }
 
     public static boolean isActionLocked(UUID playerId) {
-        return ACTIVE_ULTIMATES.containsKey(playerId) || ACTIVE_CHANNELS.containsKey(playerId);
+        return ACTIVE_ULTIMATES.containsKey(playerId);
     }
 
-    /** Khởi tạo đòn chém cận chiến từ PlayerMixin. */
+    public static boolean isTrueDamageActive() {
+        return Boolean.TRUE.equals(TRUE_DAMAGE_ACTIVE.get());
+    }
+
+    public static boolean isShieldBreakingActive() {
+        return Boolean.TRUE.equals(SHIELD_BREAK_ACTIVE.get());
+    }
+
+    public static boolean isFallingStarFallImmune(@Nullable LivingEntity entity, @Nullable DamageSource source) {
+        if (!(entity instanceof ServerPlayer sp) || source == null || !source.is(DamageTypeTags.IS_FALL)) {
+            return false;
+        }
+        PlayerExcaliburState st = PLAYER_STATES.get(sp.getUUID());
+        return st != null && st.fallingStarDiving;
+    }
+
+    public static float getActiveArmorPierceFraction(@Nullable LivingEntity victim, @Nullable DamageSource source) {
+        if (isTrueDamageActive()) {
+            return 1.0F;
+        }
+        Float ov = OVERRIDE_ARMOR_PIERCE.get();
+        if (ov != null && ov > 0.0F) {
+            return ov;
+        }
+        ActiveHitContext hit = ACTIVE_HIT.get();
+        if (hit != null && (hit.moveType == ExcaliburMoveType.ROYAL_PARRY_COUNTER
+                || hit.moveType == ExcaliburMoveType.AVALON_PARRY_COUNTER)) {
+            return 0.40F;
+        }
+        return 0.0F;
+    }
+
+    public static boolean canCastUltimate(ServerPlayer player) {
+        if (!isHoldingExcalibur(player) || isActionLocked(player.getUUID())) {
+            return false;
+        }
+        PlayerExcaliburState st = stateOf(player, player.getMainHandItem());
+        return st.ultCooldownTicks <= 0 && st.energy >= ExcaliburItem.MAX_ENERGY - 0.01F;
+    }
+
+    public static boolean hasFullEnergy(ServerPlayer player) {
+        if (!isHoldingExcalibur(player)) {
+            return false;
+        }
+        PlayerExcaliburState st = stateOf(player, player.getMainHandItem());
+        return st.energy >= ExcaliburItem.MAX_ENERGY - 0.01F;
+    }
+
+    public static int getUltimateCooldownTicks(ServerPlayer player) {
+        if (!isHoldingExcalibur(player)) {
+            return 0;
+        }
+        PlayerExcaliburState st = stateOf(player, player.getMainHandItem());
+        return Math.max(0, st.ultCooldownTicks);
+    }
+
+    public static void onStartRoyalGuard(ServerPlayer player) {
+        if (!(player.level() instanceof ServerLevel level) || !isHoldingExcalibur(player)) {
+            return;
+        }
+        long now = level.getGameTime();
+        ItemStack stack = player.getMainHandItem();
+        PlayerExcaliburState st = stateOf(player, stack);
+        st.lastCombatTick = now;
+        st.guardStartTick = now;
+        if (!st.unsheathed) {
+            // Kiếm đang trong vỏ (is_unsheathed == false) -> Mở cửa sổ Parry bằng vỏ Avalon trong 4 ticks (0.20s), CHƯA rút kiếm!
+            st.sheathedParryTicks = AVALON_PARRY_WINDOW_TICKS;
+            st.sheatheClinkTick = -1000L;
+            st.sheatheEndTick = -1000L;
+            level.playSound(null, player.getX(), player.getY() + 1.0, player.getZ(),
+                    SoundEvents.ARMOR_EQUIP_GOLD.value(), SoundSource.PLAYERS, 0.72F, 1.38F);
+            ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
+                    ExcaliburSyncPayload.EVENT_AVALON_PARRY_GUARD, player.getId(), (byte) 0,
+                    4.0F, player.getX(), player.getY() + 1.0, player.getZ(),
+                    player.getYRot(), player.getXRot(), 0.0F, 0.0F));
+            return;
+        }
+        st.sheathedParryTicks = 0;
+        markUnsheathed(player, level, st, stack, now);
+    }
+
+    /** Giảm bộ đếm cửa sổ Parry vỏ Avalon (`4 ticks / 0.20s`) mỗi tick khi đang giữ Chuột Phải lúc kiếm trong vỏ. */
+    public static void onUseTick(ServerPlayer player) {
+        PlayerExcaliburState st = PLAYER_STATES.get(player.getUUID());
+        if (st != null && st.sheathedParryTicks > 0) {
+            st.sheathedParryTicks--;
+        }
+    }
+
+    private static void markUnsheathed(ServerPlayer player, ServerLevel level, PlayerExcaliburState st,
+                                       ItemStack stack, long now) {
+        st.lastActiveCombatOrGuardTick = now;
+        st.sheatheClinkTick = -1000L;
+        st.sheatheEndTick = -1000L;
+        if (!st.unsheathed) {
+            st.unsheathed = true;
+            ExcaliburItem.setUnsheathed(stack, true);
+            sendPassiveSync(player, level, st, true);
+        }
+    }
+
+    private static void startSheatheAvalon(ServerPlayer player, ServerLevel level, PlayerExcaliburState st,
+                                           ItemStack stack, long now) {
+        st.unsheathed = false;
+        ExcaliburItem.setUnsheathed(stack, false);
+        st.nextComboStep = 0;
+        st.lastMove = ExcaliburMoveType.SHEATHE_AVALON;
+        st.sheatheClinkTick = now + SHEATHE_CLINK_DELAY_TICKS;
+        st.sheatheEndTick = now + SHEATHE_TOTAL_TICKS;
+
+        level.playSound(null, player.getX(), player.getY() + 0.95, player.getZ(),
+                SoundEvents.ARMOR_EQUIP_IRON.value(), SoundSource.PLAYERS, 0.45F, 1.48F);
+
+        ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
+                ExcaliburSyncPayload.EVENT_SHEATHE, player.getId(), (byte) ExcaliburMoveType.SHEATHE_AVALON.id,
+                ExcaliburMoveType.SHEATHE_AVALON.baseDisplayTicks, player.getX(), player.getY() + 0.95, player.getZ(),
+                player.getYRot(), player.getXRot(), 0.0F, 0.0F));
+        sendPassiveSync(player, level, st, true);
+    }
+
+    private static void handleManualSheathe(ServerPlayer player, ServerLevel level) {
+        if (isActionLocked(player.getUUID()) || player.isUsingItem()) {
+            return;
+        }
+        long now = level.getGameTime();
+        ItemStack stack = player.getMainHandItem();
+        PlayerExcaliburState st = stateOf(player, stack);
+        if (!st.unsheathed || st.fallingStarDiving || now <= st.royalCounterBeat2Tick || now < st.sheatheEndTick) {
+            return;
+        }
+        startSheatheAvalon(player, level, st, stack, now);
+    }
+
+    private static PlayerExcaliburState stateOf(ServerPlayer player, @Nullable ItemStack stack) {
+        PlayerExcaliburState st = PLAYER_STATES.computeIfAbsent(player.getUUID(), k -> new PlayerExcaliburState());
+        if (st.energy < 0.0F) {
+            st.energy = (stack != null && stack.is(ModItems.EXCALIBUR)) ? ExcaliburItem.getEnergy(stack) : 0.0F;
+        }
+        if (!st.unsheathedInit && stack != null && stack.is(ModItems.EXCALIBUR)) {
+            st.unsheathed = ExcaliburItem.isUnsheathed(stack);
+            st.unsheathedInit = true;
+            if (st.unsheathed && player.level() instanceof ServerLevel sl) {
+                st.lastActiveCombatOrGuardTick = sl.getGameTime();
+            }
+        }
+        if (!st.ultCooldownInit && stack != null && stack.is(ModItems.EXCALIBUR)) {
+            int savedCd = ExcaliburItem.getSavedUltCooldownTicks(stack);
+            if (savedCd > 0) {
+                st.ultCooldownTicks = Math.max(st.ultCooldownTicks, Math.min(savedCd, ULT_COOLDOWN_TICKS));
+                ExcaliburItem.setSavedUltCooldownTicks(stack, 0);
+            }
+            st.ultCooldownInit = true;
+        }
+        return st;
+    }
+
+    private static boolean isWithinFrontGuardArc(Player player, @Nullable Vec3 attackOrigin) {
+        if (attackOrigin == null) {
+            return true;
+        }
+        Vec3 toAttack = attackOrigin.subtract(player.position());
+        Vec3 toAttackFlat = new Vec3(toAttack.x, 0.0, toAttack.z);
+        if (toAttackFlat.lengthSqr() <= 0.04) {
+            return true;
+        }
+        Vec3 look = player.getLookAngle();
+        Vec3 lookFlat = new Vec3(look.x, 0.0, look.z);
+        if (lookFlat.lengthSqr() <= 1e-4) {
+            return true;
+        }
+        return toAttackFlat.normalize().dot(lookFlat.normalize()) >= -0.22;
+    }
+
+    /**
+     * Gạt chệch mũi tên sang hướng khác khi đang giữ Chuột Phải đỡ bằng Excalibur (cả lúc kiếm trong vỏ Avalon lẫn lúc đã rút kiếm):
+     * - Mũi tên bị hất lệch sang ngang/chếch lên, **không thể phản sát thương** (`baseDamage = 0`, `crit = false`, tắt lửa, không kích hoạt phản đòn).
+     */
     @Nullable
-    public static ActiveHitContext beginPlayerAttack(Player player, Entity target) {
-        if (player.level().isClientSide || !isHoldingExcalibur(player)) {
+    public static ProjectileDeflection tryGetArrowDeflection(Player player, @Nullable Projectile projectile) {
+        if (player == null || !(projectile instanceof AbstractArrow) || !player.isAlive() || !isHoldingExcalibur(player)) {
             return null;
         }
+        boolean activelyGuarding = player.isUsingItem() && player.getUsedItemHand() == InteractionHand.MAIN_HAND;
+        if (!activelyGuarding) {
+            return null;
+        }
+        boolean overheadGuard = player.getXRot() < -30.0F && projectile.getY() > player.getY() + 1.0;
+        if (!overheadGuard && !isWithinFrontGuardArc(player, projectile.position())) {
+            return null;
+        }
+        if (player.level().isClientSide) {
+            return CLIENT_ARROW_DEFLECT_SENTINEL;
+        }
+        if (!(player instanceof ServerPlayer sp) || !(sp.level() instanceof ServerLevel level) || isActionLocked(sp.getUUID())) {
+            return null;
+        }
+        return (proj, deflectedBy, random) -> {
+            if (proj instanceof AbstractArrow arrow && sp.isAlive() && isHoldingExcalibur(sp)) {
+                PlayerExcaliburState curSt = stateOf(sp, sp.getMainHandItem());
+                executeArrowSideDeflect(sp, level, curSt, arrow);
+            }
+        };
+    }
+
+    private static void executeArrowSideDeflect(ServerPlayer player, ServerLevel level,
+                                                PlayerExcaliburState st, AbstractArrow arrow) {
+        long now = level.getGameTime();
+        st.lastCombatTick = now;
         ItemStack stack = player.getMainHandItem();
-        boolean morgan = ExcaliburItem.isMorgan(stack);
-        PlayerExcaliburState st = PLAYER_STATES.computeIfAbsent(player.getUUID(), k -> new PlayerExcaliburState());
-        long now = player.level().getGameTime();
-        if (now - st.lastSwingTick > COMBO_RESET_TICKS) {
+
+        Vec3 look = player.getLookAngle().normalize();
+        Vec3 lookFlat = new Vec3(look.x, 0.0, look.z);
+        lookFlat = (lookFlat.lengthSqr() < 1e-4) ? Vec3.directionFromRotation(0.0F, player.getYRot()) : lookFlat.normalize();
+        Vec3 right = new Vec3(-lookFlat.z, 0.0, lookFlat.x).normalize();
+
+        Vec3 relToArrow = arrow.position().subtract(player.position());
+        double lateralDot = relToArrow.x * right.x + relToArrow.z * right.z;
+        double sideSign = (Math.abs(lateralDot) > 0.05) ? Math.signum(lateralDot) : (level.random.nextBoolean() ? 1.0 : -1.0);
+
+        double inSpeed = arrow.getDeltaMovement().length();
+        double outSpeed = Mth.clamp(inSpeed * 0.82, 0.90, 1.70);
+        Vec3 deflectDir = right.scale(sideSign * 0.90).add(lookFlat.scale(0.25)).add(0.0, 0.34, 0.0).normalize();
+        Vec3 outVel = deflectDir.scale(outSpeed);
+
+        arrow.setPos(arrow.getX() + deflectDir.x * 0.45, arrow.getY() + 0.14, arrow.getZ() + deflectDir.z * 0.45);
+        arrow.setDeltaMovement(outVel);
+        arrow.setCritArrow(false);
+        arrow.setBaseDamage(0.0);
+        arrow.clearFire();
+        float newYaw = (float) (Mth.atan2(outVel.x, outVel.z) * (180.0 / Math.PI));
+        float newPitch = (float) (Mth.atan2(outVel.y, Math.hypot(outVel.x, outVel.z)) * (180.0 / Math.PI));
+        arrow.setYRot(newYaw);
+        arrow.setXRot(newPitch);
+        arrow.yRotO = newYaw;
+        arrow.xRotO = newPitch;
+        arrow.hurtMarked = true;
+
+        stack.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
+
+        boolean overhead = st.unsheathed && player.getXRot() < -30.0F;
+        Vec3 clashPos = overhead
+                ? player.getEyePosition().add(lookFlat.scale(0.55)).add(0.0, 0.34, 0.0)
+                : player.getEyePosition().add(look.scale(0.82)).add(0.0, -0.16, 0.0);
+
+        level.sendParticles(GOLD_SPARK, clashPos.x, clashPos.y, clashPos.z, 9, 0.22, 0.22, 0.22, 0.08);
+        level.sendParticles(WHITE_HOLY, clashPos.x, clashPos.y, clashPos.z, 4, 0.16, 0.16, 0.16, 0.05);
+        level.playSound(null, clashPos.x, clashPos.y, clashPos.z,
+                ModSounds.KATANA_PARRY, SoundSource.PLAYERS, 1.10F, 1.24F + level.random.nextFloat() * 0.10F);
+        level.playSound(null, clashPos.x, clashPos.y, clashPos.z,
+                SoundEvents.SHIELD_BLOCK, SoundSource.PLAYERS, 0.92F, 1.28F);
+        ModNetworking.sendShakeNearby(level, clashPos, 10.0, 0.24F, 3);
+
+        player.displayClientMessage(Component.literal("§6✦ Hất chệch mũi tên!"), true);
+
+        if (overhead) {
+            ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
+                    ExcaliburSyncPayload.EVENT_GUARD_OVERHEAD_IMPACT, player.getId(), (byte) ExcaliburMoveType.GUARD_OVERHEAD_IMPACT.id,
+                    ExcaliburMoveType.GUARD_OVERHEAD_IMPACT.baseDisplayTicks, clashPos.x, clashPos.y, clashPos.z,
+                    player.getYRot(), player.getXRot(), 1.0F, 0.0F));
+        } else {
+            ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
+                    ExcaliburSyncPayload.EVENT_GUARD_CROSS_HIT, player.getId(), (byte) 0,
+                    3.0F, clashPos.x, clashPos.y, clashPos.z, player.getYRot(), player.getXRot(), 1.0F, 0.0F));
+        }
+    }
+
+    /**
+     * Hệ thống Đỡ Kiếm & Phản Đòn Hoàng Gia (Section 5):
+     * - **A. Đỡ Trực Diện (`Hold RMB`):** Giảm `70%` sát thương phía trước & bắn tia lửa vàng gọn.
+     * - **B. Đỡ Trên Cao (`Hold RMB + Pitch < -30°`):** Chặn `100%` đòn bổ từ trên cao.
+     * - **C. Royal Parry Counter (`<= 0.18s` / `4 ticks` trước khi trúng đòn):**
+     *   - Nhịp 1 (`0.00–0.15s`): Miễn `100%` sát thương, xoay giật `+35°` gạt chệch vũ khí địch, lóe 1 vòng phép vàng 2D nhỏ tại điểm va chạm + tiếng `"Klang!"` thanh vang!
+     *   - Nhịp 2 (`0.15–0.40s`): Tự động vặn ngược `-40°` tung nhát chém ngang cực nhanh gây `200%` sát thương & làm choáng mục tiêu `0.8s` (`16 ticks`)!
+     */
+    public static boolean tryRoyalParryIncomingDamage(LivingEntity victim, DamageSource source, float incomingAmount) {
+        if (Boolean.TRUE.equals(REENTRANT_GUARD_DAMAGE.get())) {
+            return false;
+        }
+        if (victim == null || victim.level().isClientSide || !(victim instanceof ServerPlayer player)
+                || !(player.level() instanceof ServerLevel level)) {
+            return false;
+        }
+        if (incomingAmount <= 0.0F || !player.isAlive() || !isHoldingExcalibur(player) || source == null) {
+            return false;
+        }
+        if (isTrueDamageActive() || KatanaCombatHandler.isMagicSkillDamageActive()) {
+            return false;
+        }
+        if (source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)
+                || source.is(DamageTypeTags.IS_FIRE)
+                || source.is(DamageTypeTags.IS_LIGHTNING)
+                || source.is(DamageTypeTags.IS_DROWNING)
+                || source.is(DamageTypeTags.IS_FALL)
+                || source.is(DamageTypeTags.IS_FREEZING)) {
+            return false;
+        }
+
+        long now = level.getGameTime();
+        PlayerExcaliburState st = stateOf(player, player.getMainHandItem());
+        boolean activelyGuarding = player.isUsingItem() && player.getUsedItemHand() == InteractionHand.MAIN_HAND
+                && !isActionLocked(player.getUUID());
+        boolean parryGrace = (now - st.lastRoyalParryTick) <= 6L || (now - st.lastAvalonParryTick) <= 5L;
+        if (!activelyGuarding && !parryGrace) {
+            return false;
+        }
+
+        Entity direct = source.getDirectEntity();
+        Entity root = source.getEntity();
+        boolean isProjectile = source.is(DamageTypeTags.IS_PROJECTILE)
+                || source.is(DamageTypes.ARROW)
+                || source.is(DamageTypes.TRIDENT)
+                || source.is(DamageTypes.FIREBALL)
+                || source.is(DamageTypes.UNATTRIBUTED_FIREBALL)
+                || source.is(DamageTypes.WITHER_SKULL)
+                || direct instanceof AbstractArrow
+                || direct instanceof Projectile;
+        boolean isMelee = !isProjectile
+                && ((source.is(DamageTypes.PLAYER_ATTACK) || source.is(DamageTypes.MOB_ATTACK)
+                || source.is(DamageTypes.MOB_ATTACK_NO_AGGRO) || source.is(DamageTypes.STING))
+                || (direct instanceof LivingEntity && direct != player));
+        if (!isProjectile && !isMelee) {
+            return false;
+        }
+
+        Vec3 attackOrigin = source.getSourcePosition() != null ? source.getSourcePosition()
+                : (direct != null ? direct.position() : (root != null ? root.position() : null));
+        if (!isWithinFrontGuardArc(player, attackOrigin)) {
+            return false;
+        }
+
+        st.lastCombatTick = now;
+        Vec3 look = player.getLookAngle().normalize();
+        Vec3 lookFlat = new Vec3(look.x, 0.0, look.z);
+        lookFlat = (lookFlat.lengthSqr() < 1e-4) ? Vec3.directionFromRotation(0.0F, player.getYRot()) : lookFlat.normalize();
+
+        // === 0. AVALON SHEATHED PARRY & IAIDO DRAW-SLASH COUNTER (Kiếm đang trong vỏ + cửa sổ Parry 0.20s / 4 ticks!) ===
+        if (!st.unsheathed) {
+            boolean avalonParryWindow = st.sheathedParryTicks > 0
+                    || (now - st.guardStartTick) <= AVALON_PARRY_WINDOW_TICKS
+                    || (now - st.lastAvalonParryTick) <= 4L;
+            if (isMelee && avalonParryWindow) {
+                if ((now - st.lastAvalonParryTick) <= 4L) {
+                    return true;
+                }
+                ItemStack held = player.getMainHandItem();
+                st.sheathedParryTicks = 0;
+                st.lastAvalonParryTick = now;
+                st.lastMove = ExcaliburMoveType.AVALON_PARRY_COUNTER;
+                st.lastSwingTick = now;
+                st.nextComboStep = 0;
+
+                if (player.isUsingItem()) {
+                    player.stopUsingItem();
+                }
+                // Tự động chuyển sang trạng thái Rút Kiếm (`is_unsheathed = true`)!
+                markUnsheathed(player, level, st, held, now);
+
+                // Lao lướt nhẹ tới trước (dash 0.6 block)
+                Vec3 curVel = player.getDeltaMovement();
+                player.setDeltaMovement(curVel.x * 0.25 + lookFlat.x * 0.45, Math.max(curVel.y, 0.10), curVel.z * 0.25 + lookFlat.z * 0.45);
+                player.hurtMarked = true;
+                player.swing(InteractionHand.MAIN_HAND, true);
+
+                // Gây 220% sát thương phản công ngang rộng Trái->Phải + Choáng 1.0s (20 ticks) + Knockback 0.6!
+                LivingEntity primaryAttacker = (direct instanceof LivingEntity le) ? le : (root instanceof LivingEntity rle ? rle : null);
+                float baseDmg = (float) Math.max(ExcaliburItem.ATTACK_DAMAGE, player.getAttributeValue(Attributes.ATTACK_DAMAGE));
+                float counterDmg = baseDmg * ExcaliburMoveType.AVALON_PARRY_COUNTER.damageMultiplier;
+                Vec3 slashCenter = player.getEyePosition().add(look.scale(1.90));
+                AABB box = new AABB(slashCenter, slashCenter).inflate(2.90);
+                List<LivingEntity> candidates = level.getEntitiesOfClass(LivingEntity.class, box,
+                        e -> e != player && e.isAlive() && e.isAttackable() && !ExcaliburSeals.isAlly(player, e));
+
+                OVERRIDE_ARMOR_PIERCE.set(0.40F);
+                try {
+                    for (LivingEntity target : candidates) {
+                        boolean isAttacker = (primaryAttacker != null && target == primaryAttacker);
+                        Vec3 toTarget = target.position().add(0.0, target.getBbHeight() * 0.5, 0.0).subtract(player.getEyePosition());
+                        if (!isAttacker && (toTarget.lengthSqr() > 4.6 * 4.6 || toTarget.normalize().dot(look) < -0.08)) {
+                            continue;
+                        }
+                        target.invulnerableTime = 0;
+                        if (target.hurt(level.damageSources().playerAttack(player), counterDmg)) {
+                            target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, AVALON_PARRY_STUN_TICKS, 5, false, true, true));
+                            target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, AVALON_PARRY_STUN_TICKS, 3, false, true, true));
+                            target.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, AVALON_PARRY_STUN_TICKS, 3, false, false, false));
+                            target.knockback(0.60, player.getX() - target.getX(), player.getZ() - target.getZ());
+                            target.hurtMarked = true;
+                        }
+                    }
+                } finally {
+                    OVERRIDE_ARMOR_PIERCE.remove();
+                }
+
+                // Hồi lại +15 Năng Lượng & tiêu hao 1 độ bền!
+                held.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
+                awardEnergy(player, level, st, held, AVALON_PARRY_ENERGY_GAIN, false);
+
+                Vec3 clashPos = player.getEyePosition().add(look.scale(0.86)).add(0.0, -0.16, 0.0);
+                level.sendParticles(GOLD_SPARK, clashPos.x, clashPos.y, clashPos.z, 12, 0.24, 0.24, 0.24, 0.09);
+                level.sendParticles(WHITE_HOLY, clashPos.x, clashPos.y, clashPos.z, 6, 0.16, 0.16, 0.16, 0.06);
+                level.playSound(null, clashPos.x, clashPos.y, clashPos.z,
+                        SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 0.85F, 1.80F);
+                level.playSound(null, clashPos.x, clashPos.y, clashPos.z,
+                        ModSounds.KATANA_PARRY, SoundSource.PLAYERS, 1.45F, 1.08F);
+                level.playSound(null, clashPos.x, clashPos.y, clashPos.z,
+                        ModSounds.EXCALIBUR_SLASH, SoundSource.PLAYERS, 1.35F, 1.32F);
+                ModNetworking.sendShakeNearby(level, clashPos, 16.0, 0.56F, 5);
+
+                player.displayClientMessage(Component.literal(
+                        "§6§l✦ AVALON IAIDO COUNTER! §fRút kiếm phản đòn §e220% ST §7(Choáng 1.0s · +15 NL)!"), true);
+
+                ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
+                        ExcaliburSyncPayload.EVENT_AVALON_PARRY_COUNTER, player.getId(), (byte) ExcaliburMoveType.AVALON_PARRY_COUNTER.id,
+                        ExcaliburMoveType.AVALON_PARRY_COUNTER.baseDisplayTicks, clashPos.x, clashPos.y, clashPos.z,
+                        player.getYRot(), player.getXRot(), 2.3F, 0.0F));
+                return true;
+            }
+            // Nếu giữ đỡ quá cửa sổ 0.20s khi kiếm vẫn trong vỏ -> đỡ giảm 70% sát thương bằng thân vỏ Avalon (không phản đòn)!
+            float reducedSheathed = Math.max(0.25F, incomingAmount * 0.30F);
+            boolean appliedSheathed;
+            REENTRANT_GUARD_DAMAGE.set(Boolean.TRUE);
+            try {
+                appliedSheathed = player.hurt(source, reducedSheathed);
+            } finally {
+                REENTRANT_GUARD_DAMAGE.set(Boolean.FALSE);
+            }
+            if (appliedSheathed) {
+                Vec3 clashPos = player.getEyePosition().add(look.scale(0.75)).add(0.0, -0.18, 0.0);
+                level.sendParticles(GOLD_SPARK, clashPos.x, clashPos.y, clashPos.z, 7, 0.20, 0.20, 0.20, 0.06);
+                level.playSound(null, clashPos.x, clashPos.y, clashPos.z,
+                        SoundEvents.SHIELD_BLOCK, SoundSource.PLAYERS, 1.05F, 1.24F);
+                ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
+                        ExcaliburSyncPayload.EVENT_GUARD_CROSS_HIT, player.getId(), (byte) 0,
+                        3.0F, clashPos.x, clashPos.y, clashPos.z, player.getYRot(), player.getXRot(), 1.0F, 0.0F));
+            }
+            return true;
+        }
+
+        // === C. ROYAL PARRY COUNTER (Chuẩn nhịp <= 0.18s / 4 ticks trước khi trúng đòn cận chiến!) ===
+        boolean perfectParryTiming = parryGrace || (now - st.guardStartTick) <= PERFECT_PARRY_WINDOW_TICKS;
+        if (isMelee && perfectParryTiming) {
+            if (parryGrace && st.royalCounterBeat2Tick > now) {
+                return true;
+            }
+            st.lastRoyalParryTick = now;
+            st.lastMove = ExcaliburMoveType.ROYAL_PARRY_COUNTER;
+            st.lastSwingTick = now;
+            st.nextComboStep = 0;
+
+            LivingEntity attacker = (direct instanceof LivingEntity le) ? le : (root instanceof LivingEntity rle ? rle : null);
+            st.royalParryAttackerId = (attacker != null && attacker.isAlive() && attacker != player) ? attacker.getId() : -1;
+            st.royalCounterBeat2Tick = now + 3L; // Nhịp 2 tự động chém ngang ở 0.15s (Tick 3)!
+
+            if (attacker != null && attacker.isAlive() && attacker != player) {
+                attacker.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 10, 4, false, false, false));
+                Vec3 push = attacker.position().subtract(player.position());
+                Vec3 pushFlat = new Vec3(push.x, 0.0, push.z);
+                if (pushFlat.lengthSqr() > 1e-4) {
+                    pushFlat = pushFlat.normalize();
+                    attacker.push(pushFlat.x * 0.35, 0.08, pushFlat.z * 0.35);
+                    attacker.hurtMarked = true;
+                }
+            }
+
+            if (player.isUsingItem()) {
+                player.stopUsingItem();
+            }
+            player.getMainHandItem().hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
+
+            Vec3 clashPos = player.getEyePosition().add(look.scale(0.92)).add(0.0, -0.14, 0.0);
+            level.sendParticles(GOLD_SPARK, clashPos.x, clashPos.y, clashPos.z, 10, 0.24, 0.24, 0.24, 0.08);
+            level.sendParticles(WHITE_HOLY, clashPos.x, clashPos.y, clashPos.z, 6, 0.18, 0.18, 0.18, 0.06);
+            level.playSound(null, clashPos.x, clashPos.y, clashPos.z,
+                    ModSounds.KATANA_PARRY, SoundSource.PLAYERS, 1.45F, 1.02F);
+            level.playSound(null, clashPos.x, clashPos.y, clashPos.z,
+                    SoundEvents.ANVIL_PLACE, SoundSource.PLAYERS, 0.68F, 1.78F);
+            ModNetworking.sendShakeNearby(level, clashPos, 14.0, 0.50F, 4);
+
+            player.displayClientMessage(Component.literal(
+                    "§6§l✦ ROYAL PARRY COUNTER! §fGạt chệch & Phản chém §e200% ST §f(Choáng 0.8s)!"), true);
+
+            ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
+                    ExcaliburSyncPayload.EVENT_ROYAL_PARRY, player.getId(), (byte) ExcaliburMoveType.ROYAL_PARRY_COUNTER.id,
+                    ExcaliburMoveType.ROYAL_PARRY_COUNTER.baseDisplayTicks, clashPos.x, clashPos.y, clashPos.z,
+                    player.getYRot(), player.getXRot(), 1.15F, 0.0F));
+            return true;
+        }
+
+        // === B. POSE ĐỠ TRÊN CAO (Giữ RMB + Nhìn lên trời Pitch < -30° -> Chặn 100% đòn bổ trên cao!) ===
+        if (isMelee && player.getXRot() < -30.0F) {
+            LivingEntity attacker = (direct instanceof LivingEntity le) ? le : (root instanceof LivingEntity rle ? rle : null);
+            if (attacker != null && attacker.isAlive() && attacker != player) {
+                Vec3 push = attacker.position().subtract(player.position());
+                Vec3 pushFlat = new Vec3(push.x, 0.0, push.z);
+                if (pushFlat.lengthSqr() > 1e-4) {
+                    pushFlat = pushFlat.normalize();
+                    attacker.push(pushFlat.x * 0.42, 0.12, pushFlat.z * 0.42);
+                    attacker.hurtMarked = true;
+                }
+            }
+            player.getMainHandItem().hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
+
+            Vec3 roofPos = player.getEyePosition().add(lookFlat.scale(0.55)).add(0.0, 0.34, 0.0);
+            level.sendParticles(GOLD_SPARK, roofPos.x, roofPos.y, roofPos.z, 10, 0.28, 0.12, 0.28, 0.08);
+            level.playSound(null, roofPos.x, roofPos.y, roofPos.z,
+                    ModSounds.KATANA_PARRY, SoundSource.PLAYERS, 1.15F, 1.18F);
+            level.playSound(null, roofPos.x, roofPos.y, roofPos.z,
+                    SoundEvents.SHIELD_BLOCK, SoundSource.PLAYERS, 1.05F, 1.30F);
+            ModNetworking.sendShakeNearby(level, roofPos, 12.0, 0.36F, 4);
+
+            ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
+                    ExcaliburSyncPayload.EVENT_GUARD_OVERHEAD_IMPACT, player.getId(), (byte) ExcaliburMoveType.GUARD_OVERHEAD_IMPACT.id,
+                    ExcaliburMoveType.GUARD_OVERHEAD_IMPACT.baseDisplayTicks, roofPos.x, roofPos.y, roofPos.z,
+                    player.getYRot(), player.getXRot(), 1.0F, 0.0F));
+            return true;
+        }
+
+        // === A. POSE ĐỠ TRỰC DIỆN (Hold RMB -> Giảm 70% sát thương phía trước!) ===
+        float reduced = Math.max(0.25F, incomingAmount * 0.30F);
+        boolean applied;
+        REENTRANT_GUARD_DAMAGE.set(Boolean.TRUE);
+        try {
+            applied = player.hurt(source, reduced);
+        } finally {
+            REENTRANT_GUARD_DAMAGE.set(Boolean.FALSE);
+        }
+        if (applied) {
+            Vec3 cur = player.getDeltaMovement();
+            player.setDeltaMovement(cur.x * 0.45, Math.min(cur.y, 0.08), cur.z * 0.45);
+            player.hurtMarked = true;
+            player.getMainHandItem().hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
+
+            Vec3 clashPos = player.getEyePosition().add(look.scale(0.80)).add(0.0, -0.18, 0.0);
+            level.sendParticles(GOLD_SPARK, clashPos.x, clashPos.y, clashPos.z, 8, 0.22, 0.22, 0.22, 0.07);
+            level.playSound(null, clashPos.x, clashPos.y, clashPos.z,
+                    SoundEvents.SHIELD_BLOCK, SoundSource.PLAYERS, 1.05F, 1.18F);
+            ModNetworking.sendShakeNearby(level, clashPos, 10.0, 0.22F, 3);
+
+            ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
+                    ExcaliburSyncPayload.EVENT_GUARD_CROSS_HIT, player.getId(), (byte) 0,
+                    3.0F, clashPos.x, clashPos.y, clashPos.z, player.getYRot(), player.getXRot(), 1.0F, 0.0F));
+        }
+        return true;
+    }
+
+    /** Nhịp 2 Royal Parry Counter (mốc 0.15s = Tick 3): Vặn ngược `-40°` chém ngang gây `200%` sát thương & làm choáng `0.8s`! */
+    private static void fireRoyalCounterBeat2(ServerPlayer player, ServerLevel level,
+                                              PlayerExcaliburState st, ItemStack stack) {
+        Vec3 look = player.getLookAngle().normalize();
+        Vec3 flat = new Vec3(look.x, 0.0, look.z);
+        flat = (flat.lengthSqr() < 1e-4) ? Vec3.directionFromRotation(0.0F, player.getYRot()) : flat.normalize();
+        Vec3 cur = player.getDeltaMovement();
+        player.setDeltaMovement(cur.x * 0.35 + flat.x * 0.26, cur.y, cur.z * 0.35 + flat.z * 0.26);
+        player.hurtMarked = true;
+        player.swing(InteractionHand.MAIN_HAND, true);
+
+        float baseDmg = (float) Math.max(ExcaliburItem.ATTACK_DAMAGE, player.getAttributeValue(Attributes.ATTACK_DAMAGE));
+        float dmg = baseDmg * ExcaliburMoveType.ROYAL_PARRY_COUNTER.damageMultiplier; // 200% sát thương!
+        double reach = 4.20;
+        Vec3 center = player.getEyePosition().add(look.scale(1.85));
+        AABB box = new AABB(center, center).inflate(2.75);
+        List<LivingEntity> candidates = level.getEntitiesOfClass(LivingEntity.class, box,
+                e -> e != player && e.isAlive() && e.isAttackable() && !ExcaliburSeals.isAlly(player, e));
+
+        boolean hitAny = false;
+        OVERRIDE_ARMOR_PIERCE.set(0.40F);
+        try {
+            for (LivingEntity target : candidates) {
+                boolean isPrimaryAttacker = target.getId() == st.royalParryAttackerId;
+                Vec3 toTarget = target.position().add(0, target.getBbHeight() * 0.5, 0).subtract(player.getEyePosition());
+                if (!isPrimaryAttacker && toTarget.lengthSqr() > (reach + 0.5) * (reach + 0.5)) {
+                    continue;
+                }
+                if (!isPrimaryAttacker && toTarget.normalize().dot(look) < -0.05) {
+                    continue;
+                }
+                target.invulnerableTime = 0;
+                if (target.hurt(level.damageSources().playerAttack(player), dmg)) {
+                    hitAny = true;
+                    // Làm choáng mục tiêu 0.8s (16 ticks)
+                    target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, PARRY_STUN_TICKS, 5, false, true, true));
+                    target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, PARRY_STUN_TICKS, 3, false, true, true));
+                    target.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, PARRY_STUN_TICKS, 3, false, false, false));
+                    target.setDeltaMovement(flat.x * 0.85, 0.24, flat.z * 0.85);
+                    target.hurtMarked = true;
+                }
+            }
+        } finally {
+            OVERRIDE_ARMOR_PIERCE.remove();
+            st.royalParryAttackerId = -1;
+        }
+
+        Vec3 anchor = player.position().add(0.0, player.getBbHeight() * 0.62, 0.0);
+        level.playSound(null, anchor.x, anchor.y, anchor.z,
+                ModSounds.EXCALIBUR_SLASH, SoundSource.PLAYERS, 1.32F, 1.36F);
+        if (hitAny) {
+            stack.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
+            awardEnergy(player, level, st, stack, ExcaliburItem.ENERGY_PER_HIT, false);
+            ModNetworking.sendShakeNearby(level, anchor, 14.0, 0.52F, 4);
+            ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
+                    ExcaliburSyncPayload.EVENT_HIT_STOP, player.getId(), (byte) ExcaliburMoveType.ROYAL_PARRY_COUNTER.id,
+                    1.5F, anchor.x, anchor.y, anchor.z, player.getYRot(), player.getXRot(), 0.0F, 0.0F));
+        }
+
+        ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
+                ExcaliburSyncPayload.EVENT_ROYAL_COUNTER_SLASH, player.getId(), (byte) ExcaliburMoveType.ROYAL_PARRY_COUNTER.id,
+                5.0F, anchor.x, anchor.y, anchor.z, player.getYRot(), player.getXRot(), 2.2F, 0.0F));
+    }
+
+    private static void ensureFullEnergyStrength(ServerPlayer player, PlayerExcaliburState st) {
+        MobEffectInstance cur = player.getEffect(MobEffects.DAMAGE_BOOST);
+        if (cur != null && (cur.getAmplifier() > FULL_ENERGY_STRENGTH_AMP
+                || (cur.getAmplifier() == FULL_ENERGY_STRENGTH_AMP && cur.getDuration() > FULL_ENERGY_STRENGTH_TICKS + 10))) {
+            return;
+        }
+        if (cur == null || cur.getAmplifier() < FULL_ENERGY_STRENGTH_AMP || cur.getDuration() < 35) {
+            player.addEffect(new MobEffectInstance(
+                    MobEffects.DAMAGE_BOOST, FULL_ENERGY_STRENGTH_TICKS, FULL_ENERGY_STRENGTH_AMP, true, true, true));
+        }
+        st.appliedFullEnergyStrength = true;
+    }
+
+    private static void clearFullEnergyStrength(ServerPlayer player, PlayerExcaliburState st) {
+        if (!st.appliedFullEnergyStrength) {
+            return;
+        }
+        st.appliedFullEnergyStrength = false;
+        MobEffectInstance cur = player.getEffect(MobEffects.DAMAGE_BOOST);
+        if (cur != null && cur.getAmplifier() == FULL_ENERGY_STRENGTH_AMP
+                && cur.getDuration() <= FULL_ENERGY_STRENGTH_TICKS + 10) {
+            player.removeEffect(MobEffects.DAMAGE_BOOST);
+        }
+    }
+
+    private static void awardEnergy(ServerPlayer player, ServerLevel level, PlayerExcaliburState st,
+                                    ItemStack held, float amount, boolean isKill) {
+        if (amount <= 0.0F || held.isEmpty() || !held.is(ModItems.EXCALIBUR)) {
+            return;
+        }
+        long now = level.getGameTime();
+        if (st.energy >= ExcaliburItem.MAX_ENERGY - 0.01F) {
+            return;
+        }
+
+        st.energy = Mth.clamp(st.energy + amount, 0.0F, ExcaliburItem.MAX_ENERGY);
+        ExcaliburItem.setEnergy(held, st.energy);
+        if (isKill) {
+            st.lastKillEnergyTick = now;
+        }
+
+        int pct = Math.round(st.energy);
+        if (st.energy >= ExcaliburItem.MAX_ENERGY - 0.01F) {
+            ensureFullEnergyStrength(player, st);
+            level.playSound(null, player.getX(), player.getY() + 1.1, player.getZ(),
+                    SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 1.25F, 1.40F);
+            level.sendParticles(WHITE_HOLY, player.getX(), player.getY() + 1.1, player.getZ(),
+                    14, 0.55, 0.60, 0.55, 0.06);
+            if (st.ultCooldownTicks > 0) {
+                player.displayClientMessage(Component.literal(
+                        "§e§l✦ EXCALIBUR ĐẦY 100/100 NĂNG LƯỢNG — SỨC MẠNH IV §7(Hồi kỹ năng còn "
+                                + formatTimer(st.ultCooldownTicks) + ") ✦"), true);
+            } else {
+                player.displayClientMessage(Component.literal(
+                        "§e§l✦ EXCALIBUR ĐẦY 100/100 NĂNG LƯỢNG — NHẬN SỨC MẠNH IV · BẤM [R] TUNG CHIÊU! ✦"), true);
+            }
+        } else if (isKill) {
+            level.playSound(null, player.getX(), player.getY() + 1.0, player.getZ(),
+                    SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.65F, 1.25F + (st.energy / 100.0F) * 0.45F);
+            player.displayClientMessage(Component.literal(
+                    "§6✦ +5 Năng lượng Excalibur §e(" + pct + "/100)"), true);
+        } else if (st.lastKillEnergyTick != now) {
+            level.playSound(null, player.getX(), player.getY() + 1.0, player.getZ(),
+                    SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.32F, 1.35F + (st.energy / 100.0F) * 0.40F);
+        }
+        sendPassiveSync(player, level, st, true);
+    }
+
+    public static void onEntityKilled(LivingEntity victim, DamageSource source) {
+        if (victim == null || victim.level().isClientSide || !(victim.level() instanceof ServerLevel level)) {
+            return;
+        }
+        if (isTrueDamageActive()) {
+            return;
+        }
+        ServerPlayer killer = null;
+        if (source != null && source.getEntity() instanceof ServerPlayer sp) {
+            killer = sp;
+        } else if (victim.getKillCredit() instanceof ServerPlayer sp) {
+            killer = sp;
+        }
+        if (killer == null || killer == victim || !killer.isAlive() || !isHoldingExcalibur(killer)) {
+            return;
+        }
+        ItemStack held = killer.getMainHandItem();
+        PlayerExcaliburState st = stateOf(killer, held);
+        awardEnergy(killer, level, st, held, ExcaliburItem.ENERGY_PER_KILL, true);
+    }
+
+    public static void onPlayerDisconnect(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        ACTIVE_ULTIMATES.remove(player.getUUID());
+        PlayerExcaliburState st = PLAYER_STATES.remove(player.getUUID());
+        if (st != null) {
+            ItemStack main = player.getMainHandItem();
+            if (main.is(ModItems.EXCALIBUR)) {
+                if (st.energy >= 0.0F) {
+                    ExcaliburItem.setEnergy(main, st.energy);
+                }
+                if (st.ultCooldownTicks > 0) {
+                    ExcaliburItem.setSavedUltCooldownTicks(main, st.ultCooldownTicks);
+                }
+            } else if (st.ultCooldownTicks > 0) {
+                for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                    ItemStack s = player.getInventory().getItem(i);
+                    if (s.is(ModItems.EXCALIBUR)) {
+                        ExcaliburItem.setSavedUltCooldownTicks(s, st.ultCooldownTicks);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    public static void onLivingHurtReturn(LivingEntity victim, DamageSource source) {
+        if (victim instanceof ServerPlayer sp && (isHoldingExcalibur(sp) || AvalonItem.isAvalonActive(sp))) {
+            PlayerExcaliburState st = stateOf(sp, sp.getMainHandItem());
+            st.lastCombatTick = sp.serverLevel().getGameTime();
+        }
+        Entity attacker = source != null ? source.getEntity() : null;
+        if (attacker instanceof ServerPlayer sp && isHoldingExcalibur(sp)) {
+            long now = sp.serverLevel().getGameTime();
+            PlayerExcaliburState st = stateOf(sp, sp.getMainHandItem());
+            st.lastCombatTick = now;
+            if (!isTrueDamageActive() && victim != sp && !ExcaliburSeals.isAlly(sp, victim)) {
+                st.lastDamagedEnemyTick = now;
+            }
+            if (ExcaliburSeals.isAlly(sp, victim)) {
+                st.lastDishonorTick = now;
+            }
+        }
+    }
+
+    public static boolean tryTriggerAvalonImmortality(LivingEntity entity, DamageSource source) {
+        if (!(entity instanceof ServerPlayer player) || !(player.level() instanceof ServerLevel level)) {
+            return false;
+        }
+        if (source != null && source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+            return false;
+        }
+        if (!AvalonItem.isAvalonActive(player)) {
+            return false;
+        }
+        PlayerExcaliburState st = stateOf(player, player.getMainHandItem());
+        if (st.avalonReviveCdTicks > 0) {
+            return false;
+        }
+
+        player.setHealth(player.getMaxHealth());
+        player.clearFire();
+        player.removeEffect(MobEffects.WITHER);
+        player.removeEffect(MobEffects.POISON);
+        player.removeEffect(MobEffects.HUNGER);
+        player.removeEffect(MobEffects.WEAKNESS);
+        player.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
+        player.removeEffect(MobEffects.BLINDNESS);
+        player.removeEffect(MobEffects.DARKNESS);
+        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 50, 3, false, true, true));
+        player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 80, 2, false, true, true));
+        player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 120, 2, false, true, true));
+        player.invulnerableTime = 50;
+
+        st.avalonReviveCdTicks = AVALON_REVIVE_CD_TICKS;
+
+        level.playSound(null, player.getX(), player.getY() + 1.0, player.getZ(),
+                SoundEvents.TOTEM_USE, SoundSource.PLAYERS, 1.15F, 1.32F);
+        level.playSound(null, player.getX(), player.getY() + 1.0, player.getZ(),
+                SoundEvents.BEACON_POWER_SELECT, SoundSource.PLAYERS, 1.35F, 1.45F);
+        level.sendParticles(AVALON_CYAN_GOLD, player.getX(), player.getY() + 1.0, player.getZ(),
+                24, 0.9, 0.9, 0.9, 0.06);
+        level.sendParticles(GOLD_SPARK, player.getX(), player.getY() + 1.0, player.getZ(),
+                18, 0.8, 0.9, 0.8, 0.06);
+
+        player.displayClientMessage(Component.literal("§b§l✦ AVALON — TÁI TẠO TOÀN VẸN SINH LỰC! ✦"), true);
+
+        ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
+                ExcaliburSyncPayload.EVENT_AVALON_REVIVE, player.getId(), (byte) 0,
+                22.0F, player.getX(), player.getY(), player.getZ(),
+                player.getYRot(), player.getXRot(), 3.6F, 1.0F));
+        sendPassiveSync(player, level, st, true);
+        return true;
+    }
+
+    /** Phân nhánh chuẩn (Aerial Judgment -> Delay Golden Crescent Wave -> Royal Swordplay 4-Hit). */
+    private static ExcaliburMoveType resolveStandardMove(ServerPlayer player, ServerLevel level, PlayerExcaliburState st) {
+        long now = level.getGameTime();
+
+        // 1. Nhánh C: Không Chiến — Aerial Judgment (`!player.onGround()`)
+        if (!player.onGround() && !player.isInWater() && !player.isFallFlying() && !player.isPassenger()) {
+            if (now - st.lastAirHitTick > 22L) {
+                st.airComboStep = 0;
+            }
+            ExcaliburMoveType air = ExcaliburMoveType.aerialByStep(st.airComboStep);
+            st.airComboStep = Math.min(2, st.airComboStep + 1);
+            st.lastAirHitTick = now;
+            st.nextComboStep = 0;
+            return air;
+        }
+
+        // 2. Nhánh B: Golden Crescent Wave (Delay Combo: Hit 1 -> Đợi 0.30s [7–26t] -> Đánh!)
+        long sinceLast = now - st.lastSwingTick;
+        if (st.lastMove == ExcaliburMoveType.HIT_1_SWEEP
+                && sinceLast >= DELAY_CRESCENT_MIN_TICKS && sinceLast <= DELAY_CRESCENT_MAX_TICKS) {
+            st.nextComboStep = 0;
+            st.crescentWaveFireTick = now + 8L; // Mốc 0.40s bổ phóng lưỡi liềm vàng mảnh 7 blocks!
+            return ExcaliburMoveType.GOLDEN_CRESCENT;
+        }
+
+        // 3. Chuỗi 4 đòn thường Royal Swordplay
+        if (sinceLast > COMBO_RESET_TICKS) {
             st.nextComboStep = 0;
         }
         ExcaliburMoveType move = ExcaliburMoveType.comboByStep(st.nextComboStep);
-        st.nextComboStep = (st.nextComboStep + 1) % 3;
+        st.nextComboStep = (st.nextComboStep + 1) % 4;
+        return move;
+    }
+
+    @Nullable
+    public static ActiveHitContext beginPlayerAttack(Player player, Entity target) {
+        if (player.level().isClientSide || !isHoldingExcalibur(player) || !(player instanceof ServerPlayer sp)) {
+            return null;
+        }
+        if (isActionLocked(sp.getUUID())) {
+            return null;
+        }
+        ItemStack stack = player.getMainHandItem();
+        ServerLevel level = sp.serverLevel();
+        PlayerExcaliburState st = stateOf(sp, stack);
+        long now = level.getGameTime();
+        if (st.fallingStarDiving || now <= st.royalCounterBeat2Tick) {
+            return null;
+        }
+        ExcaliburMoveType move = resolveStandardMove(sp, level, st);
+        st.lastMove = move;
         st.lastSwingTick = now;
+        st.lastCombatTick = now;
+        markUnsheathed(sp, level, st, stack, now);
+        applyMoveKinematics(sp, st, move, now, true);
 
         LivingEntity living = (target instanceof LivingEntity le) ? le : null;
-        ActiveHitContext ctx = new ActiveHitContext(player, target, living, stack, morgan, move);
+        ActiveHitContext ctx = new ActiveHitContext(player, target, living, stack, move);
         ACTIVE_HIT.set(ctx);
         return ctx;
+    }
+
+    private static void applyMoveKinematics(ServerPlayer player, PlayerExcaliburState st,
+                                            ExcaliburMoveType move, long now, boolean hasDirectTarget) {
+        if (player.isPassenger() || player.isSwimming() || player.isFallFlying()) {
+            return;
+        }
+        Vec3 look = player.getLookAngle();
+        Vec3 flat = new Vec3(look.x, 0.0, look.z);
+        flat = (flat.lengthSqr() < 1e-4) ? Vec3.directionFromRotation(0.0F, player.getYRot()) : flat.normalize();
+        Vec3 cur = player.getDeltaMovement();
+
+        switch (move) {
+            case AIR_1_DIAG, AIR_2_DIAG -> {
+                // Giảm trọng lực rơi (motionY = 0.05) giữ nhân vật lơ lửng ngang tầm mục tiêu!
+                st.airHoverUntilTick = now + 5L;
+                player.setDeltaMovement(cur.x * 0.60 + flat.x * 0.14, 0.05, cur.z * 0.60 + flat.z * 0.14);
+                player.fallDistance = 0.0F;
+                player.hurtMarked = true;
+                return;
+            }
+            case AIR_3_FALLING_STAR -> {
+                // Chĩa thẳng mũi kiếm xuống đất (Pitch -10°), lao vút xuống (motionY = -1.3)!
+                st.fallingStarDiving = true;
+                st.fallingStarStartTick = now;
+                player.setDeltaMovement(flat.x * 0.14, -1.3, flat.z * 0.14);
+                player.fallDistance = 0.0F;
+                player.hurtMarked = true;
+                return;
+            }
+            case STRIKE_AIR -> {
+                // Đạp chân lao tới trước (dash 0.6 block) diễn ra ở mốc 0.20s (Tick 4)!
+                return;
+            }
+            default -> {
+            }
+        }
+
+        if (player.isShiftKeyDown()) {
+            return;
+        }
+        double baseImpulse = switch (move) {
+            case HIT_1_SWEEP -> 0.155;      // Lướt nhẹ tới trước 0.3 block
+            case HIT_2_RISING -> 0.140;
+            case HIT_3_THRUST -> 0.360;     // Lao người đâm thẳng tới trước (dash 0.65 block)
+            case HIT_4_SLAM -> 0.155;
+            case GOLDEN_CRESCENT -> 0.150;
+            default -> 0.0;
+        };
+        if (baseImpulse > 0.0) {
+            double impulse = hasDirectTarget ? baseImpulse * 0.70 : baseImpulse;
+            if (cur.horizontalDistanceSqr() < 0.28) {
+                double hopY = (move == ExcaliburMoveType.HIT_4_SLAM && player.onGround()) ? 0.13 : 0.0;
+                player.setDeltaMovement(cur.x + flat.x * impulse, cur.y + hopY, cur.z + flat.z * impulse);
+                player.hurtMarked = true;
+            }
+        }
     }
 
     public static float modifyAttackDamage(float amount) {
@@ -194,8 +1114,6 @@ public final class ExcaliburCombatHandler {
         if (ctx == null) {
             return amount;
         }
-        // ItemAttributeModifiers already applies +40% base damage in Morgan form (36.0 -> 50.4).
-        // Scale by combo multiplier (Hit 1: 1.00x, Hit 2: 1.10x, Hit 3: 1.35x).
         return amount * ctx.moveType.damageMultiplier;
     }
 
@@ -204,29 +1122,202 @@ public final class ExcaliburCombatHandler {
         if (!(ctx.player instanceof ServerPlayer sp) || !(sp.level() instanceof ServerLevel level)) {
             return;
         }
-        executeSlashEffects(sp, level, ctx.moveType, ctx.morgan, ctx.realTarget != null && ctx.realTarget.hurtTime > 0);
+        PlayerExcaliburState st = stateOf(sp, sp.getMainHandItem());
+        boolean landedHit = (ctx.realTarget != null && ctx.realTarget.hurtTime > 0)
+                || (st.lastDamagedEnemyTick == level.getGameTime());
+        if (ctx.realTarget != null && landedHit) {
+            applySpecialOnHit(ctx.realTarget, ctx.moveType);
+        }
+        if (ctx.moveType == ExcaliburMoveType.GOLDEN_CRESCENT) {
+            if (perform360SpinHit(sp, level, ctx.realTarget)) {
+                landedHit = true;
+            }
+        } else if (ctx.moveType == ExcaliburMoveType.AIR_1_DIAG || ctx.moveType == ExcaliburMoveType.AIR_2_DIAG) {
+            if (performForwardArcCleave(sp, level, ctx.moveType, ctx.realTarget)) {
+                landedHit = true;
+            }
+        }
+        executeSlashEffects(sp, level, ctx.moveType, landedHit);
     }
 
-    /** Nhận gói C2S từ Client (Air Slash, RMB Ultimate, [R] 4s Morgan Charge). */
+    private static void applySpecialOnHit(LivingEntity target, ExcaliburMoveType move) {
+        if (move == ExcaliburMoveType.AIR_1_DIAG || move == ExcaliburMoveType.AIR_2_DIAG) {
+            Vec3 v = target.getDeltaMovement();
+            target.setDeltaMovement(v.x * 0.45, 0.22, v.z * 0.45);
+            target.hurtMarked = true;
+        }
+    }
+
     public static void handleActionPacket(ServerPlayer player, ExcaliburActionC2SPayload payload) {
         if (player == null || !player.isAlive() || player.isSpectator()) {
             return;
         }
-        if (!(player.level() instanceof ServerLevel level)) {
-            return;
-        }
-        if (!isHoldingExcalibur(player)) {
-            cancelChannel(player, level, false);
+        if (!(player.level() instanceof ServerLevel level) || !isHoldingExcalibur(player)) {
             return;
         }
         switch (payload.actionId()) {
             case ExcaliburActionC2SPayload.ACTION_AIR_SLASH -> handleAirSlash(player, level);
             case ExcaliburActionC2SPayload.ACTION_ULTIMATE -> tryStartUltimate(player);
-            case ExcaliburActionC2SPayload.ACTION_CHARGE_START -> tryToggleOrStartMorganCharge(player, level);
-            case ExcaliburActionC2SPayload.ACTION_CHARGE_CANCEL -> cancelChannel(player, level, true);
+            case ExcaliburActionC2SPayload.ACTION_STRIKE_AIR -> handleStrikeAirStart(player, level);
+            case ExcaliburActionC2SPayload.ACTION_SHEATHE -> handleManualSheathe(player, level);
             default -> {
             }
         }
+    }
+
+    /** Nhánh A: Strike Air Thrust (Hold Attack sau Hit 1/2) — 0.00–0.20s lấy đà + 0.20–0.35s đâm bộc phá (5 blocks, đẩy lùi & phá khiên)! */
+    private static void handleStrikeAirStart(ServerPlayer player, ServerLevel level) {
+        if (isActionLocked(player.getUUID()) || player.isUsingItem()) {
+            return;
+        }
+        long now = level.getGameTime();
+        ItemStack stack = player.getMainHandItem();
+        PlayerExcaliburState st = stateOf(player, stack);
+        if (st.fallingStarDiving || now <= st.royalCounterBeat2Tick) {
+            return;
+        }
+        boolean fromHit1Or2 = (st.lastMove == ExcaliburMoveType.HIT_1_SWEEP || st.lastMove == ExcaliburMoveType.HIT_2_RISING);
+        long since = now - st.lastSwingTick;
+        if (!fromHit1Or2 || since < st.lastMove.cancelAfterTicks || since > 26L) {
+            return;
+        }
+
+        st.lastMove = ExcaliburMoveType.STRIKE_AIR;
+        st.lastSwingTick = now;
+        st.lastCombatTick = now;
+        st.nextComboStep = 0;
+        st.strikeAirFireTick = now + 4L; // Mốc 0.20s phóng vòng xung kích 5 blocks!
+        markUnsheathed(player, level, st, stack, now);
+
+        level.playSound(null, player.getX(), player.getY() + 1.0, player.getZ(),
+                SoundEvents.BREEZE_CHARGE, SoundSource.PLAYERS, 0.90F, 1.32F);
+        executeSlashEffects(player, level, ExcaliburMoveType.STRIKE_AIR, false);
+    }
+
+    private static void fireStrikeAirBlast(ServerPlayer player, ServerLevel level, PlayerExcaliburState st, ItemStack stack) {
+        Vec3 look = player.getLookAngle().normalize();
+        Vec3 flat = new Vec3(look.x, 0.0, look.z);
+        flat = (flat.lengthSqr() < 1e-4) ? Vec3.directionFromRotation(0.0F, player.getYRot()) : flat.normalize();
+        Vec3 cur = player.getDeltaMovement();
+        // Đạp chân lao tới trước (dash 0.6 block)
+        player.setDeltaMovement(cur.x * 0.35 + flat.x * 0.34, cur.y, cur.z * 0.35 + flat.z * 0.34);
+        player.hurtMarked = true;
+
+        Vec3 origin = player.getEyePosition().add(0.0, -0.16, 0.0);
+        double range = 5.0; // Chính xác 5 blocks!
+        Vec3 end = origin.add(look.scale(range));
+        AABB box = new AABB(origin, end).inflate(1.85);
+        List<LivingEntity> candidates = level.getEntitiesOfClass(LivingEntity.class, box,
+                e -> e != player && e.isAlive() && e.isAttackable() && !ExcaliburSeals.isAlly(player, e));
+        float baseDmg = (float) Math.max(ExcaliburItem.ATTACK_DAMAGE, player.getAttributeValue(Attributes.ATTACK_DAMAGE));
+        float dmg = baseDmg * ExcaliburMoveType.STRIKE_AIR.damageMultiplier;
+        boolean hitAny = false;
+
+        SHIELD_BREAK_ACTIVE.set(Boolean.TRUE);
+        OVERRIDE_ARMOR_PIERCE.set(0.30F);
+        try {
+            for (LivingEntity target : candidates) {
+                Vec3 center = target.getBoundingBox().getCenter();
+                Vec3 rel = center.subtract(origin);
+                double along = rel.dot(look);
+                if (along < 0.2 || along > range + 0.5) {
+                    continue;
+                }
+                double frac = Mth.clamp(along / range, 0.0, 1.0);
+                double maxRad = Mth.lerp(frac, 0.78, 1.65) + target.getBbWidth() * 0.38;
+                Vec3 closest = origin.add(look.scale(along));
+                if (closest.distanceToSqr(center) > maxRad * maxRad) {
+                    continue;
+                }
+                if (target instanceof Player tp && tp.isBlocking()) {
+                    tp.disableShield();
+                    level.playSound(null, center.x, center.y, center.z,
+                            SoundEvents.SHIELD_BREAK, SoundSource.PLAYERS, 1.20F, 1.0F);
+                }
+                target.invulnerableTime = 0;
+                if (target.hurt(level.damageSources().playerAttack(player), dmg)) {
+                    hitAny = true;
+                    target.setDeltaMovement(look.x * 1.40, 0.35, look.z * 1.40);
+                    target.hurtMarked = true;
+                }
+            }
+        } finally {
+            OVERRIDE_ARMOR_PIERCE.remove();
+            SHIELD_BREAK_ACTIVE.set(Boolean.FALSE);
+        }
+
+        if (hitAny) {
+            stack.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
+            awardEnergy(player, level, st, stack, ExcaliburItem.ENERGY_PER_HIT, false);
+        }
+
+        level.playSound(null, origin.x, origin.y, origin.z,
+                SoundEvents.BREEZE_SHOOT, SoundSource.PLAYERS, 1.25F, 1.08F);
+        level.playSound(null, origin.x, origin.y, origin.z,
+                ModSounds.EXCALIBUR_SLASH, SoundSource.PLAYERS, 1.15F, 1.38F);
+        ModNetworking.sendShakeNearby(level, origin, 14.0, 0.38F, 4);
+
+        ModNetworking.sendExcaliburSyncNearby(level, origin, new ExcaliburSyncPayload(
+                ExcaliburSyncPayload.EVENT_STRIKE_AIR_BLAST, player.getId(), (byte) ExcaliburMoveType.STRIKE_AIR.id,
+                7.0F, origin.x, origin.y, origin.z,
+                player.getYRot(), player.getXRot(), (float) range, 0.0F));
+    }
+
+    /** Nhánh B Đòn 2 (mốc 0.40s): Bổ thẳng xuống đất phóng 1 lưỡi liềm ánh sáng vàng mảnh trượt mặt đất 7 blocks (không khói bụi)! */
+    private static void fireGoldenCrescentWave(ServerPlayer player, ServerLevel level, PlayerExcaliburState st, ItemStack stack) {
+        Vec3 look = player.getLookAngle();
+        Vec3 flat = new Vec3(look.x, 0.0, look.z);
+        flat = (flat.lengthSqr() < 1e-4) ? Vec3.directionFromRotation(0.0F, player.getYRot()) : flat.normalize();
+        Vec3 origin = player.position().add(flat.scale(0.80)).add(0.0, 0.25, 0.0);
+        double range = 7.0; // Chính xác 7 blocks!
+        Vec3 end = origin.add(flat.scale(range));
+        AABB box = new AABB(origin, end).inflate(1.50, 1.35, 1.50);
+
+        List<LivingEntity> candidates = level.getEntitiesOfClass(LivingEntity.class, box,
+                e -> e != player && e.isAlive() && e.isAttackable() && !ExcaliburSeals.isAlly(player, e));
+        float baseDmg = (float) Math.max(ExcaliburItem.ATTACK_DAMAGE, player.getAttributeValue(Attributes.ATTACK_DAMAGE));
+        float dmg = baseDmg * ExcaliburMoveType.GOLDEN_CRESCENT.damageMultiplier;
+        boolean hitAny = false;
+
+        OVERRIDE_ARMOR_PIERCE.set(0.25F);
+        try {
+            for (LivingEntity target : candidates) {
+                Vec3 center = target.position().add(0.0, target.getBbHeight() * 0.45, 0.0);
+                Vec3 rel = center.subtract(origin);
+                double along = rel.x * flat.x + rel.z * flat.z;
+                if (along < -0.3 || along > range + 0.5) {
+                    continue;
+                }
+                Vec3 closest = origin.add(flat.scale(along));
+                double perpSq = (center.x - closest.x) * (center.x - closest.x)
+                        + (center.z - closest.z) * (center.z - closest.z);
+                if (perpSq > 1.45 * 1.45 || Math.abs(center.y - origin.y) > 2.2) {
+                    continue;
+                }
+                target.invulnerableTime = 0;
+                if (target.hurt(level.damageSources().playerAttack(player), dmg)) {
+                    hitAny = true;
+                    target.push(flat.x * 0.62, 0.26, flat.z * 0.62);
+                    target.hurtMarked = true;
+                }
+            }
+        } finally {
+            OVERRIDE_ARMOR_PIERCE.remove();
+        }
+
+        if (hitAny) {
+            stack.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
+            awardEnergy(player, level, st, stack, ExcaliburItem.ENERGY_PER_HIT, false);
+        }
+
+        level.playSound(null, origin.x, origin.y, origin.z,
+                ModSounds.EXCALIBUR_SLASH, SoundSource.PLAYERS, 1.32F, 0.90F);
+        ModNetworking.sendShakeNearby(level, origin, 14.0, 0.42F, 5);
+
+        ModNetworking.sendExcaliburSyncNearby(level, origin, new ExcaliburSyncPayload(
+                ExcaliburSyncPayload.EVENT_GROUND_WAVE, player.getId(), (byte) ExcaliburMoveType.GOLDEN_CRESCENT.id,
+                9.5F, origin.x, origin.y, origin.z,
+                player.getYRot(), 0.0F, (float) range, 0.0F));
     }
 
     private static void handleAirSlash(ServerPlayer player, ServerLevel level) {
@@ -234,111 +1325,211 @@ public final class ExcaliburCombatHandler {
             return;
         }
         long now = level.getGameTime();
-        PlayerExcaliburState st = PLAYER_STATES.computeIfAbsent(player.getUUID(), k -> new PlayerExcaliburState());
-        if (now - st.lastSwingTick < 6L) {
+        ItemStack stack = player.getMainHandItem();
+        PlayerExcaliburState st = stateOf(player, stack);
+        if (st.fallingStarDiving || now <= st.royalCounterBeat2Tick || player.isUsingItem()) {
             return;
         }
-        if (now - st.lastSwingTick > COMBO_RESET_TICKS) {
-            st.nextComboStep = 0;
+        if (now - st.lastSwingTick < st.lastMove.cancelAfterTicks) {
+            return;
         }
-        ExcaliburMoveType move = ExcaliburMoveType.comboByStep(st.nextComboStep);
-        st.nextComboStep = (st.nextComboStep + 1) % 3;
-        st.lastSwingTick = now;
 
-        boolean morgan = ExcaliburItem.isMorgan(player.getMainHandItem());
+        ExcaliburMoveType move = resolveStandardMove(player, level, st);
+        st.lastMove = move;
+        st.lastSwingTick = now;
+        st.lastCombatTick = now;
+        markUnsheathed(player, level, st, stack, now);
+
+        applyMoveKinematics(player, st, move, now, false);
         player.swing(InteractionHand.MAIN_HAND, true);
 
-        // Chém gió vẫn có tầm quét mặt cung phía trước 1.8..3.4 block cho cảm giác kiếm dài chân thực!
-        boolean hitAny = performForwardArcCleave(player, level, move, morgan, null);
-        executeSlashEffects(player, level, move, morgan, hitAny);
+        boolean hitAny = false;
+        if (move == ExcaliburMoveType.GOLDEN_CRESCENT) {
+            hitAny = perform360SpinHit(player, level, null);
+        } else if (move != ExcaliburMoveType.AIR_3_FALLING_STAR) {
+            hitAny = performForwardArcCleave(player, level, move, null);
+        }
+        executeSlashEffects(player, level, move, hitAny);
     }
 
-    private static boolean performForwardArcCleave(ServerPlayer player, ServerLevel level,
-                                                   ExcaliburMoveType move, boolean morgan,
-                                                   @Nullable LivingEntity exclude) {
-        Vec3 look = player.getLookAngle().normalize();
-        double reach = morgan ? 4.2 : 3.6;
-        Vec3 center = player.getEyePosition().add(look.scale(1.8));
-        AABB box = new AABB(center, center).inflate(reach * 0.65);
+    private static boolean perform360SpinHit(ServerPlayer player, ServerLevel level, @Nullable LivingEntity exclude) {
+        double radius = 3.60;
+        AABB box = player.getBoundingBox().inflate(radius, 1.4, radius);
         List<LivingEntity> candidates = level.getEntitiesOfClass(LivingEntity.class, box,
-                e -> e != player && e != exclude && e.isAlive() && e.isAttackable() && !e.isAlliedTo(player));
+                e -> e != player && e != exclude && e.isAlive() && e.isAttackable() && !ExcaliburSeals.isAlly(player, e));
         if (candidates.isEmpty()) {
             return false;
         }
-        float baseDmg = (float) (morgan ? ExcaliburItem.MORGAN_ATTACK_DAMAGE : ExcaliburItem.GOLDEN_ATTACK_DAMAGE);
-        float dmg = baseDmg * move.damageMultiplier * (exclude != null ? 0.65F : 0.90F);
+        float baseDmg = (float) Math.max(ExcaliburItem.ATTACK_DAMAGE, player.getAttributeValue(Attributes.ATTACK_DAMAGE));
+        float dmg = baseDmg * 0.95F;
+        boolean any = false;
+        for (LivingEntity target : candidates) {
+            double dx = target.getX() - player.getX();
+            double dz = target.getZ() - player.getZ();
+            double distSq = dx * dx + dz * dz;
+            if (distSq > radius * radius) {
+                continue;
+            }
+            target.invulnerableTime = 0;
+            if (target.hurt(level.damageSources().playerAttack(player), dmg)) {
+                any = true;
+                double dist = Math.max(0.1, Math.sqrt(distSq));
+                target.push((dx / dist) * 0.55, 0.18, (dz / dist) * 0.55);
+                target.hurtMarked = true;
+            }
+        }
+        return any;
+    }
+
+    /** Chạm đất của Aerial Judgment Air Hit 3: Gây sát thương AoE & kích hoạt 1 vòng phép 2D nhỏ màu vàng trong 0.3s (không đất đá/khói)! */
+    private static void performFallingStarLanding(ServerPlayer player, ServerLevel level,
+                                                  PlayerExcaliburState st, ItemStack stack) {
+        st.fallingStarDiving = false;
+        st.airComboStep = 0;
+        st.lastCombatTick = level.getGameTime();
+        player.fallDistance = 0.0F;
+
+        Vec3 impactPos = player.position();
+        double radius = 3.8;
+        AABB box = player.getBoundingBox().inflate(radius, 1.8, radius);
+        List<LivingEntity> candidates = level.getEntitiesOfClass(LivingEntity.class, box,
+                e -> e != player && e.isAlive() && e.isAttackable() && !ExcaliburSeals.isAlly(player, e));
+        float baseDmg = (float) Math.max(ExcaliburItem.ATTACK_DAMAGE, player.getAttributeValue(Attributes.ATTACK_DAMAGE));
+        float dmg = baseDmg * ExcaliburMoveType.AIR_3_FALLING_STAR.damageMultiplier;
+        boolean hitAny = false;
+
+        OVERRIDE_ARMOR_PIERCE.set(0.25F);
+        try {
+            for (LivingEntity target : candidates) {
+                double dx = target.getX() - impactPos.x;
+                double dz = target.getZ() - impactPos.z;
+                double distSq = dx * dx + dz * dz;
+                if (distSq > radius * radius) {
+                    continue;
+                }
+                target.invulnerableTime = 0;
+                if (target.hurt(level.damageSources().playerAttack(player), dmg)) {
+                    hitAny = true;
+                    double dist = Math.max(0.1, Math.sqrt(distSq));
+                    target.setDeltaMovement((dx / dist) * 0.72, 0.42, (dz / dist) * 0.72);
+                    target.hurtMarked = true;
+                }
+            }
+        } finally {
+            OVERRIDE_ARMOR_PIERCE.remove();
+        }
+        if (hitAny) {
+            stack.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
+            awardEnergy(player, level, st, stack, ExcaliburItem.ENERGY_PER_HIT * 2.0F, false);
+        }
+
+        level.playSound(null, impactPos.x, impactPos.y, impactPos.z,
+                SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 0.70F, 1.15F);
+        level.playSound(null, impactPos.x, impactPos.y, impactPos.z,
+                ModSounds.EXCALIBUR_SLASH, SoundSource.PLAYERS, 1.10F, 0.92F);
+        ModNetworking.sendShakeNearby(level, impactPos, 16.0, 0.62F, 5);
+
+        // Vòng phép 2D nhỏ màu vàng xoay dưới mũi kiếm trong chính xác 0.30s (6 ticks)!
+        ModNetworking.sendExcaliburSyncNearby(level, impactPos, new ExcaliburSyncPayload(
+                ExcaliburSyncPayload.EVENT_FALLING_STAR_IMPACT, player.getId(), (byte) ExcaliburMoveType.AIR_3_FALLING_STAR.id,
+                6.0F, impactPos.x, impactPos.y, impactPos.z,
+                player.getYRot(), player.getXRot(), 1.85F, 0.0F));
+    }
+
+    private static boolean performForwardArcCleave(ServerPlayer player, ServerLevel level,
+                                                   ExcaliburMoveType move, @Nullable LivingEntity exclude) {
+        Vec3 look = player.getLookAngle().normalize();
+        double reach = (move == ExcaliburMoveType.HIT_3_THRUST) ? 4.65 : 3.95;
+        Vec3 center = player.getEyePosition().add(look.scale(move == ExcaliburMoveType.HIT_3_THRUST ? 2.25 : 1.85));
+        AABB box = new AABB(center, center).inflate(reach * 0.68);
+        List<LivingEntity> candidates = level.getEntitiesOfClass(LivingEntity.class, box,
+                e -> e != player && e != exclude && e.isAlive() && e.isAttackable() && !ExcaliburSeals.isAlly(player, e));
+        if (candidates.isEmpty()) {
+            return false;
+        }
+        float baseDmg = (float) Math.max(ExcaliburItem.ATTACK_DAMAGE, player.getAttributeValue(Attributes.ATTACK_DAMAGE));
+        float dmg = baseDmg * move.damageMultiplier * (exclude != null ? 0.65F : 0.94F);
+        double minDot = switch (move) {
+            case HIT_1_SWEEP -> 0.02;
+            case HIT_2_RISING, AIR_1_DIAG, AIR_2_DIAG -> 0.14;
+            case HIT_3_THRUST -> 0.62;
+            default -> 0.25;
+        };
         boolean any = false;
         for (LivingEntity target : candidates) {
             Vec3 toTarget = target.position().add(0, target.getBbHeight() * 0.5, 0).subtract(player.getEyePosition());
             if (toTarget.lengthSqr() > (reach + 0.6) * (reach + 0.6)) {
                 continue;
             }
-            if (toTarget.normalize().dot(look) < (move == ExcaliburMoveType.COMBO_2 ? 0.05 : 0.25)) {
+            if (toTarget.normalize().dot(look) < minDot) {
                 continue;
             }
             if (target.hurt(level.damageSources().playerAttack(player), dmg)) {
                 any = true;
-                double kb = (move == ExcaliburMoveType.COMBO_3) ? 0.68 : 0.36;
-                target.push(look.x * kb, move == ExcaliburMoveType.COMBO_3 ? 0.28 : 0.12, look.z * kb);
-                if (morgan) {
-                    target.addEffect(new MobEffectInstance(MobEffects.WITHER, 40, 0, false, true));
-                }
+                double kb = switch (move) {
+                    case HIT_4_SLAM -> 0.62;
+                    case HIT_3_THRUST -> 0.55;
+                    default -> 0.32;
+                };
+                double liftY = switch (move) {
+                    case HIT_2_RISING -> 0.26;
+                    case HIT_4_SLAM -> 0.22;
+                    default -> 0.10;
+                };
+                target.push(look.x * kb, liftY, look.z * kb);
+                applySpecialOnHit(target, move);
             }
         }
         return any;
     }
 
     private static void executeSlashEffects(ServerPlayer player, ServerLevel level,
-                                            ExcaliburMoveType move, boolean morgan, boolean landedHit) {
-        // Resonant holy-steel / dark-energy slash sound at exact strike keyframe!
-        float pitch = switch (move) {
-            case COMBO_1 -> morgan ? 0.78F : 1.12F;
-            case COMBO_2 -> morgan ? 0.72F : 1.05F;
-            default -> morgan ? 0.62F : 0.90F;
-        };
-        level.playSound(null, player.getX(), player.getY() + 1.0, player.getZ(),
-                ModSounds.EXCALIBUR_SLASH, SoundSource.PLAYERS, move == ExcaliburMoveType.COMBO_3 ? 1.20F : 0.95F, pitch);
+                                            ExcaliburMoveType move, boolean landedHit) {
+        PlayerExcaliburState st = stateOf(player, player.getMainHandItem());
 
-        Vec3 look = player.getLookAngle().normalize();
-        // Neo vệt chém ngay tâm vai/ngực người chơi (không đẩy rời ra 1.8 block phía trước!) để bám khít lưỡi kiếm!
+        float pitch = switch (move) {
+            case HIT_1_SWEEP -> 1.16F;
+            case HIT_2_RISING -> 1.24F;
+            case HIT_3_THRUST -> 1.36F;
+            case GOLDEN_CRESCENT -> 1.26F;
+            case AIR_1_DIAG -> 1.28F;
+            case AIR_2_DIAG -> 1.34F;
+            case AIR_3_FALLING_STAR -> 0.98F;
+            default -> 0.94F;
+        };
+        if (move != ExcaliburMoveType.STRIKE_AIR) {
+            level.playSound(null, player.getX(), player.getY() + 1.0, player.getZ(),
+                    ModSounds.EXCALIBUR_SLASH, SoundSource.PLAYERS,
+                    (move == ExcaliburMoveType.HIT_4_SLAM) ? 1.18F : 0.96F, pitch);
+        }
+
         Vec3 anchor = player.position().add(0.0, player.getBbHeight() * 0.62, 0.0);
 
-        // Hit 3 (Heavy Overhead Judgment Slam): AoE shockwave + 0.08s hit-stop impact!
-        if (move == ExcaliburMoveType.COMBO_3) {
-            boolean cleaveHit = performForwardArcCleave(player, level, move, morgan, null);
+        if (move == ExcaliburMoveType.HIT_3_THRUST) {
+            // Tối giản: Không xả khói bụi! Chỉ rung nhẹ camera khi đâm bộc phá.
+            ModNetworking.sendShakeNearby(level, anchor, 10.0, 0.22F, 3);
+        } else if (move == ExcaliburMoveType.HIT_4_SLAM) {
+            boolean cleaveHit = performForwardArcCleave(player, level, move, null);
             landedHit = landedHit || cleaveHit;
-            Vec3 slamPos = player.position().add(look.scale(2.1)).add(0.0, 0.15, 0.0);
-            level.sendParticles(morgan ? MORGAN_VOID : GOLD_SHOCK,
-                    slamPos.x, slamPos.y + 0.25, slamPos.z, 22, 1.35, 0.25, 1.35, 0.08);
-            level.sendParticles(morgan ? MORGAN_CRIMSON : WHITE_HOLY,
-                    slamPos.x, slamPos.y + 0.35, slamPos.z, 18, 1.10, 0.35, 1.10, 0.10);
-            level.playSound(null, slamPos.x, slamPos.y, slamPos.z,
-                    SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 0.55F, morgan ? 0.52F : 1.25F);
-            ModNetworking.sendShakeNearby(level, slamPos, 16.0, landedHit ? 0.55F : 0.32F, 6);
+            // Tối giản: Không xả bụi/khói — chỉ vệt chém vàng thẳng đứng sắc nét & tiếng va chạm gọn!
+            ModNetworking.sendShakeNearby(level, anchor, 14.0, landedHit ? 0.44F : 0.28F, 5);
             if (landedHit) {
                 ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
-                        ExcaliburSyncPayload.EVENT_HIT_STOP, player.getId(), (byte) move.id, morgan,
-                        1.6F, slamPos.x, slamPos.y, slamPos.z, player.getYRot(), player.getXRot(), 0.0F, 0.0F));
+                        ExcaliburSyncPayload.EVENT_HIT_STOP, player.getId(), (byte) move.id,
+                        1.8F, anchor.x, anchor.y, anchor.z, player.getYRot(), player.getXRot(), 0.0F, 0.0F));
             }
         }
 
-        // Tích năng lượng biến đổi dạng Morgan khi đánh trúng địch ở dạng Vàng (đồng bộ gói mạng mượt, 0 tụt tay!)
-        if (!morgan && landedHit) {
-            ItemStack main = player.getMainHandItem();
-            if (main.is(ModItems.EXCALIBUR)) {
-                float cur = getOrInitEnergy(player, main);
-                setAndSyncEnergy(player, level, main, cur + (move == ExcaliburMoveType.COMBO_3 ? 22.0F : 14.0F), false);
-            }
+        if (landedHit && isHoldingExcalibur(player)) {
+            awardEnergy(player, level, st, player.getMainHandItem(), ExcaliburItem.ENERGY_PER_HIT, false);
         }
 
-        // Sync crescent slash trail & 3rd-person animation to all nearby clients!
         ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
-                ExcaliburSyncPayload.EVENT_SLASH, player.getId(), (byte) move.id, morgan,
+                ExcaliburSyncPayload.EVENT_SLASH, player.getId(), (byte) move.id,
                 move.baseDisplayTicks, anchor.x, anchor.y, anchor.z,
                 player.getYRot(), player.getXRot(), 1.8F, 0.0F));
     }
 
-    /** Kích hoạt Tuyệt Kỹ Chuột Phải — 'EXCALIBUR!' (14 block) hoặc 'EXCALIBUR MORGAN!' (18 block). */
     public static void tryStartUltimate(ServerPlayer player) {
         if (!(player.level() instanceof ServerLevel level) || !isHoldingExcalibur(player)) {
             return;
@@ -347,362 +1538,436 @@ public final class ExcaliburCombatHandler {
             return;
         }
         ItemStack stack = player.getMainHandItem();
-        long now = level.getGameTime();
-        long cdUntil = ExcaliburItem.getUltCooldownUntil(stack);
-        if (now < cdUntil) {
-            float rem = (cdUntil - now) / 20.0F;
-            player.displayClientMessage(Component.literal(String.format("§e[Excalibur] Cooldown: %.1fs", rem)), true);
+        PlayerExcaliburState st = stateOf(player, stack);
+
+        if (st.ultCooldownTicks > 0) {
+            player.displayClientMessage(Component.literal(
+                    "§6[Excalibur] Tuyệt kỹ đang hồi chiêu: còn §e" + formatTimer(st.ultCooldownTicks) + "§6!"), true);
+            return;
+        }
+        if (st.energy < ExcaliburItem.MAX_ENERGY - 0.01F) {
+            player.displayClientMessage(Component.literal(
+                    "§6[Excalibur] Cần đủ 100/100 Năng lượng (hiện có " + Math.round(st.energy) + "/100)"), true);
             return;
         }
 
-        boolean morgan = ExcaliburItem.isMorgan(stack);
-        ExcaliburItem.setUltCooldownUntil(stack, now + ULT_COOLDOWN_TICKS);
-        ACTIVE_ULTIMATES.put(player.getUUID(), new ActiveUltimateCast(player, level, morgan));
+        if (player.isUsingItem()) {
+            player.stopUsingItem();
+        }
+        ensureFullEnergyStrength(player, st);
+        float lockedBaseAttack = (float) Math.max(1.0, player.getAttributeValue(Attributes.ATTACK_DAMAGE));
+        ItemStack weaponSnapshot = stack.copy();
 
-        // Announce iconic Fate/stay night Noble Phantasm!
-        player.displayClientMessage(
-                Component.literal(morgan ? "§5§l✦ EXCALIBUR MORGAN!! ✦" : "§6§l✦ EXCALIBUR!! ✦"), true);
+        st.energy = 0.0F;
+        long now = level.getGameTime();
+        st.lastCombatTick = now;
+        ExcaliburItem.setEnergy(stack, 0.0F);
+        markUnsheathed(player, level, st, stack, now);
 
-        // Rising charge hum during the 0.65s skyward raise!
-        level.playSound(null, player.getX(), player.getY() + 1.4, player.getZ(),
-                ModSounds.EXCALIBUR_CHARGE, SoundSource.PLAYERS, 1.35F, morgan ? 0.68F : 1.05F);
+        ACTIVE_ULTIMATES.put(player.getUUID(), new ActiveUltimateCast(player, level, lockedBaseAttack, weaponSnapshot));
 
-        ExcaliburMoveType ultMove = morgan ? ExcaliburMoveType.ULT_MORGAN : ExcaliburMoveType.ULT_EXCALIBUR;
-        float range = morgan ? MORGAN_BEAM_RANGE : GOLDEN_BEAM_RANGE;
+        player.displayClientMessage(Component.literal("§e§l✦ EXCALIBUR!! ✦"), true);
+        rallyNearbyAlliesOnRelease(player, level);
+
+        level.playSound(null, player.getX(), player.getY() + 1.6, player.getZ(),
+                ModSounds.EXCALIBUR_CHARGE, SoundSource.PLAYERS, 1.38F, 1.16F);
+
         ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
-                ExcaliburSyncPayload.EVENT_ULT_START, player.getId(), (byte) ultMove.id, morgan,
+                ExcaliburSyncPayload.EVENT_ULT_START, player.getId(), (byte) ExcaliburMoveType.ULT_EXCALIBUR.id,
                 ULT_TOTAL_TICKS, player.getX(), player.getY(), player.getZ(),
-                player.getYRot(), player.getXRot(), range, 0.0F));
+                player.getYRot(), player.getXRot(), BEAM_RANGE, 1.0F));
+        sendPassiveSync(player, level, st, true);
     }
 
-    /** Bắt đầu (hoặc hủy nếu đang gồng) quá trình gồng 4.0s Dark Mana [R] để thức tỉnh Excalibur Morgan! */
-    public static void tryToggleOrStartMorganCharge(ServerPlayer player, ServerLevel level) {
-        if (ACTIVE_ULTIMATES.containsKey(player.getUUID())) {
-            return;
-        }
-        if (ACTIVE_CHANNELS.containsKey(player.getUUID())) {
-            cancelChannel(player, level, true);
-            return;
-        }
-        ItemStack stack = player.getMainHandItem();
-        if (ExcaliburItem.isMorgan(stack)) {
-            long remTicks = Math.max(0L, ExcaliburItem.getMorganEndTick(stack) - level.getGameTime());
-            player.displayClientMessage(Component.literal(
-                    String.format("§c[Excalibur Morgan Active: %.1fs remaining]", remTicks / 20.0F)), true);
-            return;
-        }
-        long now = level.getGameTime();
-        long cdUntil = ExcaliburItem.getMorganCooldownUntil(stack);
-        if (now < cdUntil) {
-            float rem = (cdUntil - now) / 20.0F;
-            player.displayClientMessage(Component.literal(
-                    String.format("§c[Dark Mana Recharging: %.1fs]", rem)), true);
-            return;
-        }
-        float energy = getOrInitEnergy(player, stack);
-        if (energy < 99.5F && !player.getAbilities().instabuild) {
-            player.displayClientMessage(Component.literal(
-                    String.format("§6[Năng lượng biến đổi: %d%% / 100%%]", Math.round(energy))), true);
-            return;
-        }
-
-        ACTIVE_CHANNELS.put(player.getUUID(), new ActiveMorganChannel(player, level));
-        level.playSound(null, player.getX(), player.getY() + 1.0, player.getZ(),
-                ModSounds.EXCALIBUR_CHARGE, SoundSource.PLAYERS, 1.15F, 0.58F);
-        player.displayClientMessage(Component.literal("§c[Đang gồng biến đổi Morgan: 0%...]"), true);
-
-        ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
-                ExcaliburSyncPayload.EVENT_CHARGE_START, player.getId(), (byte) ExcaliburMoveType.MORGAN_CHANNEL.id,
-                false, CHARGE_DURATION_TICKS, player.getX(), player.getY(), player.getZ(),
-                player.getYRot(), player.getXRot(), 0.0F, 0.0F));
-    }
-
-    private static void cancelChannel(ServerPlayer player, ServerLevel level, boolean notify) {
-        ActiveMorganChannel ch = ACTIVE_CHANNELS.remove(player.getUUID());
-        if (ch != null) {
-            if (notify) {
-                player.displayClientMessage(Component.literal("§7[Dark Mana Channel Interrupted]"), true);
-            }
-            ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
-                    ExcaliburSyncPayload.EVENT_CHARGE_CANCEL, player.getId(), (byte) ExcaliburMoveType.MORGAN_CHANNEL.id,
-                    false, 0.0F, player.getX(), player.getY(), player.getZ(),
-                    player.getYRot(), player.getXRot(), 0.0F, 0.0F));
-        }
-    }
-
-    /** Server tick chính: xử lý Ultimate Beams, 4s Morgan Charge, và 20s Morgan Buffs / Status Immunity / Revert. */
     public static void tickServer(MinecraftServer server) {
-        // 1. Tick active RMB Ultimates ('EXCALIBUR!' / 'EXCALIBUR MORGAN!')
         Iterator<Map.Entry<UUID, ActiveUltimateCast>> ultIt = ACTIVE_ULTIMATES.entrySet().iterator();
         while (ultIt.hasNext()) {
             ActiveUltimateCast u = ultIt.next().getValue();
             ServerPlayer p = u.player;
             if (!p.isAlive() || p.isRemoved() || !isHoldingExcalibur(p)) {
+                if (u.fired) {
+                    PlayerExcaliburState abortSt = PLAYER_STATES.get(p.getUUID());
+                    if (abortSt != null) {
+                        abortSt.ultCooldownTicks = ULT_COOLDOWN_TICKS;
+                        sendPassiveSync(p, u.level, abortSt, true);
+                    }
+                }
                 ultIt.remove();
                 continue;
             }
             u.tick++;
 
-            // Skyward charge particles (0.00s - 0.65s = ticks 1..13)
-            if (u.tick <= 13) {
-                if ((u.tick & 1) == 0) {
-                    double r = 1.45 - (u.tick / 13.0) * 0.55;
-                    for (int k = 0; k < 5; k++) {
-                        double ang = (u.tick * 0.65) + k * (Math.PI * 2.0 / 5.0);
-                        double px = p.getX() + Math.cos(ang) * r;
-                        double pz = p.getZ() + Math.sin(ang) * r;
-                        double py = p.getY() + 0.25 + (u.tick / 13.0) * 2.8;
-                        u.level.sendParticles(u.morgan ? MORGAN_BEAM_PURPLE : GOLD_SHOCK, px, py, pz, 1, 0, 0.14, 0, 0.02);
-                    }
-                }
-                if (u.tick == 12) {
-                    // Apex gleam chime right before slam!
-                    u.level.playSound(null, p.getX(), p.getY() + 2.2, p.getZ(),
-                            SoundEvents.TRIDENT_THUNDER, SoundSource.PLAYERS, 0.70F, u.morgan ? 0.58F : 1.48F);
+            // Tối giản hạt sạch trong quá trình tụ lực: chỉ vài đốm sáng nhỏ bay dọc thân kiếm (bỏ hoàn toàn cột lửa & khói!)
+            if (u.tick < ULT_BEAM_FIRE_TICK && (u.tick & 1) == 0) {
+                Vec3 bladeAnchor = p.position().add(0.0, u.tick >= ULT_TILT_START_TICK ? 2.35 : 1.95, 0.0);
+                u.level.sendParticles(GOLD_SPARK, bladeAnchor.x, bladeAnchor.y, bladeAnchor.z, 2, 0.12, 0.35, 0.12, 0.02);
+                if (u.tick == ULT_TILT_START_TICK) {
+                    u.level.playSound(null, bladeAnchor.x, bladeAnchor.y, bladeAnchor.z,
+                            SoundEvents.BEACON_POWER_SELECT, SoundSource.PLAYERS, 1.25F, 1.28F);
+                } else if (u.tick == ULT_CLEAVE_START_TICK) {
+                    u.level.playSound(null, p.getX(), p.getY() + 1.0, p.getZ(),
+                            SoundEvents.TRIDENT_THUNDER, SoundSource.PLAYERS, 0.80F, 1.48F);
                 }
             }
 
-            // Fire piercing Holy / Dark Energy Beam at exact overhead slam impact (tick 15 = 0.75s)!
             if (u.tick == ULT_BEAM_FIRE_TICK && !u.fired) {
                 u.fired = true;
-                fireExcaliburBeam(p, u.level, u.morgan);
+                fireExcaliburFlashlightSlash(p, u.level, u.lockedBaseAttack, u.weaponSnapshot);
+            }
+
+            if (u.fired && u.tick > ULT_BEAM_FIRE_TICK && u.tick <= ULT_BEAM_END_TICK && (u.tick % 3) == 0) {
+                Vec3 origin = p.getEyePosition().add(0.0, -0.18, 0.0);
+                ModNetworking.sendShakeNearby(u.level, origin, 24.0, 0.52F, 3);
             }
 
             if (u.tick >= ULT_TOTAL_TICKS) {
                 ultIt.remove();
+                PlayerExcaliburState doneSt = PLAYER_STATES.get(p.getUUID());
+                if (doneSt != null) {
+                    doneSt.ultCooldownTicks = ULT_COOLDOWN_TICKS;
+                    p.displayClientMessage(Component.literal(
+                            "§6[Excalibur] Tuyệt kỹ đang hồi chiêu §e25s§6!"), true);
+                    sendPassiveSync(p, u.level, doneSt, true);
+                }
             }
         }
 
-        // 2. Tick active 4.0s Dark Mana Channels ([R] 80 ticks)
-        Iterator<Map.Entry<UUID, ActiveMorganChannel>> chIt = ACTIVE_CHANNELS.entrySet().iterator();
-        while (chIt.hasNext()) {
-            ActiveMorganChannel ch = chIt.next().getValue();
-            ServerPlayer p = ch.player;
-            if (!p.isAlive() || p.isRemoved() || !isHoldingExcalibur(p)) {
-                chIt.remove();
-                if (!p.isRemoved()) {
-                    ModNetworking.sendExcaliburSyncNearby(ch.level, p.position(), new ExcaliburSyncPayload(
-                            ExcaliburSyncPayload.EVENT_CHARGE_CANCEL, p.getId(), (byte) ExcaliburMoveType.MORGAN_CHANNEL.id,
-                            false, 0.0F, p.getX(), p.getY(), p.getZ(), p.getYRot(), p.getXRot(), 0.0F, 0.0F));
-                }
-                continue;
-            }
-            ch.tick++;
-            float progress = Mth.clamp(ch.tick / (float) CHARGE_DURATION_TICKS, 0.0F, 1.0F);
-            int pct = Math.min(100, Math.round(progress * 100.0F));
-
-            // Smooth Action Bar percentage progress (`§c[Đang gồng biến đổi Morgan: 75%...]`)
-            if ((ch.tick & 1) == 0 || ch.tick == CHARGE_DURATION_TICKS) {
-                p.displayClientMessage(Component.literal("§c[Đang gồng biến đổi Morgan: " + pct + "%...]"), true);
-            }
-
-            // Rising ominous dark-mana hum every 14 ticks
-            if (ch.tick == 16 || ch.tick == 32 || ch.tick == 48 || ch.tick == 64) {
-                float pitch = 0.62F + progress * 0.62F;
-                ch.level.playSound(null, p.getX(), p.getY() + 1.0, p.getZ(),
-                        ModSounds.EXCALIBUR_CHARGE, SoundSource.PLAYERS, 1.15F, pitch);
-            }
-
-            // Swirling pitch-black & crimson-red vortex particles + client sync every 2 ticks
-            if ((ch.tick & 1) == 0) {
-                double radius = 2.1 - progress * 0.9;
-                for (int k = 0; k < 4; k++) {
-                    double ang = ch.tick * 0.35 + k * (Math.PI * 0.5);
-                    double px = p.getX() + Math.cos(ang) * radius;
-                    double pz = p.getZ() + Math.sin(ang) * radius;
-                    double py = p.getY() + 0.25 + ((ch.tick + k * 7) % 24) * 0.085;
-                    ch.level.sendParticles((k & 1) == 0 ? MORGAN_VOID : MORGAN_CRIMSON, px, py, pz, 1, 0, 0.06, 0, 0.02);
-                }
-                ModNetworking.sendExcaliburSyncNearby(ch.level, p.position(), new ExcaliburSyncPayload(
-                        ExcaliburSyncPayload.EVENT_CHARGE_TICK, p.getId(), (byte) ExcaliburMoveType.MORGAN_CHANNEL.id,
-                        false, CHARGE_DURATION_TICKS, p.getX(), p.getY(), p.getZ(),
-                        p.getYRot(), p.getXRot(), 0.0F, progress));
-            }
-
-            // At 4.0 seconds (tick 80): AWAKEN EXCALIBUR MORGAN!
-            if (ch.tick >= CHARGE_DURATION_TICKS) {
-                chIt.remove();
-                awakenExcaliburMorgan(p, ch.level);
-            }
-        }
-
-        // 3. Tick active Morgan forms across all players (Status Immunity, Buffs, & 20s Auto-Revert + 35s Cooldown)
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (!player.isAlive() || !(player.level() instanceof ServerLevel level)) {
                 continue;
             }
             long now = level.getGameTime();
-            boolean holdingActiveMorgan = false;
+            boolean holdingExcalibur = isHoldingExcalibur(player);
+            boolean holdingOffhandExcalibur = player.getOffhandItem().is(ModItems.EXCALIBUR);
+            boolean avalonActive = AvalonItem.isAvalonActive(player);
 
-            // Scan inventory so Morgan ALWAYS cleanly reverts after 20s even if moved off mainhand!
-            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-                ItemStack st = player.getInventory().getItem(i);
-                if (!st.is(ModItems.EXCALIBUR) || !ExcaliburItem.isMorgan(st)) {
-                    continue;
+            PlayerExcaliburState existing = PLAYER_STATES.get(player.getUUID());
+            boolean ultCooldownJustFinished = false;
+            if (existing != null) {
+                if (existing.avalonReviveCdTicks > 0) existing.avalonReviveCdTicks--;
+                if (existing.ultCooldownTicks > 0) {
+                    existing.ultCooldownTicks--;
+                    if (existing.ultCooldownTicks == 0) {
+                        ultCooldownJustFinished = true;
+                    }
                 }
-                long endTick = ExcaliburItem.getMorganEndTick(st);
-                if (now >= endTick) {
-                    // Revert smoothly to Golden Excalibur + apply 35-second cooldown!
-                    ExcaliburItem.setMorganState(st, false, 0L, now + MORGAN_COOLDOWN_TICKS);
-                    player.displayClientMessage(
-                            Component.literal("§e[Excalibur] Reverted to Golden Form (35s Cooldown)"), true);
-                    level.playSound(null, player.getX(), player.getY() + 1.0, player.getZ(),
-                            SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 0.90F, 1.15F);
-                    ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
-                            ExcaliburSyncPayload.EVENT_MORGAN_REVERT, player.getId(), (byte) 0, false,
-                            0.0F, player.getX(), player.getY(), player.getZ(),
-                            player.getYRot(), player.getXRot(), 0.0F, 0.0F));
-                } else if (st == player.getMainHandItem()) {
-                    holdingActiveMorgan = true;
-                }
-            }
-
-            if (holdingActiveMorgan) {
-                // Ironclad Status Immunity: cleanse & block Poison, Wither, Slowness, Weakness continuously!
-                player.removeEffect(MobEffects.POISON);
-                player.removeEffect(MobEffects.WITHER);
-                player.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
-                player.removeEffect(MobEffects.WEAKNESS);
-                // Maintain Resistance II (40% damage reduction) cleanly while active!
-                MobEffectInstance res = player.getEffect(MobEffects.DAMAGE_RESISTANCE);
-                if (res == null || res.getAmplifier() < 1 || res.getDuration() < 15) {
-                    player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 30, 1, false, false, true));
-                }
-            } else if ((now % 10L) == 0L && isHoldingExcalibur(player)) {
-                // Hồi năng lượng biến đổi thụ động (+2.5% mỗi 0.5s) chỉ gửi gói mạng nhẹ -> 0 sửa ItemStack -> kiếm ĐỨNG IM 100%!
-                ItemStack held = player.getMainHandItem();
-                if (!ExcaliburItem.isMorgan(held) && now >= ExcaliburItem.getMorganCooldownUntil(held)) {
-                    float cur = getOrInitEnergy(player, held);
-                    if (cur < 100.0F) {
-                        setAndSyncEnergy(player, level, held, cur + 2.5F, false);
+                if (!holdingExcalibur) {
+                    existing.strikeAirFireTick = -1000L;
+                    existing.crescentWaveFireTick = -1000L;
+                    existing.royalCounterBeat2Tick = -1000L;
+                    existing.sheatheClinkTick = -1000L;
+                    existing.sheatheEndTick = -1000L;
+                    existing.sheathedParryTicks = 0;
+                    existing.fallingStarDiving = false;
+                    if (existing.appliedFullEnergyStrength) {
+                        clearFullEnergyStrength(player, existing);
                     }
                 }
             }
-        }
-    }
 
-    /** Bùng nổ Hắc Ám Đỏ Thẫm tại mốc 4.0s — Thức tỉnh Excalibur Morgan (20s) cùng toàn bộ Buff Chiến Thần! */
-    private static void awakenExcaliburMorgan(ServerPlayer player, ServerLevel level) {
-        ItemStack stack = player.getMainHandItem();
-        if (!stack.is(ModItems.EXCALIBUR)) {
-            return;
-        }
-        long now = level.getGameTime();
-        setAndSyncEnergy(player, level, stack, 0.0F, true);
-        ExcaliburItem.setMorganState(stack, true, now + MORGAN_DURATION_TICKS, 0L);
+            if (!holdingExcalibur && !holdingOffhandExcalibur && !avalonActive) {
+                continue;
+            }
 
-        // 1. Instant Heal 40% Max Health + Regeneration II for 5 seconds (100 ticks)!
-        float healAmt = player.getMaxHealth() * 0.40F;
-        player.heal(healAmt);
-        player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 100, 1, false, true, true));
+            ItemStack held = holdingExcalibur ? player.getMainHandItem() : player.getOffhandItem();
+            PlayerExcaliburState st = stateOf(player, held);
+            st.avalonLinked = avalonActive;
 
-        // 2. Ironclad Resistance II (40% damage reduction) for full 20 seconds (400 ticks) + cleanse negative effects!
-        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, MORGAN_DURATION_TICKS, 1, false, true, true));
-        player.removeEffect(MobEffects.POISON);
-        player.removeEffect(MobEffects.WITHER);
-        player.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
-        player.removeEffect(MobEffects.WEAKNESS);
+            if (avalonActive && (now % 10L) == 0L) {
+                tickAvalonPassive(player, level, st);
+            }
 
-        // 3. Thunderous dark explosion & crimson-red shockwave knocking back surrounding foes!
-        level.playSound(null, player.getX(), player.getY() + 1.0, player.getZ(),
-                ModSounds.MORGAN_TRANSFORM, SoundSource.PLAYERS, 1.55F, 0.82F);
-        level.sendParticles(ParticleTypes.LARGE_SMOKE, player.getX(), player.getY() + 1.0, player.getZ(),
-                36, 1.4, 0.9, 1.4, 0.14);
-        level.sendParticles(MORGAN_VOID, player.getX(), player.getY() + 1.1, player.getZ(),
-                40, 1.6, 1.0, 1.6, 0.12);
-        level.sendParticles(MORGAN_CRIMSON, player.getX(), player.getY() + 1.1, player.getZ(),
-                44, 1.6, 1.1, 1.6, 0.14);
+            if (!holdingExcalibur && !holdingOffhandExcalibur) {
+                continue;
+            }
 
-        AABB blastBox = player.getBoundingBox().inflate(5.0);
-        for (LivingEntity foe : level.getEntitiesOfClass(LivingEntity.class, blastBox,
-                e -> e != player && e.isAlive() && e.isAttackable() && !e.isAlliedTo(player))) {
-            Vec3 away = foe.position().subtract(player.position());
-            Vec3 dir = away.lengthSqr() > 1e-4 ? away.normalize() : new Vec3(0, 0, 1);
-            foe.hurt(level.damageSources().magic(), 20.0F);
-            foe.push(dir.x * 1.15, 0.42, dir.z * 1.15);
-            foe.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60, 1));
-        }
-
-        ModNetworking.sendShakeNearby(level, player.position(), 24.0, 1.05F, 12);
-        player.displayClientMessage(Component.literal("§c§l✦ EXCALIBUR MORGAN AWAKENED! (20s) ✦"), true);
-
-        ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
-                ExcaliburSyncPayload.EVENT_MORGAN_AWAKEN, player.getId(), (byte) ExcaliburMoveType.MORGAN_AWAKEN.id,
-                true, ExcaliburMoveType.MORGAN_AWAKEN.baseDisplayTicks,
-                player.getX(), player.getY(), player.getZ(),
-                player.getYRot(), player.getXRot(), 5.0F, 1.0F));
-    }
-
-    /** Khai hỏa luồng sáng chém dọc TỪ TRỜI XUỐNG ĐẤT: Vàng Thánh Quang (18 block) hoặc Tím Hắc Ám Morgan (22 block)! */
-    private static void fireExcaliburBeam(ServerPlayer player, ServerLevel level, boolean morgan) {
-        // Bám phương ngang phía trước để luồng sáng chém dọc từ bầu trời giáng xuống dọc mặt đất cực kỳ hoành tráng!
-        Vec3 flatLook = Vec3.directionFromRotation(0.0F, player.getYRot()).normalize();
-        Vec3 origin = player.position().add(0.0, 1.15, 0.0).add(flatLook.scale(1.2));
-        float range = morgan ? 22.0F : 18.0F;
-        double halfRadius = morgan ? 2.75 : 2.10;
-        float damage = morgan ? 132.0F : 92.0F;
-        double knockback = morgan ? 1.55 : 1.05;
-
-        // Massive echoing sky-cleave blast SFX!
-        level.playSound(null, origin.x, origin.y, origin.z,
-                ModSounds.EXCALIBUR_BEAM, SoundSource.PLAYERS, 1.75F, morgan ? 0.68F : 1.04F);
-        ModNetworking.sendShakeNearby(level, origin, 28.0, morgan ? 1.25F : 0.90F, 12);
-
-        // Piercing vertical sky-slash corridor along the full 18-block / 22-block path!
-        Set<UUID> alreadyHit = new HashSet<>();
-        int steps = (int) Math.ceil(range * 1.4);
-        for (int s = 1; s <= steps; s++) {
-            double dist = (s / (double) steps) * range;
-            Vec3 pt = origin.add(flatLook.scale(dist));
-
-            // Cột hạt ánh sáng Vàng (Excalibur) / Tím (Excalibur Morgan) giáng thẳng từ trời xuống mặt đất!
-            if ((s & 1) == 0) {
-                for (double skyY = 0.0; skyY <= 16.0; skyY += 4.0) {
-                    level.sendParticles(morgan ? MORGAN_BEAM_PURPLE : GOLD_SHOCK,
-                            pt.x, player.getY() + 0.4 + skyY, pt.z, morgan ? 4 : 4, 0.55, 1.2, 0.55, 0.04);
-                    level.sendParticles(morgan ? MORGAN_VOID : WHITE_HOLY,
-                            pt.x, player.getY() + 0.6 + skyY, pt.z, 3, 0.40, 1.1, 0.40, 0.05);
+            if (holdingExcalibur) {
+                if (st.royalCounterBeat2Tick > 0L && now >= st.royalCounterBeat2Tick) {
+                    st.royalCounterBeat2Tick = -1000L;
+                    fireRoyalCounterBeat2(player, level, st, held);
                 }
-                if (morgan) {
-                    level.sendParticles(ParticleTypes.LARGE_SMOKE, pt.x, player.getY() + 0.14, pt.z,
-                            2, 0.75, 0.08, 0.75, 0.03);
-                    level.sendParticles(ParticleTypes.DRAGON_BREATH, pt.x, player.getY() + 0.20, pt.z,
-                            2, 0.75, 0.12, 0.75, 0.02);
-                } else {
-                    level.sendParticles(ParticleTypes.END_ROD, pt.x, player.getY() + 1.2, pt.z, 3, 0.55, 2.2, 0.55, 0.04);
+                if (st.strikeAirFireTick > 0L && now >= st.strikeAirFireTick) {
+                    st.strikeAirFireTick = -1000L;
+                    fireStrikeAirBlast(player, level, st, held);
+                }
+                if (st.crescentWaveFireTick > 0L && now >= st.crescentWaveFireTick) {
+                    st.crescentWaveFireTick = -1000L;
+                    fireGoldenCrescentWave(player, level, st, held);
+                }
+                // Mốc 0.40s của animation Cất Kiếm: phát tiếng kim loại khóa vào vỏ ("Clink!") + 3 đốm sáng vàng tại miệng vỏ Avalon!
+                if (st.sheatheClinkTick > 0L && now >= st.sheatheClinkTick) {
+                    st.sheatheClinkTick = -1000L;
+                    float yawRad = player.getYRot() * Mth.DEG_TO_RAD;
+                    double fwdX = -Mth.sin(yawRad);
+                    double fwdZ = Mth.cos(yawRad);
+                    double leftX = Mth.cos(yawRad);
+                    double leftZ = Mth.sin(yawRad);
+                    Vec3 mouthPos = player.position().add(leftX * 0.34 + fwdX * 0.24, 0.92, leftZ * 0.34 + fwdZ * 0.24);
+                    level.playSound(null, mouthPos.x, mouthPos.y, mouthPos.z,
+                            SoundEvents.ANVIL_PLACE, SoundSource.PLAYERS, 0.42F, 2.00F);
+                    level.playSound(null, mouthPos.x, mouthPos.y, mouthPos.z,
+                            SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.30F, 1.95F);
+                    level.sendParticles(GOLD_SPARK, mouthPos.x, mouthPos.y, mouthPos.z, 3, 0.08, 0.08, 0.08, 0.02);
+                    ModNetworking.sendExcaliburSyncNearby(level, mouthPos, new ExcaliburSyncPayload(
+                            ExcaliburSyncPayload.EVENT_SHEATHE_CLINK, player.getId(), (byte) ExcaliburMoveType.SHEATHE_AVALON.id,
+                            6.0F, mouthPos.x, mouthPos.y, mouthPos.z,
+                            player.getYRot(), player.getXRot(), 0.0F, 0.0F));
+                }
+                boolean activeCombatOrGuard = player.isUsingItem()
+                        || ACTIVE_ULTIMATES.containsKey(player.getUUID())
+                        || st.fallingStarDiving
+                        || now <= st.royalCounterBeat2Tick;
+                if (activeCombatOrGuard) {
+                    st.lastActiveCombatOrGuardTick = now;
+                } else if (st.unsheathed && now >= st.sheatheEndTick
+                        && (now - st.lastActiveCombatOrGuardTick) >= AUTO_SHEATHE_IDLE_TICKS) {
+                    // Auto-Sheathe: Sau 4.0s (80 ticks) không đánh/đỡ -> tự động tra Excalibur vào vỏ Avalon!
+                    startSheatheAvalon(player, level, st, held, now);
+                }
+                if (now <= st.airHoverUntilTick && !player.onGround() && !st.fallingStarDiving) {
+                    Vec3 cur = player.getDeltaMovement();
+                    if (cur.y < 0.05) {
+                        player.setDeltaMovement(cur.x, 0.05, cur.z);
+                        player.fallDistance = 0.0F;
+                        player.hurtMarked = true;
+                    }
+                }
+                if (st.fallingStarDiving) {
+                    player.fallDistance = 0.0F;
+                    if (player.onGround() || (now - st.fallingStarStartTick) > 40L) {
+                        performFallingStarLanding(player, level, st, held);
+                    } else {
+                        Vec3 cur = player.getDeltaMovement();
+                        if (cur.y > -1.1) {
+                            player.setDeltaMovement(cur.x, -1.3, cur.z);
+                            player.hurtMarked = true;
+                        }
+                    }
+                } else if (player.onGround() && (now - st.lastAirHitTick) > 4L) {
+                    st.airComboStep = 0;
                 }
             }
 
-            AABB sliceBox = new AABB(
-                    pt.x - halfRadius, player.getY() - 1.5, pt.z - halfRadius,
-                    pt.x + halfRadius, player.getY() + 10.0, pt.z + halfRadius);
-            for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, sliceBox,
-                    e -> e != player && e.isAlive() && e.isAttackable() && !e.isAlliedTo(player))) {
-                if (!alreadyHit.add(target.getUUID())) {
+            boolean fullReady = holdingExcalibur && st.energy >= ExcaliburItem.MAX_ENERGY - 0.01F;
+            if (fullReady) {
+                if ((now % 10L) == 0L || !st.appliedFullEnergyStrength) {
+                    ensureFullEnergyStrength(player, st);
+                }
+            } else if (!ACTIVE_ULTIMATES.containsKey(player.getUUID()) && st.appliedFullEnergyStrength) {
+                clearFullEnergyStrength(player, st);
+            }
+
+            if ((now % 10L) == 0L) {
+                ExcaliburSeals.Evaluation eval = ExcaliburSeals.evaluate(
+                        player, level, now, st.lastCombatTick, st.lastDishonorTick);
+                st.sealMask = eval.sealMask();
+                st.unlockedSeals = eval.unlockedCount();
+                if (eval.unsealed() && !st.wasUnsealed) {
+                    st.wasUnsealed = true;
+                    ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
+                            ExcaliburSyncPayload.EVENT_SEAL_UNLOCK, player.getId(), (byte) 0,
+                            18.0F, player.getX(), player.getY(), player.getZ(),
+                            player.getYRot(), player.getXRot(), eval.unlockedCount(), 1.0F));
+                } else if (!eval.unsealed()) {
+                    st.wasUnsealed = false;
+                }
+            }
+
+            if ((now % 20L) == 0L) {
+                applyKingsInspirationAura(player, level, st.unlockedSeals >= ExcaliburSeals.UNLOCK_THRESHOLD);
+            }
+
+            if (ultCooldownJustFinished && holdingExcalibur) {
+                if (st.energy >= ExcaliburItem.MAX_ENERGY - 0.01F) {
+                    level.playSound(null, player.getX(), player.getY() + 1.0, player.getZ(),
+                            SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.70F, 1.55F);
+                    player.displayClientMessage(Component.literal(
+                            "§e§l✦ EXCALIBUR ĐÃ HỒI CHIÊU — BẤM [R] TUNG TUYỆT KỸ! ✦"), true);
+                } else {
+                    player.displayClientMessage(Component.literal(
+                            "§6[Excalibur] Tuyệt kỹ đã hồi chiêu xong!"), true);
+                }
+            }
+
+            sendPassiveSync(player, level, st, ultCooldownJustFinished);
+        }
+    }
+
+    private static void fireExcaliburFlashlightSlash(ServerPlayer player, ServerLevel level,
+                                                     float lockedBaseAttack, ItemStack weaponSnapshot) {
+        float effectiveBaseAttack = Math.max(lockedBaseAttack, (float) player.getAttributeValue(Attributes.ATTACK_DAMAGE));
+        ItemStack activeWeapon = isHoldingExcalibur(player) ? player.getMainHandItem() : weaponSnapshot;
+
+        Vec3 fwd = player.getLookAngle().normalize();
+        Vec3 worldUp = (Math.abs(fwd.y) > 0.98) ? new Vec3(1.0, 0.0, 0.0) : new Vec3(0.0, 1.0, 0.0);
+        Vec3 right = fwd.cross(worldUp).normalize();
+        Vec3 up = right.cross(fwd).normalize();
+
+        Vec3 origin = player.getEyePosition().add(0.0, -0.15, 0.0);
+        Vec3 endCenter = origin.add(fwd.scale(BEAM_RANGE));
+        AABB searchBox = new AABB(origin, endCenter).inflate(BEAM_END_HALF_H + 2.2);
+
+        List<LivingEntity> candidates = level.getEntitiesOfClass(LivingEntity.class, searchBox,
+                e -> e != player && e.isAlive() && e.isAttackable() && !ExcaliburSeals.isAlly(player, e));
+
+        TRUE_DAMAGE_ACTIVE.set(Boolean.TRUE);
+        try {
+            DamageSource dmgSource = level.damageSources().playerAttack(player);
+            for (LivingEntity target : candidates) {
+                Vec3 rel = target.getBoundingBox().getCenter().subtract(origin);
+                double along = rel.dot(fwd);
+                if (along < -0.4 || along > BEAM_RANGE + target.getBbWidth() * 0.5) {
                     continue;
                 }
-                target.hurt(level.damageSources().playerAttack(player), damage);
-                target.push(flatLook.x * knockback, morgan ? 0.52 : 0.38, flatLook.z * knockback);
-                if (morgan) {
-                    target.addEffect(new MobEffectInstance(MobEffects.WITHER, 80, 1, false, true));
-                    target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 80, 1, false, true));
-                } else {
-                    target.igniteForSeconds(3);
+                double frac = Mth.clamp(along / BEAM_RANGE, 0.0, 1.0);
+                double halfW = Mth.lerp(frac, BEAM_START_HALF_W, BEAM_END_HALF_W) + target.getBbWidth() * 0.45;
+                double halfH = Mth.lerp(frac, BEAM_START_HALF_H, BEAM_END_HALF_H) + target.getBbHeight() * 0.45;
+
+                double latX = Math.abs(rel.dot(right));
+                double latY = Math.abs(rel.dot(up));
+                if (latX > halfW || latY > halfH) {
+                    continue;
                 }
+
+                if (target instanceof Player victimPlayer && victimPlayer.isBlocking()) {
+                    victimPlayer.disableShield();
+                }
+                float resonatedBase = EnchantmentHelper.modifyDamage(level, activeWeapon, target, dmgSource, effectiveBaseAttack);
+                float finalUltDamage = resonatedBase * ULT_DAMAGE_MULTIPLIER;
+                target.invulnerableTime = 0;
+                target.hurt(dmgSource, finalUltDamage);
+
+                double launchSpeed = 2.40;
+                double liftY = Math.max(0.60, fwd.y * 0.60 + 0.60);
+                target.setDeltaMovement(target.getDeltaMovement().scale(0.15)
+                        .add(fwd.x * launchSpeed, liftY, fwd.z * launchSpeed));
+                target.hurtMarked = true;
+                target.igniteForSeconds(4);
+
+                level.sendParticles(GOLD_SPARK,
+                        target.getX(), target.getY() + target.getBbHeight() * 0.5, target.getZ(),
+                        8, 0.35, 0.35, 0.35, 0.06);
             }
-        }
-        if (!morgan && !alreadyHit.isEmpty()) {
-            ItemStack main = player.getMainHandItem();
-            if (main.is(ModItems.EXCALIBUR)) {
-                setAndSyncEnergy(player, level, main, getOrInitEnergy(player, main) + 25.0F, false);
-            }
+        } finally {
+            TRUE_DAMAGE_ACTIVE.set(Boolean.FALSE);
         }
 
-        // Sync massive 3D Sky-to-Ground Light Slash Beam to all nearby clients!
-        ExcaliburMoveType ultMove = morgan ? ExcaliburMoveType.ULT_MORGAN : ExcaliburMoveType.ULT_EXCALIBUR;
+        // Sạch sẽ, không khói mù che màn hình! Chỉ vài đốm sáng nhỏ dọc tia 20 blocks.
+        for (int step = 2; step <= 10; step += 2) {
+            double d = (step / 10.0) * BEAM_RANGE;
+            Vec3 p = origin.add(fwd.scale(d));
+            level.sendParticles(ParticleTypes.END_ROD, p.x, p.y, p.z, 2, 0.45, 0.45, 0.45, 0.03);
+        }
+
+        PlayerExcaliburState st = stateOf(player, player.getMainHandItem());
+        clearFullEnergyStrength(player, st);
+
+        level.playSound(null, origin.x, origin.y, origin.z,
+                ModSounds.EXCALIBUR_BEAM, SoundSource.PLAYERS, 1.90F, 1.05F);
+        ModNetworking.sendShakeNearby(level, origin, 32.0, 0.85F, 16);
+
+        player.displayClientMessage(Component.literal("§6§l✦ EXCALIBUR!! ✦"), true);
+
+        // Chùm tia + 3 Vòng Phép đứng giữ từ Tick 27 (1.35s) tới Tick 52 (2.60s, thu nhỏ trong 2.30–2.60s)!
         ModNetworking.sendExcaliburSyncNearby(level, player.position(), new ExcaliburSyncPayload(
-                ExcaliburSyncPayload.EVENT_BEAM_FIRE, player.getId(), (byte) ultMove.id, morgan,
-                18.0F, origin.x, origin.y, origin.z,
-                player.getYRot(), 0.0F, range, 1.0F));
+                ExcaliburSyncPayload.EVENT_BEAM_FIRE, player.getId(), (byte) ExcaliburMoveType.ULT_EXCALIBUR.id,
+                (float) (ULT_TOTAL_TICKS - ULT_BEAM_FIRE_TICK), origin.x, origin.y, origin.z,
+                player.getYRot(), player.getXRot(), BEAM_RANGE, 1.0F));
+        sendPassiveSync(player, level, st, true);
+    }
+
+    private static void tickAvalonPassive(ServerPlayer player, ServerLevel level, PlayerExcaliburState st) {
+        if (player.hasEffect(MobEffects.WITHER)) player.removeEffect(MobEffects.WITHER);
+        if (player.hasEffect(MobEffects.POISON)) player.removeEffect(MobEffects.POISON);
+        if (player.hasEffect(MobEffects.HUNGER)) player.removeEffect(MobEffects.HUNGER);
+        if (player.hasEffect(MobEffects.DIG_SLOWDOWN)) player.removeEffect(MobEffects.DIG_SLOWDOWN);
+        if (player.hasEffect(MobEffects.WEAKNESS)) {
+            player.removeEffect(MobEffects.WEAKNESS);
+        }
+        if (player.getFoodData().getFoodLevel() < 18) {
+            player.getFoodData().setFoodLevel(18);
+            player.getFoodData().setSaturation(Math.max(player.getFoodData().getSaturationLevel(), 6.0F));
+        }
+        if (player.getHealth() < player.getMaxHealth()) {
+            player.heal(2.0F);
+            level.sendParticles(AVALON_CYAN_GOLD, player.getX(), player.getY() + 1.0, player.getZ(),
+                    2, 0.40, 0.50, 0.40, 0.02);
+        }
+    }
+
+    private static void applyKingsInspirationAura(ServerPlayer wielder, ServerLevel level, boolean unsealed) {
+        AABB box = wielder.getBoundingBox().inflate(14.0);
+        List<LivingEntity> allies = level.getEntitiesOfClass(LivingEntity.class, box,
+                e -> ExcaliburSeals.isAlly(wielder, e));
+        if (allies.isEmpty()) {
+            return;
+        }
+        int strAmp = unsealed ? 2 : 1;
+        for (LivingEntity ally : allies) {
+            ally.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 45, strAmp, true, false, true));
+            ally.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 45, 1, true, false, true));
+            ally.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 45, 0, true, false, true));
+            MobEffectInstance abs = ally.getEffect(MobEffects.ABSORPTION);
+            if (abs == null || abs.getDuration() < 15) {
+                ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 60, 0, true, false, true));
+            }
+            level.sendParticles(GOLD_SPARK, ally.getX(), ally.getY() + 0.25, ally.getZ(),
+                    1, 0.30, 0.10, 0.30, 0.01);
+        }
+    }
+
+    private static void rallyNearbyAlliesOnRelease(ServerPlayer wielder, ServerLevel level) {
+        AABB box = wielder.getBoundingBox().inflate(16.0);
+        for (LivingEntity ally : level.getEntitiesOfClass(LivingEntity.class, box,
+                e -> ExcaliburSeals.isAlly(wielder, e))) {
+            ally.heal(6.0F);
+            ally.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 140, 1, false, true, true));
+            ally.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 140, 1, false, true, true));
+            level.sendParticles(GOLD_SPARK, ally.getX(), ally.getY() + 1.0, ally.getZ(),
+                    6, 0.40, 0.50, 0.40, 0.04);
+        }
+    }
+
+    private static void sendPassiveSync(ServerPlayer player, ServerLevel level,
+                                        PlayerExcaliburState st, boolean force) {
+        long now = level.getGameTime();
+        byte flags = 0;
+        if (st.avalonLinked) flags |= ExcaliburPassiveSyncPayload.FLAG_AVALON;
+        if (st.unsheathed) flags |= ExcaliburPassiveSyncPayload.FLAG_UNSHEATHED;
+
+        int roundedEnergy = Math.round(st.energy);
+        boolean visualChanged = (flags != st.lastBroadcastVisualFlags);
+        boolean anyTimerActive = st.avalonReviveCdTicks > 0 || st.ultCooldownTicks > 0;
+        int hash = ((roundedEnergy * 31 + st.sealMask) * 31 + flags);
+        long ticksSinceSync = now - st.lastPassiveSyncTick;
+        if (!force && !visualChanged && hash == st.lastSyncedHash && (!anyTimerActive || ticksSinceSync < 20L)) {
+            return;
+        }
+        st.lastSyncedHash = hash;
+        st.lastPassiveSyncTick = now;
+
+        ExcaliburPassiveSyncPayload payload = new ExcaliburPassiveSyncPayload(
+                player.getId(),
+                st.energy,
+                (short) (st.sealMask & 0x1FFF),
+                flags,
+                (short) Mth.clamp(st.ultCooldownTicks, 0, 30000),
+                (short) Mth.clamp(st.avalonReviveCdTicks, 0, 30000));
+        if (force || visualChanged) {
+            st.lastBroadcastVisualFlags = flags;
+            ModNetworking.sendExcaliburPassiveNearby(level, player.position(), payload);
+        } else {
+            ModNetworking.sendExcaliburPassiveToPlayer(player, payload);
+        }
+    }
+
+    public static String formatTimer(int ticks) {
+        int totalSec = Math.max(0, (ticks + 19) / 20);
+        int min = totalSec / 60;
+        int sec = totalSec % 60;
+        if (min > 0) {
+            return min + "p" + (sec < 10 ? "0" : "") + sec + "s";
+        }
+        return sec + "s";
     }
 }

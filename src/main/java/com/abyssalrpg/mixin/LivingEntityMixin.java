@@ -6,6 +6,8 @@ import com.abyssalrpg.combat.BossCombatEnhancer;
 import com.abyssalrpg.combat.CerberusArmorHandler;
 import com.abyssalrpg.combat.CinderDragonArmorHandler;
 import com.abyssalrpg.combat.DualBladeCombatHandler;
+import com.abyssalrpg.combat.ExcaliburCombatHandler;
+import com.abyssalrpg.combat.KatanaCombatHandler;
 import com.abyssalrpg.combat.MuramasaCombatHandler;
 import com.abyssalrpg.combat.SpiritHydraArmorHandler;
 import com.abyssalrpg.combat.TogetsuCombatHandler;
@@ -61,8 +63,37 @@ public abstract class LivingEntityMixin {
         LivingEntity self = (LivingEntity) (Object) this;
         if (!self.level().isClientSide && (DualBladeCombatHandler.isDashInvulnerable(self, source)
                 || TogetsuCombatHandler.isPinInvulnerable(self, source)
-                || MuramasaCombatHandler.isDashInvulnerable(self, source))) {
+                || MuramasaCombatHandler.isDashInvulnerable(self, source)
+                || KatanaCombatHandler.isIaidoOrAirSlamInvulnerable(self, source)
+                || ExcaliburCombatHandler.isFallingStarFallImmune(self, source)
+                || KatanaCombatHandler.tryParryIncomingDamage(self, source, amount)
+                || ExcaliburCombatHandler.tryRoyalParryIncomingDamage(self, source, amount))) {
             cir.setReturnValue(false);
+        }
+    }
+
+    @Inject(method = "isDamageSourceBlocked", at = @At("HEAD"), cancellable = true)
+    private void abyssalrpg$bypassShieldForExcalibur(DamageSource source, CallbackInfoReturnable<Boolean> cir) {
+        if (ExcaliburCombatHandler.isTrueDamageActive()
+                || ExcaliburCombatHandler.isShieldBreakingActive()
+                || KatanaCombatHandler.isShieldBreakingActive()) {
+            cir.setReturnValue(false);
+        }
+    }
+
+    @Inject(method = "getDamageAfterArmorAbsorb", at = @At("HEAD"), cancellable = true)
+    private void abyssalrpg$bypassArmorForExcalibur(DamageSource source, float damageAmount,
+                                                    CallbackInfoReturnable<Float> cir) {
+        if (ExcaliburCombatHandler.isTrueDamageActive()) {
+            cir.setReturnValue(damageAmount);
+        }
+    }
+
+    @Inject(method = "getDamageAfterMagicAbsorb", at = @At("HEAD"), cancellable = true)
+    private void abyssalrpg$bypassMagicAndResistanceForExcalibur(DamageSource source, float damageAmount,
+                                                                 CallbackInfoReturnable<Float> cir) {
+        if (ExcaliburCombatHandler.isTrueDamageActive()) {
+            cir.setReturnValue(damageAmount);
         }
     }
 
@@ -82,8 +113,12 @@ public abstract class LivingEntityMixin {
                         DualBladeCombatHandler.getActiveArmorPierceFraction(self, source),
                         TogetsuCombatHandler.getActiveArmorPierceFraction(self, source)),
                 Math.max(
-                        MuramasaCombatHandler.getActiveArmorPierceFraction(self, source),
-                        BossCombatEnhancer.getBossArmorPierceFraction(self, source)));
+                        Math.max(
+                                MuramasaCombatHandler.getActiveArmorPierceFraction(self, source),
+                                BossCombatEnhancer.getBossArmorPierceFraction(self, source)),
+                        Math.max(
+                                ExcaliburCombatHandler.getActiveArmorPierceFraction(self, source),
+                                KatanaCombatHandler.getActiveArmorPierceFraction(self, source))));
         float current = cir.getReturnValueF();
         if (pierce > 0.0f) {
             float armor = self.getArmorValue();
@@ -117,6 +152,15 @@ public abstract class LivingEntityMixin {
             SpiritHydraArmorHandler.onTargetHurtByAttacker(self, source);
             CerberusArmorHandler.onTargetHurtByAttacker(self, source);
             BossCombatEnhancer.onLivingHurtByBoss(self, source, amount);
+            ExcaliburCombatHandler.onLivingHurtReturn(self, source);
+        }
+    }
+
+    @Inject(method = "checkTotemDeathProtection", at = @At("HEAD"), cancellable = true)
+    private void abyssalrpg$triggerAvalonImmortality(DamageSource source, CallbackInfoReturnable<Boolean> cir) {
+        LivingEntity self = (LivingEntity) (Object) this;
+        if (!self.level().isClientSide && ExcaliburCombatHandler.tryTriggerAvalonImmortality(self, source)) {
+            cir.setReturnValue(true);
         }
     }
 }

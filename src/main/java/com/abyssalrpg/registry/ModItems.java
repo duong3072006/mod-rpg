@@ -1,12 +1,14 @@
 package com.abyssalrpg.registry;
 
 import com.abyssalrpg.AbyssalRpgMod;
+import com.abyssalrpg.item.AvalonItem;
 import com.abyssalrpg.item.CerberusArmorItem;
 import com.abyssalrpg.item.CerberusHeartItem;
 import com.abyssalrpg.item.CinderDragonArmorItem;
 import com.abyssalrpg.item.CinderDragonHeartItem;
 import com.abyssalrpg.item.DualBladeItem;
 import com.abyssalrpg.item.ExcaliburItem;
+import com.abyssalrpg.item.KatanaItem;
 import com.abyssalrpg.item.MuramasaItem;
 import com.abyssalrpg.item.NightmareArmorItem;
 import com.abyssalrpg.item.NightmareCoreItem;
@@ -88,10 +90,12 @@ public final class ModItems {
     public static Item CERBERUS_LEGGINGS;
     public static Item CERBERUS_BOOTS;
 
-    // Signature Two-Handed Weapons (`abyssalrpg:dual_knife`, `abyssalrpg:togetsu`, `abyssalrpg:excalibur`, `abyssalrpg:sea_trident`, & `abyssalrpg:muramasa`)
+    // Signature Two-Handed Weapons (`abyssalrpg:dual_knife`, `abyssalrpg:togetsu`, `abyssalrpg:excalibur`, `abyssalrpg:avalon`, `abyssalrpg:katana`, `abyssalrpg:sea_trident`, & `abyssalrpg:muramasa`)
     public static Item DUAL_KNIFE;
     public static Item TOGETSU;
     public static Item EXCALIBUR;
+    public static Item AVALON;
+    public static Item KATANA;
     public static Item SEA_TRIDENT;
     public static Item MURAMASA;
 
@@ -134,6 +138,8 @@ public final class ModItems {
         DUAL_KNIFE = register("dual_knife", new DualBladeItem());
         TOGETSU = register("togetsu", new TogetsuItem());
         EXCALIBUR = register("excalibur", new ExcaliburItem());
+        AVALON = register("avalon", new AvalonItem());
+        KATANA = register("katana", new KatanaItem());
         SEA_TRIDENT = register("sea_trident", new SeaTridentItem());
         MURAMASA = register("muramasa", new MuramasaItem());
 

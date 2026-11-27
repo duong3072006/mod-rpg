@@ -135,7 +135,8 @@ public class AbyssalOrbEntity extends Entity {
                 this.getX() + blastRadius, this.getY() + blastRadius, this.getZ() + blastRadius);
         for (Player p : level.getEntitiesOfClass(Player.class, box, pl -> pl.isAlive() && !pl.isCreative() && !pl.isSpectator())) {
             if (p.distanceToSqr(this) <= blastRadius * blastRadius) {
-                p.hurt(owner instanceof LivingEntity l ? level.damageSources().mobAttack(l) : level.damageSources().magic(), damage);
+                com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                        p.hurt(owner instanceof LivingEntity l ? level.damageSources().mobAttack(l) : level.damageSources().magic(), damage));
                 if (ignite) p.igniteForSeconds(5);
                 if (wither) p.addEffect(new MobEffectInstance(MobEffects.WITHER, 90, 1));
                 if (soulSlowZone) p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 80, 1));

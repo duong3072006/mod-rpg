@@ -42,7 +42,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -396,11 +395,13 @@ public final class BossCombatEnhancer {
 
     public static void tickServer(MinecraftServer server) {
         if (!PENDING_STRIKES.isEmpty()) {
-            Iterator<PendingLightningStrike> it = PENDING_STRIKES.iterator();
-            while (it.hasNext()) {
-                PendingLightningStrike strike = it.next();
+            List<PendingLightningStrike> snapshot = new ArrayList<>(PENDING_STRIKES);
+            for (PendingLightningStrike strike : snapshot) {
+                if (!PENDING_STRIKES.contains(strike)) {
+                    continue;
+                }
                 if (!tickPendingStrike(strike)) {
-                    it.remove();
+                    PENDING_STRIKES.remove(strike);
                 }
             }
         }
@@ -487,7 +488,7 @@ public final class BossCombatEnhancer {
             for (Player player : level.getEntitiesOfClass(Player.class, hitBox,
                     p -> p.isAlive() && !p.isCreative() && !p.isSpectator())) {
                 if (player.distanceToSqr(pos) <= radius * radius) {
-                    player.hurt(src, damage);
+                    KatanaCombatHandler.runUnparryableMagic(() -> player.hurt(src, damage));
                     applyDebuff(player, MobEffects.MOVEMENT_SLOWDOWN, 50, 0);
                 }
             }

@@ -176,12 +176,14 @@ public abstract class AbstractGeoMythicBoss extends AbstractAbyssalBoss implemen
 
     /** Áp công thức phòng thủ tùy chỉnh, tôn trọng `BYPASSES_ARMOR`, `Armor Pierce` của Dual Blade và sàn `minDamagePerHit`. */
     protected float computeCustomDefenseDamage(DamageSource source, float rawDamage) {
-        if (source.is(DamageTypeTags.BYPASSES_ARMOR)) {
+        if (source.is(DamageTypeTags.BYPASSES_ARMOR) || com.abyssalrpg.combat.ExcaliburCombatHandler.isTrueDamageActive()) {
             return rawDamage;
         }
         float pierce = Math.max(
-                com.abyssalrpg.combat.DualBladeCombatHandler.getActiveArmorPierceFraction(this, source),
-                com.abyssalrpg.combat.TogetsuCombatHandler.getActiveArmorPierceFraction(this, source));
+                Math.max(
+                        com.abyssalrpg.combat.DualBladeCombatHandler.getActiveArmorPierceFraction(this, source),
+                        com.abyssalrpg.combat.TogetsuCombatHandler.getActiveArmorPierceFraction(this, source)),
+                com.abyssalrpg.combat.KatanaCombatHandler.getActiveArmorPierceFraction(this, source));
         float reduction = computeEffectiveDefensePoints(rawDamage, pierce) / 25.0f;
         float reduced = rawDamage * (1.0f - reduction);
         float minDmg = Math.max(0.0f, getMinDamagePerHit());

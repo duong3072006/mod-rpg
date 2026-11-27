@@ -53,7 +53,6 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 public abstract class AbstractAbyssalBoss extends Monster {
@@ -396,19 +395,26 @@ public abstract class AbstractAbyssalBoss extends Monster {
             }
         }
 
-        // Tick delayed/telegraphed boss abilities
-        Iterator<DelayedAction> it = scheduledActions.iterator();
-        while (it.hasNext()) {
-            DelayedAction action = it.next();
-            if (action.onTick != null) {
-                action.onTick.run();
-            }
-            action.ticksLeft--;
-            if (action.ticksLeft <= 0) {
-                if (action.onTrigger != null) {
-                    action.onTrigger.run();
+        // Tick delayed/telegraphed boss abilities (snapshot-safe so parry counter / boss death / nested scheduleAction never throws CME)
+        if (!scheduledActions.isEmpty()) {
+            List<DelayedAction> snapshot = new ArrayList<>(scheduledActions);
+            for (DelayedAction action : snapshot) {
+                if (!scheduledActions.contains(action)) {
+                    continue;
                 }
-                it.remove();
+                if (action.onTick != null) {
+                    action.onTick.run();
+                    if (!scheduledActions.contains(action)) {
+                        continue;
+                    }
+                }
+                action.ticksLeft--;
+                if (action.ticksLeft <= 0) {
+                    scheduledActions.remove(action);
+                    if (action.onTrigger != null) {
+                        action.onTrigger.run();
+                    }
+                }
             }
         }
 
@@ -464,7 +470,8 @@ public abstract class AbstractAbyssalBoss extends Monster {
         level.playSound(null, this.blockPosition(), SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 1.5f, 0.85f);
         spawnParticleRing(level, this.position().add(0, 1.2, 0), ParticleTypes.SOUL_FIRE_FLAME, 6.0, 64);
         spawnParticleRing(level, this.position().add(0, 2.2, 0), ParticleTypes.END_ROD, 4.5, 48);
-        damagePlayersInRadius(level, this.position(), 7.0, (float) (getAttributeValue(Attributes.ATTACK_DAMAGE) * 0.9), 0.7);
+        com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                damagePlayersInRadius(level, this.position(), 7.0, (float) (getAttributeValue(Attributes.ATTACK_DAMAGE) * 0.9), 0.7));
         announceToNearby(level, Component.translatable("message.abyssalrpg.boss_phase", this.getDisplayName(), newPhase)
                 .withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
     }

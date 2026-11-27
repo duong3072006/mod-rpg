@@ -531,7 +531,8 @@ public final class CerberusSkillGoals {
                         if (hd > 0.5 && hd <= coneLen) {
                             Vec3 hDir = new Vec3(toP.x, 0, toP.z).normalize();
                             if (hDir.dot(coneDir) >= halfAngleCos) {
-                                p.hurt(boss.damageSources().mobAttack(boss), dmg);
+                                com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                                        p.hurt(boss.damageSources().mobAttack(boss), dmg));
                                 p.igniteForSeconds(3);
                             }
                         }
@@ -949,7 +950,8 @@ public final class CerberusSkillGoals {
                     boolean inRing = hd >= Math.max(0.0, prevR - 1.4 * sc) && hd <= curR + 1.4 * sc;
                     boolean jumpedOver = !p.onGround() && (p.getY() - boss.getY()) > 1.05;
                     if (inRing && !jumpedOver && hit.add(p.getUUID())) {
-                        p.hurt(boss.damageSources().mobAttack(boss), dmg);
+                        com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                                p.hurt(boss.damageSources().mobAttack(boss), dmg));
                         p.igniteForSeconds(4);
                     }
                 }

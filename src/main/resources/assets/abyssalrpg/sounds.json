@@ -179,7 +179,7 @@
     "sounds": [
       {
         "name": "mob/ghast/fireball4",
-        "pitch": 0.80,
+        "pitch": 0.8,
         "volume": 1.3
       },
       {
@@ -214,7 +214,7 @@
       },
       {
         "name": "block/respawn_anchor/charge1",
-        "pitch": 0.90,
+        "pitch": 0.9,
         "volume": 1.3
       }
     ]
@@ -309,7 +309,7 @@
       },
       {
         "name": "mob/enderdragon/hit1",
-        "pitch": 0.70,
+        "pitch": 0.7,
         "volume": 1.4
       }
     ]
@@ -429,7 +429,7 @@
       },
       {
         "name": "mob/ravager/roar1",
-        "pitch": 0.50,
+        "pitch": 0.5,
         "volume": 1.9
       }
     ]
@@ -549,7 +549,7 @@
       },
       {
         "name": "mob/endermen/portal",
-        "pitch": 0.50,
+        "pitch": 0.5,
         "volume": 1.8
       }
     ]
@@ -579,7 +579,7 @@
       },
       {
         "name": "mob/warden/roar_1",
-        "pitch": 0.50,
+        "pitch": 0.5,
         "volume": 2.1
       }
     ]
@@ -679,7 +679,7 @@
     "sounds": [
       {
         "name": "mob/cat/hiss3",
-        "pitch": 0.40,
+        "pitch": 0.4,
         "volume": 2.0
       },
       {
@@ -724,1286 +724,13 @@
     "sounds": [
       {
         "name": "mob/enderdragon/end",
-        "pitch": 0.60,
+        "pitch": 0.6,
         "volume": 2.0
       },
       {
         "name": "mob/warden/death_1",
         "pitch": 0.58,
         "volume": 1.8
-      }
-    ]
-  },
-  "biome.crystalwood_grove.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/loop",
-        "stream": true,
-        "pitch": 0.92,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.crystalwood_grove.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/mood1",
-        "pitch": 1.05,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.amberwood.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/loop",
-        "stream": true,
-        "pitch": 0.92,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.amberwood.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/mood1",
-        "pitch": 1.05,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.lanternwood.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/loop",
-        "stream": true,
-        "pitch": 0.92,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.lanternwood.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/mood1",
-        "pitch": 1.05,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.ironcap_forest.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/loop",
-        "stream": true,
-        "pitch": 0.92,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.ironcap_forest.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/mood1",
-        "pitch": 1.05,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.silvermist_woods.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/loop",
-        "stream": true,
-        "pitch": 0.92,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.silvermist_woods.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/mood1",
-        "pitch": 1.05,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.hollowroot_forest.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/loop",
-        "stream": true,
-        "pitch": 0.92,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.hollowroot_forest.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/mood1",
-        "pitch": 1.05,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.paperbark_grove.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/loop",
-        "stream": true,
-        "pitch": 0.92,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.paperbark_grove.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/mood1",
-        "pitch": 1.05,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.chimewood.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/loop",
-        "stream": true,
-        "pitch": 0.92,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.chimewood.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/mood1",
-        "pitch": 1.05,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.bloodleaf_wilds.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/loop",
-        "stream": true,
-        "pitch": 0.92,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.bloodleaf_wilds.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/mood1",
-        "pitch": 1.05,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.silkweave_forest.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/loop",
-        "stream": true,
-        "pitch": 0.92,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.silkweave_forest.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/mood1",
-        "pitch": 1.05,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.featherfield.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/soul_sand_valley/loop",
-        "stream": true,
-        "pitch": 1.15,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.featherfield.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/soul_sand_valley/mood1",
-        "pitch": 1.12,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.magnetic_meadow.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/soul_sand_valley/loop",
-        "stream": true,
-        "pitch": 1.15,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.magnetic_meadow.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/soul_sand_valley/mood1",
-        "pitch": 1.12,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.clockbloom_plains.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/soul_sand_valley/loop",
-        "stream": true,
-        "pitch": 1.15,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.clockbloom_plains.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/soul_sand_valley/mood1",
-        "pitch": 1.12,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.starfall_prairie.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/soul_sand_valley/loop",
-        "stream": true,
-        "pitch": 1.15,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.starfall_prairie.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/soul_sand_valley/mood1",
-        "pitch": 1.12,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.rosalt_flats.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/soul_sand_valley/loop",
-        "stream": true,
-        "pitch": 1.15,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.rosalt_flats.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/soul_sand_valley/mood1",
-        "pitch": 1.12,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.bladegrass_highlands.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/soul_sand_valley/loop",
-        "stream": true,
-        "pitch": 1.15,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.bladegrass_highlands.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/soul_sand_valley/mood1",
-        "pitch": 1.12,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.phantom_wheat_fields.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/soul_sand_valley/loop",
-        "stream": true,
-        "pitch": 1.15,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.phantom_wheat_fields.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/soul_sand_valley/mood1",
-        "pitch": 1.12,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.cloudrice_terraces.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/soul_sand_valley/loop",
-        "stream": true,
-        "pitch": 1.15,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.cloudrice_terraces.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/soul_sand_valley/mood1",
-        "pitch": 1.12,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.soulbell_fields.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/soul_sand_valley/loop",
-        "stream": true,
-        "pitch": 1.15,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.soulbell_fields.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/soul_sand_valley/mood1",
-        "pitch": 1.12,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.pollenstorm_meadow.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/soul_sand_valley/loop",
-        "stream": true,
-        "pitch": 1.15,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.pollenstorm_meadow.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/soul_sand_valley/mood1",
-        "pitch": 1.12,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.inkmire.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/underwater/loop",
-        "stream": true,
-        "pitch": 0.85,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.inkmire.mood": {
-    "sounds": [
-      {
-        "name": "ambient/underwater/additions/bubbles1",
-        "pitch": 0.9,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.peatflame_bog.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/underwater/loop",
-        "stream": true,
-        "pitch": 0.85,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.peatflame_bog.mood": {
-    "sounds": [
-      {
-        "name": "ambient/underwater/additions/bubbles1",
-        "pitch": 0.9,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.venomveil_fen.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/underwater/loop",
-        "stream": true,
-        "pitch": 0.85,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.venomveil_fen.mood": {
-    "sounds": [
-      {
-        "name": "ambient/underwater/additions/bubbles1",
-        "pitch": 0.9,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.mirrorlake_basin.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/underwater/loop",
-        "stream": true,
-        "pitch": 0.85,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.mirrorlake_basin.mood": {
-    "sounds": [
-      {
-        "name": "ambient/underwater/additions/bubbles1",
-        "pitch": 0.9,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.caramel_bog.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/underwater/loop",
-        "stream": true,
-        "pitch": 0.85,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.caramel_bog.mood": {
-    "sounds": [
-      {
-        "name": "ambient/underwater/additions/bubbles1",
-        "pitch": 0.9,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.upflow_falls.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/underwater/loop",
-        "stream": true,
-        "pitch": 0.85,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.upflow_falls.mood": {
-    "sounds": [
-      {
-        "name": "ambient/underwater/additions/bubbles1",
-        "pitch": 0.9,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.bubblemoor.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/underwater/loop",
-        "stream": true,
-        "pitch": 0.85,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.bubblemoor.mood": {
-    "sounds": [
-      {
-        "name": "ambient/underwater/additions/bubbles1",
-        "pitch": 0.9,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.skyspire_crags.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/loop",
-        "stream": true,
-        "pitch": 0.9,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.skyspire_crags.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/mood1",
-        "pitch": 0.86,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.azurefire_caldera.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/loop",
-        "stream": true,
-        "pitch": 0.9,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.azurefire_caldera.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/mood1",
-        "pitch": 0.86,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.whisperwind_canyon.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/loop",
-        "stream": true,
-        "pitch": 0.9,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.whisperwind_canyon.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/mood1",
-        "pitch": 0.86,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.fangtooth_mountains.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/loop",
-        "stream": true,
-        "pitch": 0.9,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.fangtooth_mountains.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/mood1",
-        "pitch": 0.86,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.obsidian_glasslands.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/loop",
-        "stream": true,
-        "pitch": 0.9,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.obsidian_glasslands.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/mood1",
-        "pitch": 0.86,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.prismfall_cliffs.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/loop",
-        "stream": true,
-        "pitch": 0.9,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.prismfall_cliffs.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/mood1",
-        "pitch": 0.86,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.sinkvale_abyss.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/loop",
-        "stream": true,
-        "pitch": 0.9,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.sinkvale_abyss.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/mood1",
-        "pitch": 0.86,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.drakenest_hills.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/loop",
-        "stream": true,
-        "pitch": 0.9,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.drakenest_hills.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/mood1",
-        "pitch": 0.86,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.thunderperch_peaks.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/loop",
-        "stream": true,
-        "pitch": 0.9,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.thunderperch_peaks.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/mood1",
-        "pitch": 0.86,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.archway_badlands.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/loop",
-        "stream": true,
-        "pitch": 0.9,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.archway_badlands.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/mood1",
-        "pitch": 0.86,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.phoenix_ashlands.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/loop",
-        "stream": true,
-        "pitch": 0.9,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.phoenix_ashlands.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/basalt_deltas/mood1",
-        "pitch": 0.86,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.resonant_geode_hollow.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave1",
-        "stream": true,
-        "pitch": 0.88,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.resonant_geode_hollow.mood": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave14",
-        "pitch": 0.85,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.fossil_reef_cavern.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave1",
-        "stream": true,
-        "pitch": 0.88,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.fossil_reef_cavern.mood": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave14",
-        "pitch": 0.85,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.saltspire_grotto.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave1",
-        "stream": true,
-        "pitch": 0.88,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.saltspire_grotto.mood": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave14",
-        "pitch": 0.85,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.geyser_hollow.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave1",
-        "stream": true,
-        "pitch": 0.88,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.geyser_hollow.mood": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave14",
-        "pitch": 0.85,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.glowsilk_burrow.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave1",
-        "stream": true,
-        "pitch": 0.88,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.glowsilk_burrow.mood": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave14",
-        "pitch": 0.85,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.rootvein_depths.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave1",
-        "stream": true,
-        "pitch": 0.88,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.rootvein_depths.mood": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave14",
-        "pitch": 0.85,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.soot_warrens.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave1",
-        "stream": true,
-        "pitch": 0.88,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.soot_warrens.mood": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave14",
-        "pitch": 0.85,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.archive_cavern.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave1",
-        "stream": true,
-        "pitch": 0.88,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.archive_cavern.mood": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave14",
-        "pitch": 0.85,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.magmafrost_vault.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave1",
-        "stream": true,
-        "pitch": 0.88,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.magmafrost_vault.mood": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave14",
-        "pitch": 0.85,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.shardmaze_cavern.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave1",
-        "stream": true,
-        "pitch": 0.88,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.shardmaze_cavern.mood": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave14",
-        "pitch": 0.85,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.dreamweave_garden.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/crimson_forest/loop",
-        "stream": true,
-        "pitch": 1.08,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.dreamweave_garden.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/crimson_forest/mood1",
-        "pitch": 1.1,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.chrono_grove.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/crimson_forest/loop",
-        "stream": true,
-        "pitch": 1.08,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.chrono_grove.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/crimson_forest/mood1",
-        "pitch": 1.1,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.umbral_moor.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/crimson_forest/loop",
-        "stream": true,
-        "pitch": 1.08,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.umbral_moor.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/crimson_forest/mood1",
-        "pitch": 1.1,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.driftvale.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/crimson_forest/loop",
-        "stream": true,
-        "pitch": 1.08,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.driftvale.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/crimson_forest/mood1",
-        "pitch": 1.1,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.runestone_barrens.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/crimson_forest/loop",
-        "stream": true,
-        "pitch": 1.08,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.runestone_barrens.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/crimson_forest/mood1",
-        "pitch": 1.1,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.shardgarden.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/crimson_forest/loop",
-        "stream": true,
-        "pitch": 1.08,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.shardgarden.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/crimson_forest/mood1",
-        "pitch": 1.1,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.prismbloom_vale.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/crimson_forest/loop",
-        "stream": true,
-        "pitch": 1.08,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.prismbloom_vale.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/crimson_forest/mood1",
-        "pitch": 1.1,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.inverse_woods.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/crimson_forest/loop",
-        "stream": true,
-        "pitch": 1.08,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.inverse_woods.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/crimson_forest/mood1",
-        "pitch": 1.1,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.moonwell_glade.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/crimson_forest/loop",
-        "stream": true,
-        "pitch": 1.08,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.moonwell_glade.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/crimson_forest/mood1",
-        "pitch": 1.1,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.songsand_barrens.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/crimson_forest/loop",
-        "stream": true,
-        "pitch": 1.08,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.songsand_barrens.mood": {
-    "sounds": [
-      {
-        "name": "ambient/nether/crimson_forest/mood1",
-        "pitch": 1.1,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.termite_mesa.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/loop",
-        "stream": true,
-        "pitch": 1.02,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.termite_mesa.mood": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave7",
-        "pitch": 1.0,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.giantnest_canopy.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/loop",
-        "stream": true,
-        "pitch": 1.02,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.giantnest_canopy.mood": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave7",
-        "pitch": 1.0,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.totem_wilds.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/loop",
-        "stream": true,
-        "pitch": 1.02,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.totem_wilds.mood": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave7",
-        "pitch": 1.0,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.gearwaste.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/loop",
-        "stream": true,
-        "pitch": 1.02,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.gearwaste.mood": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave7",
-        "pitch": 1.0,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.titanbone_barrens.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/loop",
-        "stream": true,
-        "pitch": 1.02,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.titanbone_barrens.mood": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave7",
-        "pitch": 1.0,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.harpwood.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/loop",
-        "stream": true,
-        "pitch": 1.02,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.harpwood.mood": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave7",
-        "pitch": 1.0,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.potterygarden.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/loop",
-        "stream": true,
-        "pitch": 1.02,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.potterygarden.mood": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave7",
-        "pitch": 1.0,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.cocoon_glade.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/loop",
-        "stream": true,
-        "pitch": 1.02,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.cocoon_glade.mood": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave7",
-        "pitch": 1.0,
-        "volume": 0.65
-      }
-    ]
-  },
-  "biome.copperdune_expanse.ambient": {
-    "sounds": [
-      {
-        "name": "ambient/nether/warped_forest/loop",
-        "stream": true,
-        "pitch": 1.02,
-        "volume": 0.55
-      }
-    ]
-  },
-  "biome.copperdune_expanse.mood": {
-    "sounds": [
-      {
-        "name": "ambient/cave/cave7",
-        "pitch": 1.0,
-        "volume": 0.65
       }
     ]
   },
@@ -2083,7 +810,7 @@
       {
         "name": "mob/phantom/swoop1",
         "pitch": 1.45,
-        "volume": 0.80
+        "volume": 0.8
       }
     ]
   },
@@ -2098,7 +825,7 @@
       {
         "name": "entity/player/attack/crit2",
         "pitch": 1.36,
-        "volume": 0.90
+        "volume": 0.9
       },
       {
         "name": "entity/player/attack/sweep6",
@@ -2158,7 +885,7 @@
       {
         "name": "block/beacon/activate",
         "pitch": 1.45,
-        "volume": 1.00
+        "volume": 1.0
       }
     ]
   },
@@ -2178,7 +905,72 @@
       {
         "name": "mob/wither/spawn",
         "pitch": 0.72,
-        "volume": 1.20
+        "volume": 1.2
+      }
+    ]
+  },
+  "item.katana.slash": {
+    "subtitle": "subtitles.abyssalrpg.katana.slash",
+    "sounds": [
+      {
+        "name": "entity/player/attack/sweep1",
+        "pitch": 1.38,
+        "volume": 0.9
+      },
+      {
+        "name": "entity/player/attack/sweep3",
+        "pitch": 1.45,
+        "volume": 0.9
+      }
+    ]
+  },
+  "item.katana.draw": {
+    "subtitle": "subtitles.abyssalrpg.katana.draw",
+    "sounds": [
+      {
+        "name": "item/trident/riptide1",
+        "pitch": 1.65,
+        "volume": 0.85
+      },
+      {
+        "name": "block/grindstone/grindstone1",
+        "pitch": 1.85,
+        "volume": 0.72
+      }
+    ]
+  },
+  "item.katana.sheath": {
+    "subtitle": "subtitles.abyssalrpg.katana.sheath",
+    "sounds": [
+      {
+        "name": "block/iron_trapdoor/close1",
+        "pitch": 1.75,
+        "volume": 0.75
+      },
+      {
+        "name": "item/armor/equip_iron1",
+        "pitch": 1.55,
+        "volume": 0.7
+      }
+    ]
+  },
+  "item.katana.parry": {
+    "subtitle": "subtitles.abyssalrpg.katana.parry",
+    "sounds": [
+      {
+        "name": "random/anvil_land",
+        "pitch": 1.85,
+        "volume": 1.05
+      },
+      {
+        "name": "item/shield/block1",
+        "pitch": 1.6,
+        "volume": 1.15
+      },
+      {
+        "name": "block/amethyst/chime1",
+        "pitch": 1.75,
+        "volume": 1.0
       }
     ]
   }

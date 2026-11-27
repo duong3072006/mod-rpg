@@ -94,7 +94,8 @@ public class EnergySlashEntity extends Entity {
                 for (LivingEntity target : serverLevel.getEntitiesOfClass(LivingEntity.class, box,
                         e -> e != pOwner && e.isAlive())) {
                     if (hitEntities.add(target.getUUID())) {
-                        target.hurt(serverLevel.damageSources().playerAttack(pOwner), damage);
+                        com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                                target.hurt(serverLevel.damageSources().playerAttack(pOwner), damage));
                         Vec3 playerPush = velocity.normalize().scale(0.65).add(0, 0.3, 0);
                         target.setDeltaMovement(target.getDeltaMovement().add(playerPush));
                         target.hurtMarked = true;
@@ -105,7 +106,8 @@ public class EnergySlashEntity extends Entity {
         } else {
             for (Player victim : serverLevel.getEntitiesOfClass(Player.class, box, pl -> pl.isAlive() && !pl.isCreative() && !pl.isSpectator())) {
                 if (hitEntities.add(victim.getUUID())) {
-                    victim.hurt(owner instanceof LivingEntity l ? serverLevel.damageSources().mobAttack(l) : serverLevel.damageSources().magic(), damage);
+                    com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                            victim.hurt(owner instanceof LivingEntity l ? serverLevel.damageSources().mobAttack(l) : serverLevel.damageSources().magic(), damage));
                     Vec3 mobPush = velocity.normalize().scale(0.85).add(0, 0.4, 0);
                     victim.setDeltaMovement(victim.getDeltaMovement().add(mobPush));
                     victim.hurtMarked = true;

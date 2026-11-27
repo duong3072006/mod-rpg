@@ -364,7 +364,8 @@ public class CyclopsWardenBossEntity extends AbstractGeoMythicBoss {
                     ShockwaveRingEntity.spawn(level, this.position().add(0, 0.4, 0), 7.2f, COLOR_CRIMSON_EYE, 14);
                     level.sendParticles(CRIMSON_GLARE_DUST, this.getX(), this.getY() + 2.6, this.getZ(), 22, 1.5, 0.8, 1.5, 0.05);
                     ModNetworking.sendShakeNearby(level, this.position(), 28.0, 1.15f, 10);
-                    damagePlayersInRadius(level, this.position(), 6.2, baseDmg * 0.90f, 1.05);
+                    com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                            damagePlayersInRadius(level, this.position(), 6.2, baseDmg * 0.90f, 1.05));
                 });
             }
         }

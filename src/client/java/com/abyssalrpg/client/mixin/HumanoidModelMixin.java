@@ -3,9 +3,11 @@ package com.abyssalrpg.client.mixin;
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
 import com.abyssalrpg.client.anim.DualBladeAnimState.FullBodyPose;
 import com.abyssalrpg.client.anim.ExcaliburAnimManager;
+import com.abyssalrpg.client.anim.KatanaAnimManager;
 import com.abyssalrpg.client.anim.MuramasaAnimManager;
 import com.abyssalrpg.client.anim.SeaWeaponsAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
+import com.abyssalrpg.client.anim.TogetsuBentArmRig;
 import com.abyssalrpg.registry.ModItems;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
@@ -66,6 +68,9 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
     @Final
     public ModelPart leftLeg;
 
+    @Shadow
+    public boolean crouching;
+
     @Unique
     private float abyssalrpg$savedAttackTime;
 
@@ -78,9 +83,13 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
                                                              CallbackInfo ci) {
         this.abyssalrpg$suppressedVanillaSwing = false;
         if (entity instanceof Player player) {
+            this.body.x = 0.0F;
+            this.body.z = 0.0F;
             this.body.xRot = 0.0F;
             this.body.yRot = 0.0F;
             this.body.zRot = 0.0F;
+            this.head.x = 0.0F;
+            this.head.z = 0.0F;
             this.head.zRot = 0.0F;
             this.rightArm.x = -5.0F;
             this.rightArm.z = 0.0F;
@@ -94,6 +103,7 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
             if (DualBladeAnimManager.isDualBladeAttacking(player)
                     || TogetsuAnimManager.isHoldingTogetsuReady(player)
                     || ExcaliburAnimManager.isHoldingExcalibur(player)
+                    || KatanaAnimManager.isHoldingKatana(player)
                     || SeaWeaponsAnimManager.isHoldingSeaWeapons(player)
                     || MuramasaAnimManager.isHoldingMuramasa(player)) {
                 HumanoidModel<?> self = (HumanoidModel<?>) (Object) this;
@@ -113,12 +123,16 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
             self.attackTime = this.abyssalrpg$savedAttackTime;
             this.abyssalrpg$suppressedVanillaSwing = false;
         }
+        if (TogetsuBentArmRig.isRenderingFirstPersonHand()) {
+            return;
+        }
         if (!(entity instanceof Player player)) {
             return;
         }
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
-        // Ưu tiên tuyệt đối vũ khí ĐANG CẦM trên tay phải -> chuyển giữa 5 vũ khí hotbar tức thì, 0 lọt dáng cũ!
+        // Ưu tiên tuyệt đối vũ khí ĐANG CẦM trên tay phải -> chuyển giữa các vũ khí hotbar tức thì, 0 lọt dáng cũ!
         ItemStack heldMain = player.getMainHandItem();
+        boolean isExcaliburPose = false;
         FullBodyPose pose = null;
         if (heldMain.is(ModItems.MURAMASA)) {
             pose = MuramasaAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
@@ -126,6 +140,9 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
             pose = SeaWeaponsAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
         } else if (heldMain.is(ModItems.EXCALIBUR)) {
             pose = ExcaliburAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
+            isExcaliburPose = (pose != null);
+        } else if (heldMain.is(ModItems.KATANA)) {
+            pose = KatanaAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
         } else if (heldMain.is(ModItems.TOGETSU)) {
             pose = TogetsuAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
         } else if (heldMain.is(ModItems.DUAL_KNIFE)) {
@@ -139,6 +156,10 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
         }
         if (pose == null) {
             pose = ExcaliburAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
+            isExcaliburPose = (pose != null);
+        }
+        if (pose == null) {
+            pose = KatanaAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
         }
         if (pose == null) {
             pose = SeaWeaponsAnimManager.evaluatePose(player, partialTick, limbSwingAmount, ageInTicks);
@@ -150,8 +171,15 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
             return;
         }
 
-        // 1. Thân (body): GÁN TUYỆT ĐỐI khi đang chém (0 xung đột vanilla), hòa mượt khi đứng thủ
-        if (pose.isAttacking) {
+        // 1. Thân (body): Bảo toàn độ cúi Shift (`crouching`) của vanilla để thân không bị dựng thẳng tách khỏi cặp chân lùi sau (+4px)!
+        float vanillaBodyX = this.body.xRot;
+        if (this.crouching) {
+            this.body.xRot = pose.isAttacking
+                    ? Mth.clamp(vanillaBodyX * 0.70F + pose.bodyX * 0.65F, 0.20F, 0.85F)
+                    : (vanillaBodyX + pose.bodyX * 0.35F);
+            this.body.yRot = pose.bodyY;
+            this.body.zRot = pose.bodyZ;
+        } else if (pose.isAttacking || pose.overrideVanilla) {
             this.body.xRot = pose.bodyX;
             this.body.yRot = pose.bodyY;
             this.body.zRot = pose.bodyZ;
@@ -159,6 +187,31 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
             this.body.xRot += pose.bodyX;
             this.body.yRot += pose.bodyY;
             this.body.zRot += pose.bodyZ;
+        }
+
+        // Bù trục xoay thắt lưng (Waist Pivot tại Y = 12px) theo đúng điểm nối hông gốc của vanilla (đứng: [0,12,0]; ngồi Shift: [0, 12cos(0.5), 12sin(0.5)]):
+        // Giữ mép dưới thân luôn dính khít vào đỉnh 2 đùi ở mọi góc nghiêng Pitch/Yaw/Roll kể cả khi đang ngồi Shift!
+        float waistDx = 0.0F;
+        float waistDy = 0.0F;
+        float waistDz = 0.0F;
+        if (isExcaliburPose || this.crouching) {
+            float targetY = 12.0F * Mth.cos(vanillaBodyX);
+            float targetZ = 12.0F * Mth.sin(vanillaBodyX);
+            float bx = this.body.xRot;
+            float by = this.body.yRot;
+            float bz = this.body.zRot;
+            float y1 = 12.0F * Mth.cos(bx);
+            float z1 = 12.0F * Mth.sin(bx);
+            float x2 = z1 * Mth.sin(by);
+            float z2 = z1 * Mth.cos(by);
+            float x3 = x2 * Mth.cos(bz) - y1 * Mth.sin(bz);
+            float y3 = x2 * Mth.sin(bz) + y1 * Mth.cos(bz);
+            waistDx = -x3;
+            waistDy = targetY - y3;
+            waistDz = targetZ - z2;
+            this.body.x += waistDx;
+            this.body.y += waistDy;
+            this.body.z += waistDz;
         }
 
         // 2. Đầu: khóa thẳng đứng nhìn thẳng mục tiêu khi tấn công (Head Pitch ~ 0°, không bao giờ cúi cắm xuống cỏ!)
@@ -170,10 +223,15 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
             this.head.yRot = Mth.clamp(this.head.yRot + pose.headAddY, -1.35F, 1.35F);
         }
         this.head.zRot = pose.headAddZ;
+        if (isExcaliburPose || this.crouching) {
+            this.head.x += waistDx;
+            this.head.y += waistDy;
+            this.head.z += waistDz;
+        }
         this.hat.copyFrom(this.head);
 
-        // 3. Cả 2 tay: GÁN TUYỆT ĐỐI khi đang chém để từng đường kiếm rộng & sắc nét 100%
-        if (pose.isAttacking) {
+        // 3. Cả 2 tay: GÁN TUYỆT ĐỐI ở ưu tiên cao nhất (OVERRIDE) khi đang chém, giữ đỡ hoặc stance ổn định -> tắt 100% Vanilla Arm Bobbing!
+        if (pose.isAttacking || pose.overrideVanilla || pose.armWeight >= 0.999F) {
             this.rightArm.xRot = pose.rightArmX;
             this.rightArm.yRot = pose.rightArmY;
             this.rightArm.zRot = pose.rightArmZ;
@@ -201,14 +259,16 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
                 this.leftArm.zRot = Mth.lerp(aw, this.leftArm.zRot, pose.leftArmZ);
             }
         }
-        this.rightArm.x += pose.rightArmPosX;
-        this.rightArm.z += pose.rightArmPosZ;
-        this.leftArm.x += pose.leftArmPosX;
-        this.leftArm.z += pose.leftArmPosZ;
+        this.rightArm.x += pose.rightArmPosX + waistDx;
+        this.rightArm.y += pose.rightArmPosY + waistDy;
+        this.rightArm.z += pose.rightArmPosZ + waistDz;
+        this.leftArm.x += pose.leftArmPosX + waistDx;
+        this.leftArm.y += pose.leftArmPosY + waistDy;
+        this.leftArm.z += pose.leftArmPosZ + waistDz;
 
-        // 4. Cả 2 chân: thế tấn rộng / đá chân sau cực rõ trong lúc chém, hòa bước chạy khi di chuyển
+        // 4. Cả 2 chân: khóa cứng chuẩn mặt đất khi giữ thế đỡ OVERRIDE đứng yên, hòa bước chạy mượt khi di chuyển
         float lw = pose.legWeight;
-        if (lw >= 0.99F) {
+        if (lw >= 0.99F || (pose.overrideVanilla && lw >= 0.95F)) {
             this.rightLeg.xRot = pose.rightLegX;
             this.rightLeg.yRot = pose.rightLegY;
             this.rightLeg.zRot = pose.rightLegZ;
@@ -225,6 +285,11 @@ public abstract class HumanoidModelMixin<T extends LivingEntity> {
             this.leftLeg.yRot = Mth.lerp(lw, this.leftLeg.yRot, pose.leftLegY);
             this.leftLeg.zRot = Mth.lerp(lw, this.leftLeg.zRot, pose.leftLegZ);
         }
+        float legPosScale = (isExcaliburPose ? lw : 1.0F) * (this.crouching ? 0.35F : 1.0F);
+        this.rightLeg.y += pose.rightLegPosY * legPosScale;
+        this.rightLeg.z += pose.rightLegPosZ * legPosScale;
+        this.leftLeg.y += pose.leftLegPosY * legPosScale;
+        this.leftLeg.z += pose.leftLegPosZ * legPosScale;
 
         // 5. Đồng bộ tường minh 100% lớp ngoài của PlayerModel -> không bao giờ tách skin hay giáp!
         if ((Object) this instanceof PlayerModel<?> pm) {

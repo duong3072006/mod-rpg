@@ -98,13 +98,15 @@ public class LaserBeamEntity extends Entity {
                     if (damagePerHit > 0.0f) {
                         for (LivingEntity target : serverLevel.getEntitiesOfClass(LivingEntity.class, box,
                                 e -> e != pOwner && e.isAlive())) {
-                            target.hurt(serverLevel.damageSources().playerAttack(pOwner), damagePerHit);
+                            com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                                    target.hurt(serverLevel.damageSources().playerAttack(pOwner), damagePerHit));
                             if (ignite) target.igniteForSeconds(5);
                         }
                     }
                 } else {
                     for (Player victim : serverLevel.getEntitiesOfClass(Player.class, box, pl -> pl.isAlive() && !pl.isCreative() && !pl.isSpectator())) {
-                        victim.hurt(owner instanceof LivingEntity l ? serverLevel.damageSources().mobAttack(l) : serverLevel.damageSources().magic(), damagePerHit);
+                        com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                                victim.hurt(owner instanceof LivingEntity l ? serverLevel.damageSources().mobAttack(l) : serverLevel.damageSources().magic(), damagePerHit));
                         if (ignite) victim.igniteForSeconds(5);
                     }
                 }

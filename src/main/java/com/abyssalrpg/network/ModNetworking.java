@@ -3,6 +3,7 @@ package com.abyssalrpg.network;
 import com.abyssalrpg.combat.CerberusArmorHandler;
 import com.abyssalrpg.combat.DualBladeCombatHandler;
 import com.abyssalrpg.combat.ExcaliburCombatHandler;
+import com.abyssalrpg.combat.KatanaCombatHandler;
 import com.abyssalrpg.combat.MuramasaCombatHandler;
 import com.abyssalrpg.combat.SeaWeaponsCombatHandler;
 import com.abyssalrpg.combat.TogetsuCombatHandler;
@@ -29,6 +30,8 @@ public final class ModNetworking {
         PayloadTypeRegistry.playS2C().register(DualBladeDashVfxPayload.TYPE, DualBladeDashVfxPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(TogetsuSyncPayload.TYPE, TogetsuSyncPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(ExcaliburSyncPayload.TYPE, ExcaliburSyncPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(ExcaliburPassiveSyncPayload.TYPE, ExcaliburPassiveSyncPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(KatanaSyncPayload.TYPE, KatanaSyncPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(SeaWeaponsSyncPayload.TYPE, SeaWeaponsSyncPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(MuramasaSyncPayload.TYPE, MuramasaSyncPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(CerberusArmorSyncPayload.TYPE, CerberusArmorSyncPayload.CODEC);
@@ -48,6 +51,10 @@ public final class ModNetworking {
         PayloadTypeRegistry.playC2S().register(ExcaliburActionC2SPayload.TYPE, ExcaliburActionC2SPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(ExcaliburActionC2SPayload.TYPE, (payload, context) ->
                 context.server().execute(() -> ExcaliburCombatHandler.handleActionPacket(context.player(), payload)));
+
+        PayloadTypeRegistry.playC2S().register(KatanaActionC2SPayload.TYPE, KatanaActionC2SPayload.CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(KatanaActionC2SPayload.TYPE, (payload, context) ->
+                context.server().execute(() -> KatanaCombatHandler.handleActionPacket(context.player(), payload)));
 
         PayloadTypeRegistry.playC2S().register(SeaWeaponsActionC2SPayload.TYPE, SeaWeaponsActionC2SPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(SeaWeaponsActionC2SPayload.TYPE, (payload, context) ->
@@ -203,7 +210,7 @@ public final class ModNetworking {
         }
     }
 
-    /** Gửi gói tin đồng bộ animation, slash, gồng Dark Mana & chùm tia EXCALIBUR! / EXCALIBUR MORGAN! trong bán kính 68 block. */
+    /** Gửi gói tin đồng bộ animation, slash & luồng ánh sáng EXCALIBUR! trong bán kính 68 block. */
     public static void sendExcaliburSyncNearby(ServerLevel level, Vec3 center, ExcaliburSyncPayload payload) {
         double syncDist = 68.0;
         AABB box = new AABB(center.x - syncDist, center.y - 32.0, center.z - syncDist,
@@ -256,6 +263,35 @@ public final class ModNetworking {
         }
         if (!sentToOwner) {
             ServerPlayNetworking.send(owner, payload);
+        }
+    }
+
+    /** Gửi gói đồng bộ nội tại Excalibur (Ma lực, 13 Phong Ấn, Invisible Air, Hành Tinh, Avalon) tới người chơi xung quanh. */
+    public static void sendExcaliburPassiveNearby(ServerLevel level, Vec3 center, ExcaliburPassiveSyncPayload payload) {
+        double syncDist = 64.0;
+        AABB box = new AABB(center.x - syncDist, center.y - 32.0, center.z - syncDist,
+                center.x + syncDist, center.y + 32.0, center.z + syncDist);
+        for (ServerPlayer p : level.getEntitiesOfClass(ServerPlayer.class, box)) {
+            if (p.position().distanceToSqr(center) <= syncDist * syncDist) {
+                ServerPlayNetworking.send(p, payload);
+            }
+        }
+    }
+
+    /** Gửi gói đồng bộ HUD ma lực / đếm ngược Excalibur trực tiếp cho riêng người cầm kiếm (giảm băng thông mạng). */
+    public static void sendExcaliburPassiveToPlayer(ServerPlayer player, ExcaliburPassiveSyncPayload payload) {
+        ServerPlayNetworking.send(player, payload);
+    }
+
+    /** Gửi gói tin đồng bộ rút/tra kiếm, chém & gạt đòn phản công Katana trong bán kính 64 block. */
+    public static void sendKatanaSyncNearby(ServerLevel level, Vec3 center, KatanaSyncPayload payload) {
+        double syncDist = 64.0;
+        AABB box = new AABB(center.x - syncDist, center.y - 32.0, center.z - syncDist,
+                center.x + syncDist, center.y + 32.0, center.z + syncDist);
+        for (ServerPlayer p : level.getEntitiesOfClass(ServerPlayer.class, box)) {
+            if (p.position().distanceToSqr(center) <= syncDist * syncDist) {
+                ServerPlayNetworking.send(p, payload);
+            }
         }
     }
 }

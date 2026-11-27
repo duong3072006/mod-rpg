@@ -50,7 +50,6 @@ import software.bernie.geckolib.animation.RawAnimation;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -635,12 +634,12 @@ public class CinderDragonBossEntity extends AbstractGeoMythicBoss {
 
     private void tickFirePatches(ServerLevel level) {
         if (this.activeFirePatches.isEmpty()) return;
-        Iterator<FirePatch> it = this.activeFirePatches.iterator();
-        while (it.hasNext()) {
-            FirePatch fp = it.next();
+        List<FirePatch> snapshot = new ArrayList<>(this.activeFirePatches);
+        for (FirePatch fp : snapshot) {
+            if (!this.activeFirePatches.contains(fp)) continue;
             fp.ticksLeft--;
             if (fp.ticksLeft <= 0) {
-                it.remove();
+                this.activeFirePatches.remove(fp);
                 continue;
             }
             if (fp.ticksLeft % 10 == 0) {
@@ -649,7 +648,8 @@ public class CinderDragonBossEntity extends AbstractGeoMythicBoss {
                 for (Player p : level.getEntitiesOfClass(Player.class, box,
                         pl -> pl.isAlive() && !pl.isCreative() && !pl.isSpectator())) {
                     if (p.position().distanceTo(fp.pos) <= fp.radius + 0.5) {
-                        p.hurt(this.damageSources().mobAttack(this), fp.tickDamage);
+                        com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                                p.hurt(this.damageSources().mobAttack(this), fp.tickDamage));
                         p.igniteForSeconds(3);
                     }
                 }

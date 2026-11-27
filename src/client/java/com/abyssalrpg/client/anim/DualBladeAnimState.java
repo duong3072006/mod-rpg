@@ -14,11 +14,13 @@ import net.minecraft.util.Mth;
 public final class DualBladeAnimState {
     public static final class FullBodyPose {
         public boolean isAttacking;
+        public boolean overrideVanilla;
 
         public float rootYawDeg;
         public float rootPitchDeg;
         public float rootRollDeg;
         public float rootTranslateY;
+        public float rootTranslateZ;
 
         public float bodyX;
         public float bodyY;
@@ -32,12 +34,14 @@ public final class DualBladeAnimState {
         public float rightArmY;
         public float rightArmZ;
         public float rightArmPosX;
+        public float rightArmPosY;
         public float rightArmPosZ;
 
         public float leftArmX;
         public float leftArmY;
         public float leftArmZ;
         public float leftArmPosX;
+        public float leftArmPosY;
         public float leftArmPosZ;
 
         public float rightElbowX;
@@ -50,13 +54,21 @@ public final class DualBladeAnimState {
 
         public float elbowWeight;
 
+        public float rightKneeX;
+        public float leftKneeX;
+        public float kneeWeight;
+
         public float rightLegX;
         public float rightLegY;
         public float rightLegZ;
+        public float rightLegPosY;
+        public float rightLegPosZ;
 
         public float leftLegX;
         public float leftLegY;
         public float leftLegZ;
+        public float leftLegPosY;
+        public float leftLegPosZ;
 
         public float armWeight;
         public float legWeight;
@@ -79,16 +91,18 @@ public final class DualBladeAnimState {
 
         public void reset() {
             isAttacking = false;
-            rootYawDeg = rootPitchDeg = rootRollDeg = rootTranslateY = 0.0F;
+            overrideVanilla = false;
+            rootYawDeg = rootPitchDeg = rootRollDeg = rootTranslateY = rootTranslateZ = 0.0F;
             bodyX = bodyY = bodyZ = 0.0F;
             headAddX = headAddY = headAddZ = 0.0F;
-            rightArmX = rightArmY = rightArmZ = rightArmPosX = rightArmPosZ = 0.0F;
-            leftArmX = leftArmY = leftArmZ = leftArmPosX = leftArmPosZ = 0.0F;
+            rightArmX = rightArmY = rightArmZ = rightArmPosX = rightArmPosY = rightArmPosZ = 0.0F;
+            leftArmX = leftArmY = leftArmZ = leftArmPosX = leftArmPosY = leftArmPosZ = 0.0F;
             rightElbowX = rightElbowY = rightElbowZ = 0.0F;
             leftElbowX = leftElbowY = leftElbowZ = 0.0F;
             elbowWeight = 0.0F;
-            rightLegX = rightLegY = rightLegZ = 0.0F;
-            leftLegX = leftLegY = leftLegZ = 0.0F;
+            rightKneeX = leftKneeX = kneeWeight = 0.0F;
+            rightLegX = rightLegY = rightLegZ = rightLegPosY = rightLegPosZ = 0.0F;
+            leftLegX = leftLegY = leftLegZ = leftLegPosY = leftLegPosZ = 0.0F;
             armWeight = legWeight = 0.0F;
             rightBladePitchDeg = rightBladeRollDeg = rightBladeYawDeg = 0.0F;
             rightBladeOffX = rightBladeOffY = rightBladeOffZ = 0.0F;
@@ -100,10 +114,12 @@ public final class DualBladeAnimState {
 
         public void copyFrom(FullBodyPose src) {
             this.isAttacking = src.isAttacking;
+            this.overrideVanilla = src.overrideVanilla;
             this.rootYawDeg = src.rootYawDeg;
             this.rootPitchDeg = src.rootPitchDeg;
             this.rootRollDeg = src.rootRollDeg;
             this.rootTranslateY = src.rootTranslateY;
+            this.rootTranslateZ = src.rootTranslateZ;
             this.bodyX = src.bodyX;
             this.bodyY = src.bodyY;
             this.bodyZ = src.bodyZ;
@@ -114,11 +130,13 @@ public final class DualBladeAnimState {
             this.rightArmY = src.rightArmY;
             this.rightArmZ = src.rightArmZ;
             this.rightArmPosX = src.rightArmPosX;
+            this.rightArmPosY = src.rightArmPosY;
             this.rightArmPosZ = src.rightArmPosZ;
             this.leftArmX = src.leftArmX;
             this.leftArmY = src.leftArmY;
             this.leftArmZ = src.leftArmZ;
             this.leftArmPosX = src.leftArmPosX;
+            this.leftArmPosY = src.leftArmPosY;
             this.leftArmPosZ = src.leftArmPosZ;
             this.rightElbowX = src.rightElbowX;
             this.rightElbowY = src.rightElbowY;
@@ -127,12 +145,19 @@ public final class DualBladeAnimState {
             this.leftElbowY = src.leftElbowY;
             this.leftElbowZ = src.leftElbowZ;
             this.elbowWeight = src.elbowWeight;
+            this.rightKneeX = src.rightKneeX;
+            this.leftKneeX = src.leftKneeX;
+            this.kneeWeight = src.kneeWeight;
             this.rightLegX = src.rightLegX;
             this.rightLegY = src.rightLegY;
             this.rightLegZ = src.rightLegZ;
+            this.rightLegPosY = src.rightLegPosY;
+            this.rightLegPosZ = src.rightLegPosZ;
             this.leftLegX = src.leftLegX;
             this.leftLegY = src.leftLegY;
             this.leftLegZ = src.leftLegZ;
+            this.leftLegPosY = src.leftLegPosY;
+            this.leftLegPosZ = src.leftLegPosZ;
             this.armWeight = src.armWeight;
             this.legWeight = src.legWeight;
             this.rightBladePitchDeg = src.rightBladePitchDeg;
@@ -158,6 +183,7 @@ public final class DualBladeAnimState {
             this.rootPitchDeg = Mth.lerp(k, from.rootPitchDeg, this.rootPitchDeg);
             this.rootRollDeg = Mth.lerp(k, from.rootRollDeg, this.rootRollDeg);
             this.rootTranslateY = Mth.lerp(k, from.rootTranslateY, this.rootTranslateY);
+            this.rootTranslateZ = Mth.lerp(k, from.rootTranslateZ, this.rootTranslateZ);
 
             this.bodyX = Mth.lerp(k, from.bodyX, this.bodyX);
             this.bodyY = Mth.lerp(k, from.bodyY, this.bodyY);
@@ -171,12 +197,14 @@ public final class DualBladeAnimState {
             this.rightArmY = Mth.lerp(k, from.rightArmY, this.rightArmY);
             this.rightArmZ = Mth.lerp(k, from.rightArmZ, this.rightArmZ);
             this.rightArmPosX = Mth.lerp(k, from.rightArmPosX, this.rightArmPosX);
+            this.rightArmPosY = Mth.lerp(k, from.rightArmPosY, this.rightArmPosY);
             this.rightArmPosZ = Mth.lerp(k, from.rightArmPosZ, this.rightArmPosZ);
 
             this.leftArmX = Mth.lerp(k, from.leftArmX, this.leftArmX);
             this.leftArmY = Mth.lerp(k, from.leftArmY, this.leftArmY);
             this.leftArmZ = Mth.lerp(k, from.leftArmZ, this.leftArmZ);
             this.leftArmPosX = Mth.lerp(k, from.leftArmPosX, this.leftArmPosX);
+            this.leftArmPosY = Mth.lerp(k, from.leftArmPosY, this.leftArmPosY);
             this.leftArmPosZ = Mth.lerp(k, from.leftArmPosZ, this.leftArmPosZ);
 
             this.rightElbowX = Mth.lerp(k, from.rightElbowX, this.rightElbowX);
@@ -186,14 +214,21 @@ public final class DualBladeAnimState {
             this.leftElbowY = Mth.lerp(k, from.leftElbowY, this.leftElbowY);
             this.leftElbowZ = Mth.lerp(k, from.leftElbowZ, this.leftElbowZ);
             this.elbowWeight = Mth.lerp(k, from.elbowWeight, this.elbowWeight);
+            this.rightKneeX = Mth.lerp(k, from.rightKneeX, this.rightKneeX);
+            this.leftKneeX = Mth.lerp(k, from.leftKneeX, this.leftKneeX);
+            this.kneeWeight = Mth.lerp(k, from.kneeWeight, this.kneeWeight);
 
             this.rightLegX = Mth.lerp(k, from.rightLegX, this.rightLegX);
             this.rightLegY = Mth.lerp(k, from.rightLegY, this.rightLegY);
             this.rightLegZ = Mth.lerp(k, from.rightLegZ, this.rightLegZ);
+            this.rightLegPosY = Mth.lerp(k, from.rightLegPosY, this.rightLegPosY);
+            this.rightLegPosZ = Mth.lerp(k, from.rightLegPosZ, this.rightLegPosZ);
 
             this.leftLegX = Mth.lerp(k, from.leftLegX, this.leftLegX);
             this.leftLegY = Mth.lerp(k, from.leftLegY, this.leftLegY);
             this.leftLegZ = Mth.lerp(k, from.leftLegZ, this.leftLegZ);
+            this.leftLegPosY = Mth.lerp(k, from.leftLegPosY, this.leftLegPosY);
+            this.leftLegPosZ = Mth.lerp(k, from.leftLegPosZ, this.leftLegPosZ);
 
             this.armWeight = Mth.lerp(k, from.armWeight, this.armWeight);
             this.legWeight = Mth.lerp(k, from.legWeight, this.legWeight);
@@ -336,6 +371,12 @@ public final class DualBladeAnimState {
     public static float easeOutQuart(float t) {
         float inv = 1.0F - Mth.clamp(t, 0.0F, 1.0F);
         return 1.0F - inv * inv * inv * inv;
+    }
+
+    /** Easing đặc trưng Sung Jin-Woo (`EaseOutExpo`): vung dao bùng nổ siêu tốc và dừng sắc lẹm dứt khoát! */
+    public static float easeOutExpo(float t) {
+        float x = Mth.clamp(t, 0.0F, 1.0F);
+        return x >= 0.999F ? 1.0F : 1.0F - (float) Math.pow(2.0, -10.0 * x);
     }
 
     public static float easeOutBack(float t, float overshoot) {

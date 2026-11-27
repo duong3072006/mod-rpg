@@ -164,13 +164,15 @@ public final class TogetsuClientState {
             return;
         }
 
-        // 1. Xử lý phím [R] Hợp Nhất / Tách Song Nguyệt (Togetsu) hoặc Gồng 4.0s Dark Mana (Excalibur Morgan)!
+        // 1. Xử lý phím [R] Hợp Nhất / Tách Song Nguyệt (Togetsu), Nhất Kiếm Tất Sát (Katana) hoặc Tuyệt Kỹ Excalibur!
         while (fuseKey != null && fuseKey.consumeClick()) {
             if (mc.screen == null && !player.isSpectator()) {
                 if (player.getMainHandItem().is(ModItems.TOGETSU)) {
                     ClientPlayNetworking.send(new TogetsuActionC2SPayload(TogetsuActionC2SPayload.ACTION_TOGGLE_FUSE, -1));
+                } else if (player.getMainHandItem().is(ModItems.KATANA)) {
+                    KatanaClientState.onIaidoBlinkKeyPressed(mc);
                 } else if (player.getMainHandItem().is(ModItems.EXCALIBUR)) {
-                    ExcaliburClientState.onTransformKeyPressed(player);
+                    ExcaliburClientState.onUltimateKeyPressed(mc);
                 } else if (player.getMainHandItem().is(ModItems.SEA_TRIDENT)) {
                     SeaWeaponsClientState.onWhirlpoolKeyPressed(player);
                 } else if (player.getMainHandItem().is(ModItems.MURAMASA)) {

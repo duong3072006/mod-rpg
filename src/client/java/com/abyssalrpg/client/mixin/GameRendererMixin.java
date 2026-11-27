@@ -3,6 +3,7 @@ package com.abyssalrpg.client.mixin;
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
 import com.abyssalrpg.client.anim.DualBladeAnimState.FullBodyPose;
 import com.abyssalrpg.client.anim.ExcaliburAnimManager;
+import com.abyssalrpg.client.anim.KatanaAnimManager;
 import com.abyssalrpg.client.anim.MuramasaAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
 import com.abyssalrpg.config.WeaponsConfig;
@@ -38,6 +39,7 @@ public abstract class GameRendererMixin {
         return main.is(ModItems.DUAL_KNIFE)
                 || main.is(ModItems.TOGETSU)
                 || main.is(ModItems.EXCALIBUR)
+                || main.is(ModItems.KATANA)
                 || main.is(ModItems.SEA_TRIDENT)
                 || main.is(ModItems.MURAMASA);
     }
@@ -70,6 +72,9 @@ public abstract class GameRendererMixin {
         }
         if (pose == null) {
             pose = ExcaliburAnimManager.evaluatePose(player, partialTicks, 0.0F, player.tickCount + partialTicks);
+        }
+        if (pose == null) {
+            pose = KatanaAnimManager.evaluatePose(player, partialTicks, 0.0F, player.tickCount + partialTicks);
         }
         if (pose == null) {
             pose = MuramasaAnimManager.evaluatePose(player, partialTicks, 0.0F, player.tickCount + partialTicks);

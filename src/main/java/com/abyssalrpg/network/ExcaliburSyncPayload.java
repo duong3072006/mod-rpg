@@ -6,14 +6,12 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
 /**
- * Gói S2C đồng bộ animation, vệt chém, vòng xoáy gồng Dark Mana, tia năng lượng EXCALIBUR! / EXCALIBUR MORGAN!
- * và trạng thái thức tỉnh Morgan tới toàn bộ Client trong bán kính 68 block.
+ * Gói S2C đồng bộ animation, 3 nhánh combo mở rộng, Royal Parry Counter & Vòng Phép Fairy Tail của **Excalibur**.
  */
 public record ExcaliburSyncPayload(
         byte eventType,
         int playerId,
         byte moveId,
-        boolean morgan,
         float durationTicks,
         double x,
         double y,
@@ -21,18 +19,25 @@ public record ExcaliburSyncPayload(
         float yawDeg,
         float pitchDeg,
         float rangeBlocks,
-        float chargeProgress
+        float extraValue
 ) implements CustomPacketPayload {
     public static final byte EVENT_SLASH = 0;
     public static final byte EVENT_ULT_START = 1;
     public static final byte EVENT_BEAM_FIRE = 2;
-    public static final byte EVENT_CHARGE_START = 3;
-    public static final byte EVENT_CHARGE_TICK = 4;
-    public static final byte EVENT_CHARGE_CANCEL = 5;
-    public static final byte EVENT_MORGAN_AWAKEN = 6;
-    public static final byte EVENT_MORGAN_REVERT = 7;
-    public static final byte EVENT_HIT_STOP = 8;
-    public static final byte EVENT_ENERGY_SYNC = 9;
+    public static final byte EVENT_HIT_STOP = 3;
+    public static final byte EVENT_AVALON_REVIVE = 4;
+    public static final byte EVENT_SEAL_UNLOCK = 5;
+    public static final byte EVENT_STRIKE_AIR_BLAST = 6;
+    public static final byte EVENT_GROUND_WAVE = 7;
+    public static final byte EVENT_FALLING_STAR_IMPACT = 8;
+    public static final byte EVENT_ROYAL_PARRY = 9;
+    public static final byte EVENT_GUARD_CROSS_HIT = 10;
+    public static final byte EVENT_GUARD_OVERHEAD_IMPACT = 11;
+    public static final byte EVENT_ROYAL_COUNTER_SLASH = 12;
+    public static final byte EVENT_SHEATHE = 13;
+    public static final byte EVENT_SHEATHE_CLINK = 14;
+    public static final byte EVENT_AVALON_PARRY_GUARD = 15;
+    public static final byte EVENT_AVALON_PARRY_COUNTER = 16;
 
     public static final Type<ExcaliburSyncPayload> TYPE =
             new Type<>(AbyssalRpgMod.id("excalibur_sync_s2c"));
@@ -42,7 +47,6 @@ public record ExcaliburSyncPayload(
                 buf.writeByte(p.eventType);
                 buf.writeVarInt(p.playerId);
                 buf.writeByte(p.moveId);
-                buf.writeBoolean(p.morgan);
                 buf.writeFloat(p.durationTicks);
                 buf.writeDouble(p.x);
                 buf.writeDouble(p.y);
@@ -50,13 +54,12 @@ public record ExcaliburSyncPayload(
                 buf.writeFloat(p.yawDeg);
                 buf.writeFloat(p.pitchDeg);
                 buf.writeFloat(p.rangeBlocks);
-                buf.writeFloat(p.chargeProgress);
+                buf.writeFloat(p.extraValue);
             },
             buf -> new ExcaliburSyncPayload(
                     buf.readByte(),
                     buf.readVarInt(),
                     buf.readByte(),
-                    buf.readBoolean(),
                     buf.readFloat(),
                     buf.readDouble(),
                     buf.readDouble(),

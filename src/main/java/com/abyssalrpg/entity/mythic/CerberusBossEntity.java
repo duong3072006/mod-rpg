@@ -61,7 +61,6 @@ import software.bernie.geckolib.animation.RawAnimation;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -1150,7 +1149,8 @@ public class CerberusBossEntity extends AbstractGeoMythicBoss {
 
         float landDmg = CerberusConfig.get().splitLandingDamage;
         if (landDmg > 0.01f) {
-            damagePlayersInRadius(level, pos, 4.5 * rel, landDmg, 0.35);
+            com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                    damagePlayersInRadius(level, pos, 4.5 * rel, landDmg, 0.35));
         }
     }
 
@@ -1288,16 +1288,16 @@ public class CerberusBossEntity extends AbstractGeoMythicBoss {
 
     private void tickFireTrails(ServerLevel level) {
         if (this.fireTrails.isEmpty()) return;
-        Iterator<FireTrailPatch> it = this.fireTrails.iterator();
         boolean checkDamage = (this.tickCount % 10 == 0);
         boolean emitParticles = (this.tickCount % 6 == 0);
         float trailDmg = 4.0f * skillDamageScale();
 
-        while (it.hasNext()) {
-            FireTrailPatch patch = it.next();
+        List<FireTrailPatch> snapshot = new ArrayList<>(this.fireTrails);
+        for (FireTrailPatch patch : snapshot) {
+            if (!this.fireTrails.contains(patch)) continue;
             patch.ticksLeft--;
             if (patch.ticksLeft <= 0) {
-                it.remove();
+                this.fireTrails.remove(patch);
                 continue;
             }
             if (emitParticles) {
@@ -1309,7 +1309,8 @@ public class CerberusBossEntity extends AbstractGeoMythicBoss {
                         patch.pos.x + 1.3, patch.pos.y + 1.6, patch.pos.z + 1.3);
                 for (Player p : level.getEntitiesOfClass(Player.class, box,
                         pl -> pl.isAlive() && !pl.isCreative() && !pl.isSpectator())) {
-                    p.hurt(this.damageSources().mobAttack(this), trailDmg);
+                    com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                            p.hurt(this.damageSources().mobAttack(this), trailDmg));
                     p.igniteForSeconds(2);
                 }
             }

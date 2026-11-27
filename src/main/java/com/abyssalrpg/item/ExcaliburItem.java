@@ -2,6 +2,7 @@ package com.abyssalrpg.item;
 
 import com.abyssalrpg.AbyssalRpgMod;
 import com.abyssalrpg.combat.ExcaliburCombatHandler;
+import com.abyssalrpg.registry.ModItems;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
@@ -9,6 +10,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -21,6 +23,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.level.Level;
@@ -30,36 +33,38 @@ import software.bernie.geckolib.animatable.SingletonGeoAnimatable;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.animation.AnimationController;
-import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.animation.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.List;
 
 /**
- * **Excalibur — Sword of Promised Victory** & corrupted form **Excalibur Morgan (Saber Alter)**:
- * - **Normal Form (Golden Excalibur):** 36.0 Attack Damage, 1.8 Attack Speed, 3.75 Reach, 3-Hit Golden Combo,
- *   RMB `'EXCALIBUR!'` Two-Handed Vertical Golden Holy Beam (14 blocks).
- * - **Awakened Form (Excalibur Morgan — 4.0s `[R]` Charge, 20s Duration, 35s Cooldown):**
- *   +40% Damage Surge (`50.4` Attack Damage), 100% Knockback Resistance, Resistance II,
- *   Instant 40% Max HP Heal + Regeneration II (5s), Status Immunity (Poison/Wither/Slowness/Weakness),
- *   and RMB `'EXCALIBUR MORGAN!'` Pitch-Black & Dark-Violet Energy Beam (18 blocks, wider AoE, Wither + Slowness).
+ * **Excalibur — Thánh Kiếm Chiến Thắng Hứa Hẹn:**
+ * - **Trạng thái tàng hình (0 năng lượng):** Khi thanh năng lượng ở mức `0`, lưỡi kiếm tự động rơi vào trạng thái tàng hình mờ ảo!
+ * - **Tích tầng năng lượng & Sức Mạnh IV:** Đánh thường trúng địch được **`+2` năng lượng / đòn**, kết liễu kẻ địch được **`+5` năng lượng / mục tiêu** (tối đa `100`).
+ *   Khi tích đủ `100` năng lượng, người dùng nhận ngay **Sức Mạnh IV** — và hiệu ứng này cộng hưởng trực tiếp vào tuyệt kỹ!
+ * - **Tuyệt kỹ `[Chuột Phải]` (khi tích đủ `100` năng lượng):**
+ *   + Giơ thẳng chuôi kiếm lên trời rồi bổ xuống 1 đòn đánh lan dạng **ánh sáng đèn pin chiếu ra** với phạm vi **`4×5`**, tầm xa **`20` block**.
+ *   + Gây **sát thương `1500%` sát thương cơ bản** (cộng hưởng hiệu ứng & phù phép), **bỏ qua mọi loại phòng thủ** (giáp, Kháng cự, Protection, phòng thủ Boss), **không thể chặn bằng khiên**, và **hất văng** toàn bộ kẻ địch đi!
+ *   + Hậu quả sau khi tung chiêu: nhận **Suy Yếu III (`15s`)**, **Đi Chậm II (`15s`)** và **không thể tích năng lượng trong `45s`**!
  */
 public final class ExcaliburItem extends Item implements GeoItem {
-    public static final double GOLDEN_ATTACK_DAMAGE = 36.0;
-    public static final double MORGAN_ATTACK_DAMAGE = GOLDEN_ATTACK_DAMAGE * 1.40; // +40% Damage Surge = 50.4!
+    public static final double ATTACK_DAMAGE = 36.0;
     public static final double ATTACK_SPEED = 1.8;
+    public static final double BONUS_REACH = 0.90;
     public static final int MAX_DURABILITY = 2500;
+    public static final float MAX_ENERGY = 100.0F;
+    public static final float ENERGY_PER_HIT = 2.0F;
+    public static final float ENERGY_PER_KILL = 5.0F;
 
-    public static final String TAG_MORGAN = "ExcaliburMorgan";
-    public static final String TAG_MORGAN_END_TICK = "MorganEndTick";
-    public static final String TAG_MORGAN_CD_UNTIL = "MorganCooldownUntil";
-    public static final String TAG_ULT_CD_UNTIL = "UltCooldownUntil";
     public static final String TAG_ENERGY = "ExcaliburEnergy";
+    public static final String TAG_UNSHEATHED = "is_unsheathed";
+    public static final String TAG_ULT_COOLDOWN_TICKS = "ExcaliburUltCdTicks";
 
     private static final ResourceLocation REACH_MOD_ID = AbyssalRpgMod.id("excalibur_reach");
-    private static final ResourceLocation KB_RESIST_MOD_ID = AbyssalRpgMod.id("excalibur_morgan_kb_resist");
 
-    private static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("animation.excalibur.idle");
+    /** Tên phím kích hoạt Tuyệt Kỹ phía Client (mặc định `R`, đồng bộ từ cài đặt phím). */
+    public static java.util.function.Supplier<String> clientUltKeyName = () -> "R";
 
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
@@ -69,17 +74,15 @@ public final class ExcaliburItem extends Item implements GeoItem {
                 .durability(MAX_DURABILITY)
                 .rarity(Rarity.EPIC)
                 .fireResistant()
-                .attributes(createAttributes(false)));
+                .attributes(createAttributes()));
         SingletonGeoAnimatable.registerSyncedAnimatable(this);
     }
 
-    public static ItemAttributeModifiers createAttributes(boolean morgan) {
-        double damage = morgan ? MORGAN_ATTACK_DAMAGE : GOLDEN_ATTACK_DAMAGE;
-        double bonusReach = morgan ? 1.25 : 0.75;
-        ItemAttributeModifiers.Builder builder = ItemAttributeModifiers.builder()
+    public static ItemAttributeModifiers createAttributes() {
+        return ItemAttributeModifiers.builder()
                 .add(
                         Attributes.ATTACK_DAMAGE,
-                        new AttributeModifier(BASE_ATTACK_DAMAGE_ID, damage - 1.0, AttributeModifier.Operation.ADD_VALUE),
+                        new AttributeModifier(BASE_ATTACK_DAMAGE_ID, ATTACK_DAMAGE - 1.0, AttributeModifier.Operation.ADD_VALUE),
                         EquipmentSlotGroup.MAINHAND
                 )
                 .add(
@@ -89,17 +92,10 @@ public final class ExcaliburItem extends Item implements GeoItem {
                 )
                 .add(
                         Attributes.ENTITY_INTERACTION_RANGE,
-                        new AttributeModifier(REACH_MOD_ID, bonusReach, AttributeModifier.Operation.ADD_VALUE),
+                        new AttributeModifier(REACH_MOD_ID, BONUS_REACH, AttributeModifier.Operation.ADD_VALUE),
                         EquipmentSlotGroup.MAINHAND
-                );
-        if (morgan) {
-            builder.add(
-                    Attributes.KNOCKBACK_RESISTANCE,
-                    new AttributeModifier(KB_RESIST_MOD_ID, 1.0, AttributeModifier.Operation.ADD_VALUE),
-                    EquipmentSlotGroup.MAINHAND
-            );
-        }
-        return builder.build();
+                )
+                .build();
     }
 
     private static CompoundTag readTag(ItemStack stack) {
@@ -111,61 +107,23 @@ public final class ExcaliburItem extends Item implements GeoItem {
         stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
     }
 
-    public static boolean isMorgan(ItemStack stack) {
-        return !stack.isEmpty() && readTag(stack).getBoolean(TAG_MORGAN);
-    }
-
-    public static void setMorganState(ItemStack stack, boolean morgan, long morganEndTick, long cooldownUntilTick) {
-        if (stack.isEmpty()) {
-            return;
-        }
-        CompoundTag tag = readTag(stack);
-        tag.putBoolean(TAG_MORGAN, morgan);
-        tag.putLong(TAG_MORGAN_END_TICK, morganEndTick);
-        if (cooldownUntilTick > 0L) {
-            tag.putLong(TAG_MORGAN_CD_UNTIL, cooldownUntilTick);
-        }
-        writeTag(stack, tag);
-        stack.set(DataComponents.ATTRIBUTE_MODIFIERS, createAttributes(morgan));
-    }
-
-    public static long getMorganEndTick(ItemStack stack) {
-        return stack.isEmpty() ? 0L : readTag(stack).getLong(TAG_MORGAN_END_TICK);
-    }
-
-    public static long getMorganCooldownUntil(ItemStack stack) {
-        return stack.isEmpty() ? 0L : readTag(stack).getLong(TAG_MORGAN_CD_UNTIL);
-    }
-
-    public static long getUltCooldownUntil(ItemStack stack) {
-        return stack.isEmpty() ? 0L : readTag(stack).getLong(TAG_ULT_CD_UNTIL);
-    }
-
-    public static void setUltCooldownUntil(ItemStack stack, long tick) {
-        if (stack.isEmpty()) {
-            return;
-        }
-        CompoundTag tag = readTag(stack);
-        tag.putLong(TAG_ULT_CD_UNTIL, tick);
-        writeTag(stack, tag);
-    }
-
+    /** Mặc định bằng `0` khi mới sở hữu Excalibur -> kiếm lập tức ở trạng thái tàng hình! */
     public static float getEnergy(ItemStack stack) {
         if (stack.isEmpty()) {
             return 0.0F;
         }
         CompoundTag tag = readTag(stack);
         if (!tag.contains(TAG_ENERGY)) {
-            return 100.0F; // Bắt đầu sẵn sàng 100% khi mới nhận kiếm để người chơi thử ngay!
+            return 0.0F;
         }
-        return net.minecraft.util.Mth.clamp(tag.getFloat(TAG_ENERGY), 0.0F, 100.0F);
+        return Mth.clamp(tag.getFloat(TAG_ENERGY), 0.0F, MAX_ENERGY);
     }
 
     public static void setEnergy(ItemStack stack, float value) {
         if (stack.isEmpty()) {
             return;
         }
-        float clamped = net.minecraft.util.Mth.clamp(value, 0.0F, 100.0F);
+        float clamped = Mth.clamp(value, 0.0F, MAX_ENERGY);
         CompoundTag tag = readTag(stack);
         if (tag.contains(TAG_ENERGY) && Math.abs(tag.getFloat(TAG_ENERGY) - clamped) < 0.05F) {
             return;
@@ -174,33 +132,66 @@ public final class ExcaliburItem extends Item implements GeoItem {
         writeTag(stack, tag);
     }
 
-    public static void addEnergy(ItemStack stack, float delta) {
-        setEnergy(stack, getEnergy(stack) + delta);
+    /** Trạng thái rút kiếm (`is_unsheathed` trong DataComponent 1.21.1): `false` = đang tra gọn trong vỏ Avalon. */
+    public static boolean isUnsheathed(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return false;
+        }
+        CompoundTag tag = readTag(stack);
+        return tag.getBoolean(TAG_UNSHEATHED);
     }
 
-    /**
-     * Ngăn vanilla tụt tay & giật kiếm (re-equip dip/jitter) mỗi khi cập nhật thanh năng lượng,
-     * hồi chiêu hay trạng thái biến hình trên DataComponents.CUSTOM_DATA!
-     */
+    public static void setUnsheathed(ItemStack stack, boolean unsheathed) {
+        if (stack.isEmpty()) {
+            return;
+        }
+        CompoundTag tag = readTag(stack);
+        if (tag.contains(TAG_UNSHEATHED) && tag.getBoolean(TAG_UNSHEATHED) == unsheathed) {
+            return;
+        }
+        tag.putBoolean(TAG_UNSHEATHED, unsheathed);
+        writeTag(stack, tag);
+    }
+
+    /** Đọc/ghi thời gian hồi chiêu Tuyệt kỹ còn lại (chỉ dùng khi thoát/vào lại game, tránh làm giật tay trong giao tranh). */
+    public static int getSavedUltCooldownTicks(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return 0;
+        }
+        CompoundTag tag = readTag(stack);
+        return Math.max(0, tag.getInt(TAG_ULT_COOLDOWN_TICKS));
+    }
+
+    public static void setSavedUltCooldownTicks(ItemStack stack, int ticks) {
+        if (stack.isEmpty()) {
+            return;
+        }
+        int clamped = Math.max(0, ticks);
+        CompoundTag tag = readTag(stack);
+        if (clamped == 0) {
+            if (!tag.contains(TAG_ULT_COOLDOWN_TICKS)) {
+                return;
+            }
+            tag.remove(TAG_ULT_COOLDOWN_TICKS);
+        } else {
+            if (tag.contains(TAG_ULT_COOLDOWN_TICKS) && tag.getInt(TAG_ULT_COOLDOWN_TICKS) == clamped) {
+                return;
+            }
+            tag.putInt(TAG_ULT_COOLDOWN_TICKS, clamped);
+        }
+        writeTag(stack, tag);
+    }
+
+    /** Ngăn vanilla tụt tay & giật kiếm (re-equip dip/jitter) mỗi khi cập nhật dữ liệu trên Excalibur. */
     @Override
     public boolean allowComponentsUpdateAnimation(Player player, InteractionHand hand, ItemStack oldStack, ItemStack newStack) {
-        return !oldStack.is(com.abyssalrpg.registry.ModItems.EXCALIBUR)
-                || !newStack.is(com.abyssalrpg.registry.ModItems.EXCALIBUR);
+        return !oldStack.is(ModItems.EXCALIBUR) || !newStack.is(ModItems.EXCALIBUR);
     }
 
     @Override
     public Component getName(ItemStack stack) {
-        if (isMorgan(stack)) {
-            return Component.translatable("item.abyssalrpg.excalibur_morgan")
-                    .withStyle(ChatFormatting.RED, ChatFormatting.BOLD);
-        }
         return Component.translatable("item.abyssalrpg.excalibur")
                 .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
-    }
-
-    @Override
-    public boolean isFoil(ItemStack stack) {
-        return super.isFoil(stack);
     }
 
     @Override
@@ -220,43 +211,64 @@ public final class ExcaliburItem extends Item implements GeoItem {
     }
 
     @Override
+    public int getUseDuration(ItemStack stack, LivingEntity entity) {
+        return 72000;
+    }
+
+    @Override
+    public UseAnim getUseAnimation(ItemStack stack) {
+        return UseAnim.NONE;
+    }
+
+    @Override
+    public void onUseTick(Level level, LivingEntity entity, ItemStack stack, int remainingUseDuration) {
+        if (!level.isClientSide && entity instanceof ServerPlayer sp) {
+            ExcaliburCombatHandler.onUseTick(sp);
+        }
+    }
+
+    @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         if (hand != InteractionHand.MAIN_HAND) {
             return InteractionResultHolder.pass(stack);
         }
-        if (!level.isClientSide && player instanceof ServerPlayer sp) {
-            ExcaliburCombatHandler.tryStartUltimate(sp);
+        // Chuột phải [RMB] CHỈ dùng để Đỡ Hoàng Gia / Avalon Parry; Tuyệt kỹ kích hoạt bằng phím [R]!
+        if (level.isClientSide) {
+            player.startUsingItem(hand);
+            return InteractionResultHolder.consume(stack);
+        }
+        if (player instanceof ServerPlayer sp) {
+            if (ExcaliburCombatHandler.isActionLocked(sp.getUUID())) {
+                return InteractionResultHolder.pass(stack);
+            }
+            ExcaliburCombatHandler.onStartRoyalGuard(sp);
+            player.startUsingItem(hand);
         }
         return InteractionResultHolder.consume(stack);
     }
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        boolean morgan = isMorgan(stack);
-        int energyPct = Math.round(getEnergy(stack));
-        if (morgan) {
-            tooltip.add(Component.literal("✦ ").withStyle(ChatFormatting.DARK_RED)
-                    .append(Component.translatable("tooltip.abyssalrpg.excalibur.morgan_form")
-                            .withStyle(ChatFormatting.RED, ChatFormatting.BOLD)));
-            tooltip.add(Component.translatable("tooltip.abyssalrpg.excalibur.morgan_buffs")
-                    .withStyle(ChatFormatting.GRAY));
-        } else {
-            tooltip.add(Component.literal("✦ ").withStyle(ChatFormatting.GOLD)
-                    .append(Component.translatable("tooltip.abyssalrpg.excalibur.golden_form")
-                            .withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD)));
-            tooltip.add(Component.literal("✦ Năng lượng biến đổi: " + energyPct + "%")
-                    .withStyle(energyPct >= 100 ? ChatFormatting.RED : ChatFormatting.GOLD));
-        }
-        tooltip.add(Component.translatable("tooltip.abyssalrpg.excalibur.controls_rmb")
-                .withStyle(morgan ? ChatFormatting.LIGHT_PURPLE : ChatFormatting.GOLD));
-        tooltip.add(Component.translatable("tooltip.abyssalrpg.excalibur.controls_r")
-                .withStyle(ChatFormatting.RED));
+        tooltip.add(Component.literal("✦ ").withStyle(ChatFormatting.GOLD)
+                .append(Component.translatable("tooltip.abyssalrpg.excalibur.golden_form")
+                        .withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD)));
+        tooltip.add(Component.translatable("tooltip.abyssalrpg.excalibur.royal_guard")
+                .withStyle(ChatFormatting.AQUA));
+        tooltip.add(Component.translatable("tooltip.abyssalrpg.excalibur.kill_charge")
+                .withStyle(ChatFormatting.GREEN));
+        tooltip.add(Component.translatable("tooltip.abyssalrpg.excalibur.controls_rmb", clientUltKeyName.get())
+                .withStyle(ChatFormatting.GOLD));
+        tooltip.add(Component.translatable("tooltip.abyssalrpg.excalibur.ult_pierce")
+                .withStyle(ChatFormatting.YELLOW));
+        tooltip.add(Component.translatable("tooltip.abyssalrpg.excalibur.avalon_hint")
+                .withStyle(ChatFormatting.LIGHT_PURPLE));
     }
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this, "idle_controller", 2, state -> state.setAndContinue(IDLE_ANIM)));
+        // Trả PlayState.STOP để toàn bộ góc xoay do ExcaliburAnimManager điều khiển 1 nguồn duy nhất (0 xung đột xương GeckoLib!)
+        controllers.add(new AnimationController<>(this, "idle_controller", 0, state -> PlayState.STOP));
     }
 
     @Override

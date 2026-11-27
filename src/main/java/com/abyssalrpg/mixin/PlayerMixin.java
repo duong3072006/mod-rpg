@@ -2,6 +2,7 @@ package com.abyssalrpg.mixin;
 
 import com.abyssalrpg.combat.DualBladeCombatHandler;
 import com.abyssalrpg.combat.ExcaliburCombatHandler;
+import com.abyssalrpg.combat.KatanaCombatHandler;
 import com.abyssalrpg.combat.MuramasaCombatHandler;
 import com.abyssalrpg.combat.SeaWeaponsCombatHandler;
 import com.abyssalrpg.combat.TogetsuCombatHandler;
@@ -15,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Móc nối an toàn vào `Player.attack(Entity)` cho Dual Blade, Togetsu & Excalibur / Excalibur Morgan.
+ * Móc nối an toàn vào `Player.attack(Entity)` cho Dual Blade, Togetsu, Excalibur & Katana.
  */
 @Mixin(Player.class)
 public abstract class PlayerMixin {
@@ -34,6 +35,9 @@ public abstract class PlayerMixin {
     @Unique
     private MuramasaCombatHandler.ActiveHitContext abyssalrpg$activeMuramasaHit;
 
+    @Unique
+    private KatanaCombatHandler.ActiveHitContext abyssalrpg$activeKatanaHit;
+
     @Inject(method = "attack", at = @At("HEAD"))
     private void abyssalrpg$beginDualBladeAttack(Entity target, CallbackInfo ci) {
         Player self = (Player) (Object) this;
@@ -42,6 +46,7 @@ public abstract class PlayerMixin {
         this.abyssalrpg$activeExcaliburHit = ExcaliburCombatHandler.beginPlayerAttack(self, target);
         this.abyssalrpg$activeSeaHit = SeaWeaponsCombatHandler.beginPlayerAttack(self, target);
         this.abyssalrpg$activeMuramasaHit = MuramasaCombatHandler.beginPlayerAttack(self, target);
+        this.abyssalrpg$activeKatanaHit = KatanaCombatHandler.beginPlayerAttack(self, target);
     }
 
     @ModifyArg(
@@ -67,6 +72,9 @@ public abstract class PlayerMixin {
         }
         if (this.abyssalrpg$activeMuramasaHit != null) {
             return MuramasaCombatHandler.modifyAttackDamage(amount);
+        }
+        if (this.abyssalrpg$activeKatanaHit != null) {
+            return KatanaCombatHandler.modifyAttackDamage(amount);
         }
         return amount;
     }
@@ -97,6 +105,11 @@ public abstract class PlayerMixin {
             MuramasaCombatHandler.ActiveHitContext ctx = this.abyssalrpg$activeMuramasaHit;
             this.abyssalrpg$activeMuramasaHit = null;
             MuramasaCombatHandler.finishPlayerAttack(ctx);
+        }
+        if (this.abyssalrpg$activeKatanaHit != null) {
+            KatanaCombatHandler.ActiveHitContext ctx = this.abyssalrpg$activeKatanaHit;
+            this.abyssalrpg$activeKatanaHit = null;
+            KatanaCombatHandler.finishPlayerAttack(ctx);
         }
     }
 }

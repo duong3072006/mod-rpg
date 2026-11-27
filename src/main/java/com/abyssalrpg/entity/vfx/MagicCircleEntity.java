@@ -118,7 +118,8 @@ public class MagicCircleEntity extends Entity {
                 this.getX() + r, this.getY() + 8.0, this.getZ() + r);
         for (Player p : level.getEntitiesOfClass(Player.class, box, pl -> pl.isAlive() && !pl.isCreative() && !pl.isSpectator())) {
             if (Math.hypot(p.getX() - this.getX(), p.getZ() - this.getZ()) <= r + 0.4) {
-                p.hurt(owner instanceof LivingEntity l ? level.damageSources().mobAttack(l) : level.damageSources().magic(), damage);
+                com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                        p.hurt(owner instanceof LivingEntity l ? level.damageSources().mobAttack(l) : level.damageSources().magic(), damage));
                 p.setDeltaMovement(p.getDeltaMovement().add(0, 0.55, 0));
                 p.hurtMarked = true;
                 if (applyWither) {

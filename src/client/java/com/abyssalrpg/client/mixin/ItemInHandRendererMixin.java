@@ -2,16 +2,17 @@ package com.abyssalrpg.client.mixin;
 
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
 import com.abyssalrpg.client.anim.DualBladeAnimState;
-import com.abyssalrpg.client.anim.ExcaliburAnimManager;
+import com.abyssalrpg.client.anim.KatanaAnimManager;
 import com.abyssalrpg.client.anim.MuramasaAnimManager;
 import com.abyssalrpg.client.anim.SeaWeaponsAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
+import com.abyssalrpg.client.renderer.ExcaliburFirstPersonRigRenderer;
 import com.abyssalrpg.client.renderer.ExcaliburGeoRenderer;
+import com.abyssalrpg.client.renderer.KatanaItemRenderer;
 import com.abyssalrpg.client.renderer.MuramasaGeoRenderer;
 import com.abyssalrpg.client.renderer.SeaTridentGeoRenderer;
 import com.abyssalrpg.client.renderer.TogetsuGeoRenderer;
 import com.abyssalrpg.combat.DualBladeMoveType;
-import com.abyssalrpg.combat.ExcaliburMoveType;
 import com.abyssalrpg.combat.MuramasaMoveType;
 import com.abyssalrpg.combat.SeaWeaponsMoveType;
 import com.abyssalrpg.combat.TogetsuMoveType;
@@ -56,8 +57,14 @@ public abstract class ItemInHandRendererMixin {
     @Shadow
     private ItemStack mainHandItem;
 
+    @Shadow
+    private ItemStack offHandItem;
+
     @Unique
     private boolean abyssalrpg$wasHoldingCustomWeapon;
+
+    @Unique
+    private boolean abyssalrpg$wasHoldingExcalibur;
 
     @Unique
     private boolean abyssalrpg$savedBob;
@@ -79,30 +86,99 @@ public abstract class ItemInHandRendererMixin {
         return stack.is(ModItems.DUAL_KNIFE)
                 || stack.is(ModItems.TOGETSU)
                 || stack.is(ModItems.EXCALIBUR)
+                || stack.is(ModItems.KATANA)
                 || stack.is(ModItems.SEA_TRIDENT)
                 || stack.is(ModItems.MURAMASA);
     }
 
+    @Unique
+    private boolean abyssalrpg$wasOffhandExcalibur;
+
+    @Unique
+    private boolean abyssalrpg$wasHoldingKatana;
+
+    @Unique
+    private boolean abyssalrpg$lockKatanaEquip;
+
+    @Unique
+    private int abyssalrpg$lastSelectedSlot = -1;
+
     @org.spongepowered.asm.mixin.injection.Inject(method = "tick", at = @At("HEAD"))
     private void abyssalrpg$captureExcaliburBeforeTick(org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
         this.abyssalrpg$wasHoldingCustomWeapon = abyssalrpg$isCustomWeapon(this.mainHandItem);
+        this.abyssalrpg$wasHoldingExcalibur = this.mainHandItem.is(ModItems.EXCALIBUR);
+        this.abyssalrpg$wasOffhandExcalibur = this.offHandItem.is(ModItems.EXCALIBUR);
+        this.abyssalrpg$wasHoldingKatana = this.mainHandItem.is(ModItems.KATANA);
+
+        // Chặn trước mọi xung tụt tay do đổi reference ItemStack ngay đầu tick!
+        net.minecraft.client.player.LocalPlayer lp = net.minecraft.client.Minecraft.getInstance().player;
+        if (lp != null && lp.getInventory().selected == this.abyssalrpg$lastSelectedSlot) {
+            ItemStack held = lp.getMainHandItem();
+            if (this.abyssalrpg$wasHoldingExcalibur && held.is(ModItems.EXCALIBUR)) {
+                this.mainHandItem = held;
+                this.mainHandHeight = 1.0F;
+                this.oMainHandHeight = 1.0F;
+            }
+            if (this.abyssalrpg$wasHoldingKatana && held.is(ModItems.KATANA)) {
+                this.mainHandItem = held;
+                this.mainHandHeight = 1.0F;
+                this.oMainHandHeight = 1.0F;
+            }
+            ItemStack offHeld = lp.getOffhandItem();
+            if (this.abyssalrpg$wasOffhandExcalibur && offHeld.is(ModItems.EXCALIBUR)) {
+                this.offHandItem = offHeld;
+                this.offHandHeight = 1.0F;
+                this.oOffHandHeight = 1.0F;
+            }
+        }
     }
 
     @org.spongepowered.asm.mixin.injection.Inject(method = "tick", at = @At("TAIL"))
     private void abyssalrpg$stabilizeExcaliburHandHeight(
             org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
         net.minecraft.client.player.LocalPlayer lp = net.minecraft.client.Minecraft.getInstance().player;
-        if (lp != null && this.abyssalrpg$wasHoldingCustomWeapon
-                && abyssalrpg$isCustomWeapon(lp.getMainHandItem())
-                && lp.getMainHandItem().getItem() == this.mainHandItem.getItem()) {
+        if (lp == null) {
+            this.abyssalrpg$lastSelectedSlot = -1;
+            return;
+        }
+        int curSlot = lp.getInventory().selected;
+        boolean sameSlot = (curSlot == this.abyssalrpg$lastSelectedSlot);
+        this.abyssalrpg$lastSelectedSlot = curSlot;
+        ItemStack held = lp.getMainHandItem();
+        ItemStack offHeld = lp.getOffhandItem();
+
+        if (sameSlot && this.abyssalrpg$wasHoldingCustomWeapon
+                && abyssalrpg$isCustomWeapon(held)
+                && held.getItem() == this.mainHandItem.getItem()) {
             // QUY TẮC CHỐNG RUNG 0%: Khóa cứng cả tay phải & tay phụ (0 tụt tay, 0 giật khi cập nhật cooldown/NBT!)
-            this.mainHandItem = lp.getMainHandItem();
+            this.mainHandItem = held;
             this.mainHandHeight = 1.0F;
             this.oMainHandHeight = 1.0F;
-            if (lp.getOffhandItem().isEmpty()) {
+            if (offHeld.isEmpty()) {
                 this.offHandHeight = 1.0F;
                 this.oOffHandHeight = 1.0F;
             }
+            this.abyssalrpg$lockKatanaEquip = held.is(ModItems.KATANA);
+        } else {
+            this.abyssalrpg$lockKatanaEquip = false;
+        }
+
+        if (this.abyssalrpg$wasOffhandExcalibur && offHeld.is(ModItems.EXCALIBUR)) {
+            this.offHandItem = offHeld;
+            this.offHandHeight = 1.0F;
+            this.oOffHandHeight = 1.0F;
+        }
+    }
+
+    @org.spongepowered.asm.mixin.injection.Inject(method = "itemUsed", at = @At("HEAD"), cancellable = true)
+    private void abyssalrpg$preventSwordUseDip(InteractionHand hand,
+            org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
+        if (hand == InteractionHand.MAIN_HAND
+                && (this.mainHandItem.is(ModItems.EXCALIBUR)
+                || this.mainHandItem.is(ModItems.KATANA))) {
+            ci.cancel();
+        } else if (hand == InteractionHand.OFF_HAND && this.offHandItem.is(ModItems.EXCALIBUR)) {
+            ci.cancel();
         }
     }
 
@@ -165,6 +241,7 @@ public abstract class ItemInHandRendererMixin {
         boolean dualWieldActive = mainStack.is(ModItems.DUAL_KNIFE) && player.getOffhandItem().isEmpty();
         boolean togetsuActive = mainStack.is(ModItems.TOGETSU) && player.getOffhandItem().isEmpty();
         boolean excaliburActive = (hand == InteractionHand.MAIN_HAND) && stack.is(ModItems.EXCALIBUR);
+        boolean katanaActive = (hand == InteractionHand.MAIN_HAND) && stack.is(ModItems.KATANA);
         boolean seaActive = mainStack.is(ModItems.SEA_TRIDENT)
                 && (hand == InteractionHand.MAIN_HAND || player.getOffhandItem().isEmpty());
         boolean muramasaActive = mainStack.is(ModItems.MURAMASA)
@@ -378,95 +455,50 @@ public abstract class ItemInHandRendererMixin {
             return;
         }
 
-        if (excaliburActive) {
-            float alpha = ExcaliburAnimManager.getActionProgress(player.getId(), partialTicks);
-            ExcaliburMoveType move = ExcaliburAnimManager.getMoveType(player.getId());
-            float sprint = ExcaliburAnimManager.getSprintBlend(player.getId(), partialTicks);
-            poseStack.pushPose();
-            if (alpha > 0.001F) {
-                // Đường cong liền mạch 3 nhịp: kết thúc Hit 1 bên trái-dưới -> Hit 2 quét tiếp
-                // từ trái-dưới lên phải-trên -> Hit 3 nâng đỉnh bổ thẳng!
-                float ret = (alpha > 0.78F) ? (1.0F - DualBladeAnimState.easeInOutCubic((alpha - 0.78F) / 0.22F))
-                        : 1.0F;
-                switch (move) {
-                    case COMBO_1 -> {
-                        // Hit 1: Nâng gọn sang phải-trên (0..18%) -> chém chéo liền mạch xuống
-                        // trái-dưới (14..58%) -> giữ đà -> thu êm!
-                        float rise = DualBladeAnimState.easeOutCubic(Mth.clamp(alpha / 0.18F, 0.0F, 1.0F));
-                        float sweep = DualBladeAnimState.easeInOutCubic(Mth.clamp((alpha - 0.14F) / 0.44F, 0.0F, 1.0F));
-                        float tx = Mth.lerp(sweep, 0.22F * rise, -0.76F) * ret;
-                        float ty = Mth.lerp(sweep, 0.24F * rise, -0.30F) * ret;
-                        float tz = Mth.lerp(sweep, -0.08F * rise, -0.34F) * ret;
-                        poseStack.translate(tx, ty, tz);
-                        poseStack.mulPose(Axis.YP.rotationDegrees(Mth.lerp(sweep, -26.0F * rise, 82.0F) * ret));
-                        poseStack.mulPose(Axis.XP.rotationDegrees(Mth.lerp(sweep, 16.0F * rise, -62.0F) * ret));
-                        poseStack.mulPose(Axis.ZP.rotationDegrees(Mth.lerp(sweep, -16.0F * rise, 54.0F) * ret));
-                    }
-                    case COMBO_2 -> {
-                        // Hit 2: Xuất phát TRỰC TIẾP tại điểm kết trái-dưới của Hit 1 (0 giật về tâm!)
-                        // -> quét ngược mượt lên phải-trên!
-                        float enter = DualBladeAnimState.easeOutCubic(Mth.clamp(alpha / 0.10F, 0.0F, 1.0F));
-                        float sweep = DualBladeAnimState.easeInOutCubic(Mth.clamp((alpha - 0.08F) / 0.48F, 0.0F, 1.0F));
-                        float startScale = Mth.lerp(enter, 0.85F, 1.0F);
-                        poseStack.translate(
-                                Mth.lerp(sweep, -0.76F * startScale, 0.42F) * ret,
-                                Mth.lerp(sweep, -0.28F * startScale, 0.20F) * ret,
-                                Mth.lerp(sweep, -0.34F * startScale, -0.24F) * ret);
-                        poseStack.mulPose(Axis.YP.rotationDegrees(Mth.lerp(sweep, 82.0F * startScale, -58.0F) * ret));
-                        poseStack.mulPose(Axis.XP.rotationDegrees(Mth.lerp(sweep, -62.0F * startScale, -24.0F) * ret));
-                        poseStack.mulPose(Axis.ZP.rotationDegrees(Mth.lerp(sweep, 54.0F * startScale, -68.0F) * ret));
-                    }
-                    case COMBO_3 -> {
-                        // Hit 3: Nâng liền mạch từ phải-trên lên đỉnh đầu (0..26%) -> bổ dọc uy lực
-                        // xuống đất (24..60%)!
-                        float raise = DualBladeAnimState.easeInOutCubic(Mth.clamp(alpha / 0.26F, 0.0F, 1.0F));
-                        float slam = DualBladeAnimState.easeOutQuart(Mth.clamp((alpha - 0.24F) / 0.36F, 0.0F, 1.0F));
-                        poseStack.translate(
-                                Mth.lerp(slam, Mth.lerp(raise, 0.26F, -0.22F), -0.22F) * ret,
-                                Mth.lerp(slam, Mth.lerp(raise, 0.14F, 0.38F), -0.42F) * ret,
-                                Mth.lerp(slam, -0.18F, -0.40F) * ret);
-                        poseStack.mulPose(Axis.YP.rotationDegrees(Mth.lerp(raise, -28.0F, 0.0F) * (1.0F - slam) * ret));
-                        poseStack.mulPose(Axis.XP.rotationDegrees(Mth.lerp(slam, 28.0F * raise, -84.0F) * ret));
-                    }
-                    case ULT_EXCALIBUR, ULT_MORGAN -> {
-                        if (alpha < 0.625F) {
-                            float raise = DualBladeAnimState.easeOutCubic(Mth.clamp(alpha / 0.28F, 0.0F, 1.0F));
-                            poseStack.translate(-0.34F * raise, 0.28F * raise, -0.18F * raise);
-                            poseStack.mulPose(Axis.ZP.rotationDegrees(16.0F * raise));
-                            poseStack.mulPose(Axis.XP.rotationDegrees(22.0F * raise));
-                        } else {
-                            float slam = DualBladeAnimState
-                                    .easeOutQuart(Mth.clamp((alpha - 0.625F) / 0.18F, 0.0F, 1.0F));
-                            poseStack.translate(-0.34F, Mth.lerp(slam, 0.28F, -0.38F), Mth.lerp(slam, -0.18F, -0.44F));
-                            poseStack.mulPose(Axis.XP.rotationDegrees(Mth.lerp(slam, 22.0F, -86.0F)));
-                        }
-                    }
-                    case MORGAN_CHANNEL -> {
-                        poseStack.translate(-0.32F, -0.06F, -0.22F);
-                        poseStack.mulPose(Axis.ZP.rotationDegrees(14.0F));
-                        poseStack.mulPose(Axis.XP.rotationDegrees(-12.0F));
-                    }
-                    case MORGAN_AWAKEN -> {
-                        float b = DualBladeAnimState.easeOutQuart(Mth.clamp(alpha / 0.40F, 0.0F, 1.0F));
-                        poseStack.translate(0.16F * b * ret, -0.14F * ret, -0.10F * ret);
-                        poseStack.mulPose(Axis.ZP.rotationDegrees(-24.0F * b * ret));
-                    }
-                }
-            } else if (sprint > 0.001F) {
-                poseStack.translate(0.06F * sprint, -0.08F * sprint, 0.04F * sprint);
-                poseStack.mulPose(Axis.XP.rotationDegrees(14.0F * sprint));
-                poseStack.mulPose(Axis.ZP.rotationDegrees(-10.0F * sprint));
-            }
+        if (katanaActive) {
+            // Toàn bộ dáng Đỡ Chéo Cao, Tra Vỏ Iaido, Rút Kiếm, Combo 3 nhịp & Gạt Đòn góc nhìn thứ 1
+            // được tính chuẩn trong Camera-Space quanh chuôi kiếm tại KatanaItemRenderer (không xoay lệch tâm Camera!).
+            float alpha = KatanaAnimManager.getActionProgress(player.getId(), partialTicks);
+            float guard = KatanaAnimManager.getGuardBlend(player.getId(), partialTicks);
+            float sayaGuard = KatanaAnimManager.getSayaGuardBlend(player.getId(), partialTicks);
+            float iaidoCharge = KatanaAnimManager.getIaidoChargeBlend(player.getId(), partialTicks);
             float effectiveSwing = 0.0F;
-            float effectiveEquip = (alpha > 0.001F || ExcaliburAnimManager.isChanneling(player.getId())) ? 0.0F
-                    : equippedProgress;
-            ExcaliburGeoRenderer.setCurrentRenderEntityId(player.getId());
+            float effectiveEquip = (this.abyssalrpg$lockKatanaEquip || alpha > 0.001F || guard > 0.05F || sayaGuard > 0.05F || iaidoCharge > 0.05F) ? 0.0F : equippedProgress;
+            KatanaItemRenderer.setCurrentRenderEntityId(player.getId());
             try {
                 original.call(instance, player, partialTicks, pitch, hand, effectiveSwing, stack,
                         effectiveEquip, poseStack, buffer, combinedLight);
             } finally {
+                KatanaItemRenderer.setCurrentRenderEntityId(-1);
+            }
+            return;
+        }
+
+        if (excaliburActive) {
+            // Kiến trúc đồng bộ 100% F5 ↔ Góc nhìn thứ nhất:
+            // Hủy render Item Display JSON mặc định; vẽ trực tiếp cây xương 2 tay gập khuỷu, Excalibur 3D & vỏ Avalon 3D
+            // của góc nhìn thứ ba ngay trước tầm mắt (ẩn đầu & thân, bù trừ offset Combat Idle/Blocking & Pitch Clamp 0.75f)!
+            ExcaliburGeoRenderer.setCurrentRenderEntityId(player.getId());
+            try {
+                ExcaliburFirstPersonRigRenderer.render(player, stack, partialTicks, pitch, poseStack, buffer, combinedLight);
+            } finally {
                 ExcaliburGeoRenderer.setCurrentRenderEntityId(-1);
-                poseStack.popPose();
+            }
+            return;
+        }
+        // Khi tay chính đang cầm Excalibur và tay phụ trống -> không vẽ thêm cánh tay trái vanilla trùng lặp
+        // vì ExcaliburFirstPersonRigRenderer đã vẽ đủ cả 2 cánh tay 2 khớp đồng bộ với F5!
+        if (hand == InteractionHand.OFF_HAND && stack.isEmpty() && mainStack.is(ModItems.EXCALIBUR)) {
+            return;
+        }
+        // Khi cầm Excalibur ở tay phụ: hủy hiệu ứng vung/nâng tay mặc định của vanilla (tương đương applyForgeHandTransform = true)!
+        if (hand == InteractionHand.OFF_HAND && stack.is(ModItems.EXCALIBUR)) {
+            ExcaliburGeoRenderer.setCurrentRenderEntityId(player.getId());
+            try {
+                original.call(instance, player, partialTicks, pitch, hand, 0.0F, stack,
+                        0.0F, poseStack, buffer, combinedLight);
+            } finally {
+                ExcaliburGeoRenderer.setCurrentRenderEntityId(-1);
             }
             return;
         }

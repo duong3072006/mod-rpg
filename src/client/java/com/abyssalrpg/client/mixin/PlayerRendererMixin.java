@@ -3,9 +3,11 @@ package com.abyssalrpg.client.mixin;
 import com.abyssalrpg.client.anim.DualBladeAnimManager;
 import com.abyssalrpg.client.anim.DualBladeAnimState.FullBodyPose;
 import com.abyssalrpg.client.anim.ExcaliburAnimManager;
+import com.abyssalrpg.client.anim.KatanaAnimManager;
 import com.abyssalrpg.client.anim.MuramasaAnimManager;
 import com.abyssalrpg.client.anim.SeaWeaponsAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
+import com.abyssalrpg.client.anim.TogetsuBentArmRig;
 import com.abyssalrpg.client.renderer.CerberusArmorRenderer;
 import com.abyssalrpg.item.CerberusArmorItem;
 import com.abyssalrpg.registry.ModItems;
@@ -46,6 +48,8 @@ public abstract class PlayerRendererMixin {
             pose = SeaWeaponsAnimManager.evaluatePose(player, partialTick, 0.0F, bob);
         } else if (heldMain.is(ModItems.EXCALIBUR)) {
             pose = ExcaliburAnimManager.evaluatePose(player, partialTick, 0.0F, bob);
+        } else if (heldMain.is(ModItems.KATANA)) {
+            pose = KatanaAnimManager.evaluatePose(player, partialTick, 0.0F, bob);
         } else if (heldMain.is(ModItems.TOGETSU)) {
             pose = TogetsuAnimManager.evaluatePose(player, partialTick, 0.0F, bob);
         } else if (heldMain.is(ModItems.DUAL_KNIFE)) {
@@ -61,6 +65,9 @@ public abstract class PlayerRendererMixin {
             pose = ExcaliburAnimManager.evaluatePose(player, partialTick, 0.0F, bob);
         }
         if (pose == null) {
+            pose = KatanaAnimManager.evaluatePose(player, partialTick, 0.0F, bob);
+        }
+        if (pose == null) {
             pose = SeaWeaponsAnimManager.evaluatePose(player, partialTick, 0.0F, bob);
         }
         if (pose == null) {
@@ -69,8 +76,8 @@ public abstract class PlayerRendererMixin {
         if (pose == null) {
             return;
         }
-        if (Math.abs(pose.rootTranslateY) > 1e-4F) {
-            poseStack.translate(0.0, pose.rootTranslateY, 0.0);
+        if (Math.abs(pose.rootTranslateY) > 1e-4F || Math.abs(pose.rootTranslateZ) > 1e-4F) {
+            poseStack.translate(0.0, pose.rootTranslateY, pose.rootTranslateZ);
         }
         if (Math.abs(pose.rootYawDeg) > 1e-3F) {
             poseStack.mulPose(Axis.YP.rotationDegrees(pose.rootYawDeg));
@@ -88,10 +95,12 @@ public abstract class PlayerRendererMixin {
             at = @At("HEAD"),
             cancellable = true
     )
-    private void abyssalrpg$renderCerberusFirstPersonArm(PoseStack poseStack, MultiBufferSource buffer,
-                                                         int combinedLight, AbstractClientPlayer player,
-                                                         ModelPart rendererArm, ModelPart rendererArmwear,
-                                                         CallbackInfo ci) {
+    private void abyssalrpg$beginFirstPersonHandOrCerberusArm(PoseStack poseStack, MultiBufferSource buffer,
+                                                              int combinedLight, AbstractClientPlayer player,
+                                                              ModelPart rendererArm, ModelPart rendererArmwear,
+                                                              CallbackInfo ci) {
+        // Ngăn HumanoidModelMixin / PlayerModelMixin ẩn hoặc xoay cánh tay vanilla bằng rig F5 khi vẽ tay góc nhìn thứ nhất!
+        TogetsuBentArmRig.setRenderingFirstPersonHand(true);
         ItemStack chestStack = player.getItemBySlot(EquipmentSlot.CHEST);
         if (!(chestStack.getItem() instanceof CerberusArmorItem)) {
             return;
@@ -102,15 +111,29 @@ public abstract class PlayerRendererMixin {
         Object armorRenderer = GeoRenderProvider.of(chestStack)
                 .getGeoArmorRenderer(player, chestStack, EquipmentSlot.CHEST, playerModel);
         if (armorRenderer instanceof CerberusArmorRenderer cerberusRenderer) {
-            playerModel.attackTime = 0.0F;
-            playerModel.crouching = false;
-            playerModel.swimAmount = 0.0F;
-            playerModel.setupAnim(player, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F);
-            rendererArm.xRot = 0.0F;
-            cerberusRenderer.renderFirstPersonArm(
-                    poseStack, buffer, combinedLight, player, playerModel, chestStack, isRightArm);
+            try {
+                playerModel.attackTime = 0.0F;
+                playerModel.crouching = false;
+                playerModel.swimAmount = 0.0F;
+                playerModel.setupAnim(player, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F);
+                rendererArm.xRot = 0.0F;
+                cerberusRenderer.renderFirstPersonArm(
+                        poseStack, buffer, combinedLight, player, playerModel, chestStack, isRightArm);
+            } finally {
+                TogetsuBentArmRig.setRenderingFirstPersonHand(false);
+            }
             ci.cancel();
         }
+    }
+
+    @Inject(
+            method = "renderHand(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;ILnet/minecraft/client/player/AbstractClientPlayer;Lnet/minecraft/client/model/geom/ModelPart;Lnet/minecraft/client/model/geom/ModelPart;)V",
+            at = @At("RETURN")
+    )
+    private void abyssalrpg$endFirstPersonHandRender(PoseStack poseStack, MultiBufferSource buffer, int combinedLight,
+                                                     AbstractClientPlayer player, ModelPart rendererArm,
+                                                     ModelPart rendererArmwear, CallbackInfo ci) {
+        TogetsuBentArmRig.setRenderingFirstPersonHand(false);
     }
 }
 

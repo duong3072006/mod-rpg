@@ -1,8 +1,6 @@
 package com.abyssalrpg.client.mixin;
 
 import com.abyssalrpg.client.anim.DualBladeAnimState.FullBodyPose;
-import com.abyssalrpg.client.anim.SeaWeaponsAnimManager;
-import com.abyssalrpg.client.anim.TogetsuAnimManager;
 import com.abyssalrpg.client.anim.TogetsuBentArmRig;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.model.HumanoidModel;
@@ -19,14 +17,22 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import software.bernie.geckolib.animatable.GeoItem;
 
 /**
- * Đồng bộ tay áo giáp ngực vanilla (`EquipmentSlot.CHEST`) gập khuỷu theo cánh tay 2 khúc khi cầm Togetsu Dual Idle!
+ * Đồng bộ giáp ngực (`CHEST` — khớp khuỷu tay) và giáp quần/giày (`LEGS`/`FEET` — khớp đầu gối) vanilla
+ * theo hệ thống khớp 2 khúc `TogetsuBentArmRig` cho cả **Togetsu** và **Katana**!
  */
 @Mixin(HumanoidArmorLayer.class)
 public abstract class HumanoidArmorLayerMixin<T extends LivingEntity, M extends HumanoidModel<T>, A extends HumanoidModel<T>> {
     @Unique
     private boolean abyssalrpg$bentChestActive;
+
+    @Unique
+    private boolean abyssalrpg$bentLegsActive;
+
+    @Unique
+    private boolean abyssalrpg$bentLegsIsBoots;
 
     @Unique
     private FullBodyPose abyssalrpg$bentArmorPose;
@@ -38,16 +44,22 @@ public abstract class HumanoidArmorLayerMixin<T extends LivingEntity, M extends 
     private void abyssalrpg$beginBentChestCheck(PoseStack poseStack, MultiBufferSource buffer, T entity,
                                                 EquipmentSlot slot, int packedLight, A model, CallbackInfo ci) {
         this.abyssalrpg$bentChestActive = false;
+        this.abyssalrpg$bentLegsActive = false;
+        this.abyssalrpg$bentLegsIsBoots = false;
         this.abyssalrpg$bentArmorPose = null;
-        if (slot == EquipmentSlot.CHEST && entity instanceof Player player) {
-            FullBodyPose pose = TogetsuAnimManager.isHoldingTogetsuReady(player)
-                    ? TogetsuAnimManager.getLastComputedPose(player.getId()) : null;
-            if ((pose == null || pose.elbowWeight <= 0.003F) && SeaWeaponsAnimManager.isHoldingSeaWeapons(player)) {
-                pose = SeaWeaponsAnimManager.getLastComputedPose(player.getId());
-            }
-            if (pose != null && pose.elbowWeight > 0.003F) {
-                this.abyssalrpg$bentChestActive = true;
-                this.abyssalrpg$bentArmorPose = pose;
+        if (entity instanceof Player player) {
+            FullBodyPose pose = TogetsuBentArmRig.getActiveArticulatedPose(player);
+            if (pose != null) {
+                if (slot == EquipmentSlot.CHEST && pose.elbowWeight > 0.003F) {
+                    this.abyssalrpg$bentChestActive = true;
+                    this.abyssalrpg$bentArmorPose = pose;
+                } else if ((slot == EquipmentSlot.LEGS || slot == EquipmentSlot.FEET)
+                        && pose.kneeWeight > 0.003F
+                        && !(player.getItemBySlot(slot).getItem() instanceof GeoItem)) {
+                    this.abyssalrpg$bentLegsActive = true;
+                    this.abyssalrpg$bentLegsIsBoots = (slot == EquipmentSlot.FEET);
+                    this.abyssalrpg$bentArmorPose = pose;
+                }
             }
         }
     }
@@ -57,6 +69,9 @@ public abstract class HumanoidArmorLayerMixin<T extends LivingEntity, M extends 
         if (this.abyssalrpg$bentChestActive && slot == EquipmentSlot.CHEST) {
             model.rightArm.visible = false;
             model.leftArm.visible = false;
+        } else if (this.abyssalrpg$bentLegsActive && (slot == EquipmentSlot.LEGS || slot == EquipmentSlot.FEET)) {
+            model.rightLeg.visible = false;
+            model.leftLeg.visible = false;
         }
     }
 
@@ -66,11 +81,20 @@ public abstract class HumanoidArmorLayerMixin<T extends LivingEntity, M extends 
     )
     private void abyssalrpg$renderBentChestSleeves(PoseStack poseStack, MultiBufferSource buffer, int packedLight,
                                                    A model, int color, ResourceLocation texture, CallbackInfo ci) {
-        if (this.abyssalrpg$bentChestActive && this.abyssalrpg$bentArmorPose != null) {
+        if (this.abyssalrpg$bentArmorPose == null) {
+            return;
+        }
+        if (this.abyssalrpg$bentChestActive) {
             TogetsuBentArmRig.renderBentArmorSleeves(
                     poseStack, buffer.getBuffer(RenderType.armorCutoutNoCull(texture)),
                     packedLight, OverlayTexture.NO_OVERLAY, color,
                     model.rightArm, model.leftArm, this.abyssalrpg$bentArmorPose
+            );
+        } else if (this.abyssalrpg$bentLegsActive) {
+            TogetsuBentArmRig.renderBentArmorLegs(
+                    poseStack, buffer.getBuffer(RenderType.armorCutoutNoCull(texture)),
+                    packedLight, OverlayTexture.NO_OVERLAY, color,
+                    model.rightLeg, model.leftLeg, this.abyssalrpg$bentArmorPose, this.abyssalrpg$bentLegsIsBoots
             );
         }
     }
@@ -81,11 +105,20 @@ public abstract class HumanoidArmorLayerMixin<T extends LivingEntity, M extends 
     )
     private void abyssalrpg$renderBentChestGlint(PoseStack poseStack, MultiBufferSource buffer, int packedLight,
                                                  A model, CallbackInfo ci) {
-        if (this.abyssalrpg$bentChestActive && this.abyssalrpg$bentArmorPose != null) {
+        if (this.abyssalrpg$bentArmorPose == null) {
+            return;
+        }
+        if (this.abyssalrpg$bentChestActive) {
             TogetsuBentArmRig.renderBentArmorSleeves(
                     poseStack, buffer.getBuffer(RenderType.armorEntityGlint()),
                     packedLight, OverlayTexture.NO_OVERLAY, -1,
                     model.rightArm, model.leftArm, this.abyssalrpg$bentArmorPose
+            );
+        } else if (this.abyssalrpg$bentLegsActive) {
+            TogetsuBentArmRig.renderBentArmorLegs(
+                    poseStack, buffer.getBuffer(RenderType.armorEntityGlint()),
+                    packedLight, OverlayTexture.NO_OVERLAY, -1,
+                    model.rightLeg, model.leftLeg, this.abyssalrpg$bentArmorPose, this.abyssalrpg$bentLegsIsBoots
             );
         }
     }
@@ -97,6 +130,8 @@ public abstract class HumanoidArmorLayerMixin<T extends LivingEntity, M extends 
     private void abyssalrpg$endBentChestCheck(PoseStack poseStack, MultiBufferSource buffer, T entity,
                                               EquipmentSlot slot, int packedLight, A model, CallbackInfo ci) {
         this.abyssalrpg$bentChestActive = false;
+        this.abyssalrpg$bentLegsActive = false;
+        this.abyssalrpg$bentLegsIsBoots = false;
         this.abyssalrpg$bentArmorPose = null;
     }
 }

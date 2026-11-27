@@ -586,9 +586,10 @@ public class LeviathanBossEntity extends AbstractGeoMythicBoss {
         applyPhase2Modifiers();
         this.setHealth(this.getMaxHealth());
 
-        // Đẩy nhẹ người chơi đứng sát thân boss (dùng mobAttack bình thường)
+        // Đẩy nhẹ người chơi đứng sát thân boss (sóng chuyển phase không thể parry)
         float burstDmg = LeviathanConfig.get().roarShockwaveDamage * skillDamageScale();
-        damagePlayersInRadius(level, this.position(), 8.5 * SCALE, burstDmg, 0.85);
+        com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                damagePlayersInRadius(level, this.position(), 8.5 * SCALE, burstDmg, 0.85));
 
         // Giữ nguyên góc hiện tại đã khóa, chỉ giải phóng trạng thái chuyển phase
         snapSyncPrevAngles();
@@ -1374,7 +1375,8 @@ public class LeviathanBossEntity extends AbstractGeoMythicBoss {
                         p.hurtMarked = true;
                     }
                     if (dist <= dmgR && tick % 12 == 0) {
-                        p.hurt(boss.damageSources().mobAttack(boss), tickDmg);
+                        com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                                p.hurt(boss.damageSources().mobAttack(boss), tickDmg));
                     }
                 }
             }
@@ -1436,7 +1438,8 @@ public class LeviathanBossEntity extends AbstractGeoMythicBoss {
                     boolean inRing = hd >= Math.max(0.0, prevR - 1.8 * eff) && hd <= curR + 1.8 * eff;
                     boolean jumpedOver = !p.onGround() && (p.getY() - boss.getY()) > 1.15;
                     if (inRing && !jumpedOver && hit.add(p.getUUID())) {
-                        p.hurt(boss.damageSources().mobAttack(boss), dmg);
+                        com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                                p.hurt(boss.damageSources().mobAttack(boss), dmg));
                         Vec3 push = p.position().subtract(boss.position());
                         Vec3 norm = push.lengthSqr() > 1e-4 ? push.normalize() : new Vec3(1, 0, 0);
                         p.setDeltaMovement(p.getDeltaMovement().add(norm.x * 1.35, 0.56, norm.z * 1.35));
@@ -1569,7 +1572,8 @@ public class LeviathanBossEntity extends AbstractGeoMythicBoss {
             for (Player p : level.getEntitiesOfClass(Player.class, box, pl -> pl.isAlive() && !pl.isCreative() && !pl.isSpectator())) {
                 double d = p.position().distanceTo(pos);
                 if (d <= impactR) {
-                    p.hurt(boss.damageSources().mobAttack(boss), dmg * (float) Math.max(0.60, 1.0 - (d / (impactR * 1.25))));
+                    com.abyssalrpg.combat.KatanaCombatHandler.runUnparryableMagic(() ->
+                            p.hurt(boss.damageSources().mobAttack(boss), dmg * (float) Math.max(0.60, 1.0 - (d / (impactR * 1.25)))));
                     p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 80, 1));
                     Vec3 away = p.position().subtract(pos);
                     double len = Math.max(0.1, away.length());
