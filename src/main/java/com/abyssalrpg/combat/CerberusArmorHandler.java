@@ -4,12 +4,20 @@ import com.abyssalrpg.AbyssalRpgMod;
 import com.abyssalrpg.api.BossHealthHolder;
 import com.abyssalrpg.config.ArmorConfig;
 import com.abyssalrpg.item.CerberusArmorItem;
+import com.abyssalrpg.network.CerberusArmorActionC2SPayload;
+import com.abyssalrpg.network.CerberusArmorSyncPayload;
+import com.abyssalrpg.network.ModNetworking;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -20,22 +28,34 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
- * Xử lý Full Set Bonus 4/4 của Bộ Giáp Cerberus phía server:
+ * Xử lý Full Set Bonus 4/4 & Kỹ Năng Lưỡi Đao Cánh Tay của Bộ Giáp Cerberus phía server:
  * 1. Kháng Lửa (`MobEffects.FIRE_RESISTANCE`)
  * 2. Tốc Độ I (`MobEffects.MOVEMENT_SPEED`, amp 0)
- * 3. Sức Mạnh I (`MobEffects.DAMAGE_BOOST`, amp 0)
- * 4. +4.0 Máu Tối Đa (+2 tim) qua `AttributeModifier` cố định `abyssalrpg:cerberus_armor_set_health` (`ADD_VALUE`),
+ * 3. Sức Mạnh I (`MobEffects.DAMAGE_BOOST`, amp 0) — mặc định khi mặc giáp (2 lưỡi đao co rút ẩn trong tay).
+ * 4. Ấn Chuột Phải khi 2 tay trống (`ACTION_ACTIVATE_BLADES`): nâng Sức Mạnh lên **Sức Mạnh II (1 phút = 1200 ticks)**
+ *    và bung 2 lưỡi đao từ cánh tay; hết 1 phút (hoặc tháo giáp / chết / mất buff) lưỡi đao tự co rút vào tay!
+ * 5. +4.0 Máu Tối Đa (+2 tim) qua `AttributeModifier` cố định `abyssalrpg:cerberus_armor_set_health` (`ADD_VALUE`),
  *    không cộng dồn khi relog/đổi world, gỡ ngay khi tháo 1 món + clamp máu an toàn, không chạm `BossHealthHolder`.
- * 5. Đòn đánh thiêu đốt bằng Lửa Địa Ngục (`4s`) kèm tia lửa địa ngục gọn nhẹ.
+ * 6. Đòn đánh thiêu đốt bằng Lửa Địa Ngục (`4s`) kèm tia lửa địa ngục gọn nhẹ.
  */
 public final class CerberusArmorHandler {
     public static final ResourceLocation SET_HEALTH_MODIFIER_ID =
             AbyssalRpgMod.id("cerberus_armor_set_health");
 
+    /** 1 phút = 60 giây = 1200 ticks. */
+    public static final int BLADE_OVERDRIVE_DURATION_TICKS = 60 * 20;
+
     private static final EquipmentSlot[] ARMOR_SLOTS = {
             EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET
     };
+
+    /** Lưu số tick còn lại của trạng thái bung 2 lưỡi đao (Strength II) theo UUID người chơi. */
+    private static final Map<UUID, Integer> BLADE_REMAINING_TICKS = new ConcurrentHashMap<>();
 
     private CerberusArmorHandler() {}
 
@@ -56,19 +76,168 @@ public final class CerberusArmorHandler {
         return countEquippedPieces(entity) >= 4;
     }
 
+    public static boolean isBladesActive(UUID playerId) {
+        Integer rem = BLADE_REMAINING_TICKS.get(playerId);
+        return rem != null && rem > 0;
+    }
+
+    private static int getOverdriveStrengthAmplifier(ArmorConfig cfg) {
+        return Math.max(1, cfg.cerberusSetBonusStrengthAmplifier + 1);
+    }
+
+    public static void handleActionPacket(ServerPlayer player, CerberusArmorActionC2SPayload payload) {
+        if (player == null || !player.isAlive() || player.isSpectator()) {
+            return;
+        }
+        if (payload.actionType() != CerberusArmorActionC2SPayload.ACTION_ACTIVATE_BLADES) {
+            return;
+        }
+        ArmorConfig cfg = ArmorConfig.get();
+        if (!cfg.cerberusEnableSetBonus || !hasFullSet(player)) {
+            return;
+        }
+        if (!player.getMainHandItem().isEmpty() || !player.getOffhandItem().isEmpty()) {
+            return;
+        }
+
+        UUID id = player.getUUID();
+        Integer existingRem = BLADE_REMAINING_TICKS.get(id);
+        if (existingRem != null && existingRem > 0) {
+            int secs = (existingRem + 19) / 20;
+            String formatted = String.format("%d:%02d", secs / 60, secs % 60);
+            player.displayClientMessage(
+                    Component.translatable("message.abyssalrpg.cerberus_blades.active", formatted)
+                            .withStyle(ChatFormatting.GOLD),
+                    true
+            );
+            return;
+        }
+
+        int targetAmp = getOverdriveStrengthAmplifier(cfg);
+        BLADE_REMAINING_TICKS.put(id, BLADE_OVERDRIVE_DURATION_TICKS);
+
+        // Nâng Sức Mạnh I thành Sức Mạnh II trong đúng 1 phút (1200 ticks)
+        player.addEffect(new MobEffectInstance(
+                MobEffects.DAMAGE_BOOST,
+                BLADE_OVERDRIVE_DURATION_TICKS,
+                targetAmp,
+                false,
+                true,
+                true
+        ));
+
+        ServerLevel level = player.serverLevel();
+        level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                SoundEvents.ARMOR_EQUIP_NETHERITE.value(), SoundSource.PLAYERS, 1.0F, 0.85F);
+        level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS, 0.70F, 1.15F);
+        level.sendParticles(
+                ParticleTypes.FLAME,
+                player.getX(), player.getY() + 1.15, player.getZ(),
+                16, 0.55, 0.35, 0.55, 0.05
+        );
+        level.sendParticles(
+                ParticleTypes.LAVA,
+                player.getX(), player.getY() + 1.15, player.getZ(),
+                6, 0.45, 0.25, 0.45, 0.04
+        );
+
+        ModNetworking.sendCerberusArmorSyncNearby(
+                level, player, new CerberusArmorSyncPayload(player.getId(), true, BLADE_OVERDRIVE_DURATION_TICKS));
+
+        player.displayClientMessage(
+                Component.translatable("message.abyssalrpg.cerberus_blades.deployed")
+                        .withStyle(ChatFormatting.RED, ChatFormatting.BOLD),
+                true
+        );
+    }
+
     public static void tickServer(MinecraftServer server) {
         ArmorConfig cfg = ArmorConfig.get();
         int interval = Math.max(1, cfg.cerberusSetBonusTickInterval);
         boolean applyEffectsThisTick = (server.getTickCount() % interval) == 0;
+        int overdriveAmp = getOverdriveStrengthAmplifier(cfg);
 
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            UUID id = player.getUUID();
+            Integer rem = BLADE_REMAINING_TICKS.get(id);
+
             if (!player.isAlive()) {
+                if (rem != null) {
+                    BLADE_REMAINING_TICKS.remove(id);
+                    ModNetworking.sendCerberusArmorSyncNearby(
+                            player.serverLevel(), player, new CerberusArmorSyncPayload(player.getId(), false, 0));
+                }
                 continue;
             }
+
             syncMaxHealthModifier(player);
+
+            if (rem != null) {
+                boolean fullSet = cfg.cerberusEnableSetBonus && hasFullSet(player);
+                MobEffectInstance strEffect = player.getEffect(MobEffects.DAMAGE_BOOST);
+                boolean hasOverdriveBuff = strEffect != null && strEffect.getAmplifier() >= overdriveAmp;
+
+                if (!fullSet || !hasOverdriveBuff || rem <= 1) {
+                    BLADE_REMAINING_TICKS.remove(id);
+                    if (!fullSet && hasOverdriveBuff) {
+                        player.removeEffect(MobEffects.DAMAGE_BOOST);
+                    }
+                    ServerLevel level = player.serverLevel();
+                    level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                            SoundEvents.ARMOR_EQUIP_NETHERITE.value(), SoundSource.PLAYERS, 0.85F, 0.72F);
+                    ModNetworking.sendCerberusArmorSyncNearby(
+                            level, player, new CerberusArmorSyncPayload(player.getId(), false, 0));
+                    if (fullSet) {
+                        player.displayClientMessage(
+                                Component.translatable("message.abyssalrpg.cerberus_blades.retracted")
+                                        .withStyle(ChatFormatting.GRAY),
+                                true
+                        );
+                        applyPeriodicSetEffects(player);
+                    }
+                } else {
+                    int nextRem = rem - 1;
+                    BLADE_REMAINING_TICKS.put(id, nextRem);
+                    if ((nextRem % 40) == 0) {
+                        ModNetworking.sendCerberusArmorSyncNearby(
+                                player.serverLevel(), player, new CerberusArmorSyncPayload(player.getId(), true, nextRem));
+                    }
+                }
+            }
+
             if (applyEffectsThisTick) {
                 applyPeriodicSetEffects(player);
             }
+        }
+    }
+
+    public static void onPlayerJoin(ServerPlayer joining) {
+        if (joining == null) {
+            return;
+        }
+        syncPlayerImmediate(joining);
+        // Đồng bộ trạng thái đao của mọi người chơi cùng dimension đang kích hoạt tới người mới vào
+        ServerLevel level = joining.serverLevel();
+        for (ServerPlayer other : level.players()) {
+            Integer rem = BLADE_REMAINING_TICKS.get(other.getUUID());
+            if (rem != null && rem > 0) {
+                ServerPlayNetworking.send(joining, new CerberusArmorSyncPayload(other.getId(), true, rem));
+            }
+        }
+    }
+
+    public static void onPlayerRespawn(ServerPlayer newPlayer) {
+        if (newPlayer == null) {
+            return;
+        }
+        BLADE_REMAINING_TICKS.remove(newPlayer.getUUID());
+        syncPlayerImmediate(newPlayer);
+    }
+
+    public static void onPlayerDisconnect(ServerPlayer player) {
+        if (player != null) {
+            BLADE_REMAINING_TICKS.remove(player.getUUID());
         }
     }
 
@@ -78,6 +247,15 @@ public final class CerberusArmorHandler {
         }
         syncMaxHealthModifier(entity);
         applyPeriodicSetEffects(entity);
+        if (entity instanceof ServerPlayer sp) {
+            Integer rem = BLADE_REMAINING_TICKS.get(sp.getUUID());
+            boolean active = rem != null && rem > 0 && hasFullSet(sp);
+            if (!active && rem != null) {
+                BLADE_REMAINING_TICKS.remove(sp.getUUID());
+            }
+            ModNetworking.sendCerberusArmorSyncNearby(
+                    sp.serverLevel(), sp, new CerberusArmorSyncPayload(sp.getId(), active, active ? rem : 0));
+        }
     }
 
     public static void syncMaxHealthModifier(LivingEntity entity) {

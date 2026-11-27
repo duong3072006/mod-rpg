@@ -82,6 +82,8 @@ public final class CerberusArmorTooltipHandler {
                             cfg.cerberusSetBonusIgniteSeconds)
                     .withStyle(detailColor));
         }
+        lines.add(Component.translatable("tooltip.abyssalrpg.cerberus_set.blades")
+                .withStyle(active ? ChatFormatting.GOLD : ChatFormatting.DARK_GRAY));
     }
 
     private static String toRoman(int level) {

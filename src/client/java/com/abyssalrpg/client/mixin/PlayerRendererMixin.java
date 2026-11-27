@@ -6,16 +6,23 @@ import com.abyssalrpg.client.anim.ExcaliburAnimManager;
 import com.abyssalrpg.client.anim.MuramasaAnimManager;
 import com.abyssalrpg.client.anim.SeaWeaponsAnimManager;
 import com.abyssalrpg.client.anim.TogetsuAnimManager;
+import com.abyssalrpg.client.renderer.CerberusArmorRenderer;
+import com.abyssalrpg.item.CerberusArmorItem;
 import com.abyssalrpg.registry.ModItems;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import net.minecraft.client.model.PlayerModel;
+import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import software.bernie.geckolib.animatable.client.GeoRenderProvider;
 
 /**
  * Full-Body Root Transform Mixin (`PlayerRenderer.setupRotations`):
@@ -73,6 +80,36 @@ public abstract class PlayerRendererMixin {
         }
         if (Math.abs(pose.rootRollDeg) > 1e-3F) {
             poseStack.mulPose(Axis.ZP.rotationDegrees(pose.rootRollDeg));
+        }
+    }
+
+    @Inject(
+            method = "renderHand(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;ILnet/minecraft/client/player/AbstractClientPlayer;Lnet/minecraft/client/model/geom/ModelPart;Lnet/minecraft/client/model/geom/ModelPart;)V",
+            at = @At("HEAD"),
+            cancellable = true
+    )
+    private void abyssalrpg$renderCerberusFirstPersonArm(PoseStack poseStack, MultiBufferSource buffer,
+                                                         int combinedLight, AbstractClientPlayer player,
+                                                         ModelPart rendererArm, ModelPart rendererArmwear,
+                                                         CallbackInfo ci) {
+        ItemStack chestStack = player.getItemBySlot(EquipmentSlot.CHEST);
+        if (!(chestStack.getItem() instanceof CerberusArmorItem)) {
+            return;
+        }
+        PlayerRenderer self = (PlayerRenderer) (Object) this;
+        PlayerModel<AbstractClientPlayer> playerModel = self.getModel();
+        boolean isRightArm = (rendererArm == playerModel.rightArm);
+        Object armorRenderer = GeoRenderProvider.of(chestStack)
+                .getGeoArmorRenderer(player, chestStack, EquipmentSlot.CHEST, playerModel);
+        if (armorRenderer instanceof CerberusArmorRenderer cerberusRenderer) {
+            playerModel.attackTime = 0.0F;
+            playerModel.crouching = false;
+            playerModel.swimAmount = 0.0F;
+            playerModel.setupAnim(player, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F);
+            rendererArm.xRot = 0.0F;
+            cerberusRenderer.renderFirstPersonArm(
+                    poseStack, buffer, combinedLight, player, playerModel, chestStack, isRightArm);
+            ci.cancel();
         }
     }
 }

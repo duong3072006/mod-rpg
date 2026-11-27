@@ -7,10 +7,14 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.ResourceLocation;
@@ -19,9 +23,11 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
+import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.renderer.GeoArmorRenderer;
 import software.bernie.geckolib.renderer.GeoRenderer;
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
@@ -43,6 +49,8 @@ public final class CerberusArmorRenderer extends GeoArmorRenderer<CerberusArmorI
             new DustParticleOptions(new Vector3f(0.92F, 0.14F, 0.06F), 0.68F);
 
     private final CerberusArmorModel cerberusModel;
+    /** 0 = render bình thường (góc nhìn thứ 3 / kho đồ), +1 = tay phải góc nhìn thứ nhất, -1 = tay trái góc nhìn thứ nhất. */
+    private int firstPersonArmMode = 0;
 
     public CerberusArmorRenderer() {
         this(new CerberusArmorModel());
@@ -52,6 +60,78 @@ public final class CerberusArmorRenderer extends GeoArmorRenderer<CerberusArmorI
         super(model);
         this.cerberusModel = model;
         this.addRenderLayer(new CerberusArmorEmissiveLayer(this));
+    }
+
+    /**
+     * Render trực tiếp cánh tay giáp Cerberus 3D (gồm găng tay móng vuốt, lớp phát sáng Emissive & lưỡi đao co rút)
+     * ngay trên cánh tay ở góc nhìn thứ nhất (`PlayerRenderer.renderHand`), ẩn đầu vai để không che tầm nhìn!
+     */
+    public void renderFirstPersonArm(PoseStack poseStack, MultiBufferSource bufferSource, int packedLight,
+            AbstractClientPlayer player, PlayerModel<AbstractClientPlayer> playerModel,
+            ItemStack chestStack, boolean isRightArm) {
+        float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
+        this.firstPersonArmMode = isRightArm ? 1 : -1;
+        this.cerberusModel.setFirstPersonArmPass(true);
+        try {
+            this.prepForRender(player, chestStack, EquipmentSlot.CHEST, playerModel, bufferSource,
+                    partialTick, 0.0F, 0.0F, 0.0F, 0.0F);
+            RenderType renderType = this.getRenderType(
+                    this.animatable, this.getTextureLocation(this.animatable), bufferSource, partialTick);
+            VertexConsumer buffer = ItemRenderer.getArmorFoilBuffer(bufferSource, renderType, chestStack.hasFoil());
+            this.defaultRender(poseStack, this.animatable, bufferSource, renderType, buffer,
+                    0.0F, partialTick, packedLight);
+        } finally {
+            this.firstPersonArmMode = 0;
+            this.cerberusModel.setFirstPersonArmPass(false);
+            this.animatable = null;
+            GeoBone shR = this.cerberusModel.getAnimationProcessor().getBone("cerberus_shoulder_head_r");
+            GeoBone shL = this.cerberusModel.getAnimationProcessor().getBone("cerberus_shoulder_head_l");
+            if (shR != null) {
+                shR.setHidden(false);
+            }
+            if (shL != null) {
+                shL.setHidden(false);
+            }
+        }
+    }
+
+    @Override
+    protected void applyBoneVisibilityBySlot(EquipmentSlot currentSlot) {
+        GeoBone shR = this.cerberusModel.getAnimationProcessor().getBone("cerberus_shoulder_head_r");
+        GeoBone shL = this.cerberusModel.getAnimationProcessor().getBone("cerberus_shoulder_head_l");
+        if (this.firstPersonArmMode != 0) {
+            setAllBonesVisible(false);
+            setBoneVisible(this.firstPersonArmMode > 0 ? this.rightArm : this.leftArm, true);
+            if (shR != null) {
+                shR.setHidden(true);
+            }
+            if (shL != null) {
+                shL.setHidden(true);
+            }
+            return;
+        }
+        super.applyBoneVisibilityBySlot(currentSlot);
+        if (shR != null) {
+            shR.setHidden(false);
+        }
+        if (shL != null) {
+            shL.setHidden(false);
+        }
+    }
+
+    @Override
+    protected void applyBaseTransformations(HumanoidModel<?> baseModel) {
+        super.applyBaseTransformations(baseModel);
+        if (this.firstPersonArmMode != 0) {
+            GeoBone activeArm = this.firstPersonArmMode > 0 ? this.rightArm : this.leftArm;
+            if (activeArm != null) {
+                activeArm.updateRotation(0.0F, 0.0F, 0.0F);
+                activeArm.updatePosition(0.0F, 0.0F, 0.0F);
+            }
+            this.cerberusModel.syncFirstPersonArm(this.currentEntity);
+            return;
+        }
+        this.cerberusModel.syncLookFromBaseModel(this.currentEntity, baseModel, this.partialTick);
     }
 
     @Override

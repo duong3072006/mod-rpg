@@ -256,5 +256,9 @@
   "message.abyssalrpg.muramasa.oath_active": "Blood Oath already active (%ss remaining)",
   "message.abyssalrpg.muramasa.oath_cd": "Blood Oath recharging (%ss)",
   "message.abyssalrpg.muramasa.oath_awaken": "村正 · BLOOD OATH AWAKENED (12s)! +35% DMG · Speed II · 15% Lifesteal!",
-  "message.abyssalrpg.muramasa.oath_end": "Muramasa's Blood Oath has subsided."
+  "message.abyssalrpg.muramasa.oath_end": "Muramasa's Blood Oath has subsided.",
+  "tooltip.abyssalrpg.cerberus_set.blades": "  ▪ [Empty-Hand Right-Click]: Deploy Twin Arm Blades & upgrade Strength to Strength II (1 min)",
+  "message.abyssalrpg.cerberus_blades.deployed": "⚔ Cerberus Arm Blades Deployed — Strength II (1:00)!",
+  "message.abyssalrpg.cerberus_blades.retracted": "Cerberus Arm Blades retracted into gauntlets",
+  "message.abyssalrpg.cerberus_blades.active": "⚔ Cerberus Arm Blades active — %1$s remaining"
 }

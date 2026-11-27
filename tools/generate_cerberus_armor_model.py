@@ -81,6 +81,14 @@ REG = {
     "CHEST_PLATE_R":    (0,   80,  16, 18),
     "CHEST_PLATE_L":    (18,  80,  16, 18),
     "CHEST_PLATE_BEVEL":(36,  80,  10, 18),
+
+    # Hàng 4 (y=104..134): Bắp tay giáp phân tầng, găng cẳng tay lưỡi khuỷu & bàn tay móng vuốt (phong cách ảnh mẫu!)
+    "ARM_BICEP":        (0,  104,  16, 16),
+    "GAUNTLET_FRONT":   (18, 104,  16, 22),
+    "GAUNTLET_OUTER":   (36, 104,  16, 22),
+    "GAUNTLET_HAND":    (54, 104,  16, 16),
+    "BLADE_FIN_SIDE":   (72, 104,  18, 28),
+    "BONE_TRIM":        (92, 104,  12, 16),
     "EMPTY_TRANS":      (250, 250,  2,  2),
 }
 
@@ -237,111 +245,175 @@ def build_cerberus_armor_geo():
     """
     back_dorsal_rot = matrix_to_bedrock_euler(bedrock_rot_matrix([+14.0, 0.0, 0.0]) @ bedrock_rot_matrix([0.0, 0.0, 45.0]))
 
-    # ==================== 1. MŨ GIÁP THANH THOÁT SẮC GỌN 1.0F (`armorHead` + `cerberus_ear_r/l`) ====================
-    # - Lưu ý trục UV của GeckoLib 4.8.3 (`BakedModelFactory.constructCube` đảo dấu X):
-    #   Mặt ngoài phía -X (bên phải người chơi) là `"east"`, mặt ngoài phía +X (bên trái người chơi) là `"west"`!
-    # - Đỉnh mũ có sống vát thuôn phá dáng hộp vuông khi nhìn từ trên xuống; 2 vết nứt magma thái dương hiện chuẩn mặt ngoài.
-    # - Má giáp mảnh gọn (`0.62px`) ôm sát hàm tạo khe chữ V, không đè mắt đỏ, không thò cột dày ra trước mặt.
-    # - 3 lớp bờm đá đen mảnh gọn thuôn dần xuống cổ (không đâm xuyên vách bên, không đóng khung gạch dày).
-    # - DUY NHẤT 1 cặp sừng/tai sói Obsidian 4 đốt chuyển tiết diện mượt cong ra sau (xóa hoàn toàn kiểu ăng-ten bậc thang!).
+    # ==================== 1. MŨ GIÁP ĐẦU SÓI CERBERUS BAO TRỌN 100% ĐẦU (`armorHead` + `cerberus_ear_r/l` + `cerberus_helm_jaw`) ====================
+    # Thiết kế full-enclosed beast mask (0% hở mặt người chơi) lấy cảm hứng đầu sói sắc lạnh trong ảnh mẫu:
+    # - Bao kín đỉnh đầu, thái dương, má giáp, cằm & cổ; mặt trước là hộp sọ sói + mõm dài vát sắc + hàm dưới há gầm
+    #   lộ 2 hàng răng nanh răng cưa sắc nhọn và vòm họng dung nham phát sáng bên trong!
+    # - Đôi mắt xếch dữ tợn + vệt mạch magma chéo góc chạy dọc thái dương + mào vây nhọn giữa đỉnh đầu + cặp tai/sừng Obsidian
+    #   + bờm gai đá đen vuốt mạnh ra sau (giữ |X| <= 4.8 để tuyệt đối không chạm 2 đầu vai lớn!).
     head_cubes = [
-        # Khung đỉnh mũ gọn ôm đầu + sống vát 2 bậc ở đỉnh phá dáng nắp hộp phẳng khi nhìn từ trên xuống
-        make_centered_cube([0.0, 32.16, -0.10], [8.85, 0.72, 8.70], "NETH_PLATE",
+        # 1. Vỏ sọ kín 100% bao trọn đầu Steve 8x8x8 (trên, sau, hai bên, mặt trước & đáy cằm -> 0% hở da!)
+        make_centered_cube([0.0, 32.16, -0.15], [8.86, 0.78, 8.80], "NETH_PLATE",
                            face_mats={"up": "HELM_TOP", "north": "NETH_PLATE", "south": "NETH_DARK",
                                       "east": "NETH_PLATE", "west": "NETH_PLATE"}),
-        make_centered_cube([0.0, 32.58, -0.32], [4.30, 0.44, 7.95], "NETH_PLATE"),
-        make_centered_cube([0.0, 32.84, -0.55], [2.10, 0.34, 6.75], "NETH_PLATE"),
-
-        # Lót sọ trong kín khít 100% quanh đầu Steve 8x8x8 (thuôn gọn rìa dưới để bờm sau quyết định silhouette!)
-        make_centered_cube([0.0, 27.95, +4.06], [8.16, 7.92, 0.44], "NETH_DARK"),
-        make_centered_cube([-4.06, 24.75, +0.05], [0.34, 1.50, 7.90], "NETH_DARK"),
-        make_centered_cube([+4.06, 24.75, +0.05], [0.34, 1.50, 7.90], "NETH_DARK"),
-
-        # Hai bên thái dương 1.0F — ĐÚNG CHIỀU UV GECKOLIB (`east` = mặt ngoài -X, `west` = mặt ngoài +X) để hiện vết nứt magma!
-        make_centered_cube([-4.22, 28.48, -0.35], [0.68, 6.95, 8.20], "NETH_DARK",
+        make_centered_cube([0.0, 28.00, +4.12], [8.56, 8.15, 0.62], "NETH_DARK"),
+        make_centered_cube([-4.28, 28.05, -0.20], [0.76, 8.10, 8.55], "NETH_DARK",
                            face_mats={"east": "HELM_SIDE", "west": "NETH_DARK"}),
-        make_centered_cube([+4.22, 28.48, -0.35], [0.68, 6.95, 8.20], "NETH_DARK",
+        make_centered_cube([+4.28, 28.05, -0.20], [0.76, 8.10, 8.55], "NETH_DARK",
                            face_mats={"west": "HELM_SIDE", "east": "NETH_DARK"}),
+        # Tấm che mặt trong kín khít & giáp cằm/cổ kín hoàn toàn phía dưới (đảm bảo khi hàm há gầm chỉ lộ ánh magma, không lộ mặt Steve!)
+        make_centered_cube([0.0, 27.95, -4.18], [8.48, 7.95, 0.52], "NETH_DARK"),
+        make_centered_cube([0.0, 23.95, -0.25], [8.38, 0.58, 8.32], "NETH_DARK"),
+        make_centered_cube([0.0, 24.55, -4.38], [6.60, 1.85, 1.25], "NETH_DARK"),
 
-        # Trán & gờ mày hạ thấp gọn sát mắt nhân vật, khớp khít bề rộng hai bên thái dương
-        make_centered_cube([0.0, 30.58, -4.18], [8.60, 2.55, 0.68], "NETH_PLATE"),
-        make_centered_cube([0.0, 31.38, -4.46], [4.90, 0.66, 0.48], "NETH_PLATE", rot=[+10.0, 0.0, 0.0]),
+        # Vòm họng dung nham đỏ rực sâu sau khe hàm răng cưa (dùng MAGMA_CRACK tương phản sâu để răng nanh ngà nổi bật sắc nét!)
+        make_centered_cube([0.0, 26.68, -4.48], [4.65, 2.10, 0.30], "MAGMA_CRACK"),
+        make_centered_cube([0.0, 26.58, -4.60], [2.40, 1.05, 0.18], "MAGMA_CORE"),
 
-        # Mõm sói gọn sắc nhô 1.95px (`z = -6.48`) + sống mũi vát thanh + 2 răng nanh trắng gọn
-        make_centered_cube([0.0, 28.54, -5.18], [3.42, 1.44, 2.30], "HELM_SNOUT_TOP",
-                           rot=[+6.5, 0.0, 0.0],
+        # 2. Đỉnh sọ vát 2 bậc + MÀO VÂY GIỮA ĐỈNH ĐẦU thuôn nhọn liền mạch vuốt ngược (0 bậc khối rời!)
+        make_centered_cube([0.0, 32.66, -0.58], [4.48, 0.56, 7.80], "NETH_PLATE", rot=[+4.0, 0.0, 0.0]),
+        make_centered_cube([0.0, 33.04, -0.92], [2.18, 0.44, 6.40], "NETH_PLATE", rot=[+6.0, 0.0, 0.0]),
+        make_segment_cube((0.0, 32.55, -1.55), (0.0, 34.15, +0.20), 0.96, 1.55, "OBSIDIAN_HORN", pad=0.30),
+        make_segment_cube((0.0, 34.15, +0.20), (0.0, 35.65, +1.55), 0.68, 1.10, "OBSIDIAN_HORN", pad=0.26),
+        make_segment_cube((0.0, 35.65, +1.55), (0.0, 36.85, +2.55), 0.36, 0.58, "OBSIDIAN_TIP",  pad=0.14),
+        make_segment_cube((0.0, 32.85, -1.90), (0.0, 35.95, +1.40), 0.22, 0.28, "MAGMA_CRACK",   pad=0.10),
+
+        # 3. Trán giáp vát chữ V + sống trán lao xuống giữa 2 mắt
+        make_centered_cube([0.0, 30.88, -4.46], [8.48, 2.38, 0.86], "NETH_PLATE", rot=[+8.0, 0.0, 0.0]),
+        make_centered_cube([0.0, 30.18, -4.92], [2.62, 1.80, 0.92], "NETH_PLATE", rot=[+16.0, 0.0, 0.0]),
+
+        # 4. Đôi mắt đỏ xếch dữ tợn EMISSIVE + gờ chân mày vát sắc góc cạnh
+        make_centered_cube([-2.52, 30.52, -4.88], [2.72, 0.56, 0.96], "NETH_PLATE", rot=[+10.0, +14.0, +18.0]),
+        make_centered_cube([+2.52, 30.52, -4.88], [2.72, 0.56, 0.96], "NETH_PLATE", rot=[+10.0, -14.0, -18.0]),
+        make_centered_cube([-2.46, 29.78, -4.82], [2.14, 0.82, 0.24], "EYE_RED",    rot=[0.0, +15.0, +16.0]),
+        make_centered_cube([+2.46, 29.78, -4.82], [2.14, 0.82, 0.24], "EYE_RED",    rot=[0.0, -15.0, -16.0]),
+
+        # 5. Mõm sói địa ngục dài vát nhọn + sống mũi cao + chóp mũi Obsidian sắc lạnh (không chấm đỏ mũi!)
+        make_centered_cube([0.0, 28.68, -5.62], [4.68, 2.02, 2.75], "HELM_SNOUT_TOP",
+                           rot=[+7.0, 0.0, 0.0],
                            face_mats={"up": "HELM_SNOUT_TOP", "north": "NETH_DARK",
                                       "east": "HELM_SNOUT_SIDE", "west": "HELM_SNOUT_SIDE", "down": "NETH_DARK"}),
-        make_centered_cube([0.0, 29.30, -5.02], [1.74, 0.42, 2.15], "NETH_PLATE", rot=[+9.0, 0.0, 0.0]),
-        make_centered_cube([0.0, 28.64, -6.34], [1.28, 0.56, 0.28], "NOSE_DARK", rot=[+6.5, 0.0, 0.0]),
-        make_centered_cube([-1.10, 27.44, -5.94], [0.44, 0.68, 0.44], "FANG_IVORY", rot=[+6.5, 0.0, 0.0]),
-        make_centered_cube([+1.10, 27.44, -5.94], [0.44, 0.68, 0.44], "FANG_IVORY", rot=[+6.5, 0.0, 0.0]),
+        make_centered_cube([0.0, 28.34, -7.12], [3.38, 1.50, 2.15], "HELM_SNOUT_TOP",
+                           rot=[+9.0, 0.0, 0.0],
+                           face_mats={"up": "HELM_SNOUT_TOP", "north": "NETH_DARK",
+                                      "east": "HELM_SNOUT_SIDE", "west": "HELM_SNOUT_SIDE", "down": "NETH_DARK"}),
+        make_centered_cube([0.0, 29.36, -6.12], [1.92, 0.62, 3.65], "NETH_PLATE", rot=[+11.0, 0.0, 0.0]),
+        make_centered_cube([0.0, 28.36, -8.32], [1.62, 0.86, 0.78], "NOSE_DARK",  rot=[+15.0, 0.0, 0.0]),
+        make_centered_cube([0.0, 28.44, -8.68], [0.96, 0.52, 0.44], "OBSIDIAN_HORN", rot=[+18.0, 0.0, 0.0]),
+        make_centered_cube([0.0, 27.54, -6.05], [2.58, 0.26, 2.95], "MAGMA_CRACK", rot=[+6.0, 0.0, 0.0]),
 
-        # Gờ chân mày & mắt đỏ EMISSIVE sắc lạnh, thoáng rõ hoàn toàn không bị má giáp che góc
-        make_centered_cube([-2.36, 30.16, -4.60], [2.12, 0.48, 0.42], "NETH_PLATE", rot=[+8.0, +8.0, +13.0]),
-        make_centered_cube([+2.36, 30.16, -4.60], [2.12, 0.48, 0.42], "NETH_PLATE", rot=[+8.0, -8.0, -13.0]),
-        make_centered_cube([-2.32, 29.48, -4.55], [1.82, 0.72, 0.18], "EYE_RED", rot=[0.0, +8.0, +11.0]),
-        make_centered_cube([+2.32, 29.48, -4.55], [1.82, 0.72, 0.18], "EYE_RED", rot=[0.0, -8.0, -11.0]),
+        # 6. 6 răng nanh hàm trên đan răng cưa dữ tợn
+        make_centered_cube([-1.32, 27.14, -7.52], [0.46, 1.24, 0.48], "FANG_IVORY", rot=[+8.0, 0.0, -5.0]),
+        make_centered_cube([+1.32, 27.14, -7.52], [0.46, 1.24, 0.48], "FANG_IVORY", rot=[+8.0, 0.0, +5.0]),
+        make_centered_cube([-1.82, 27.32, -6.26], [0.44, 1.06, 0.56], "FANG_IVORY", rot=[+12.0, +10.0, 0.0]),
+        make_centered_cube([+1.82, 27.32, -6.26], [0.44, 1.06, 0.56], "FANG_IVORY", rot=[+12.0, -10.0, 0.0]),
+        make_centered_cube([-2.10, 27.46, -5.14], [0.40, 0.88, 0.50], "FANG_IVORY", rot=[+10.0, +12.0, 0.0]),
+        make_centered_cube([+2.10, 27.46, -5.14], [0.40, 0.88, 0.50], "FANG_IVORY", rot=[+10.0, -12.0, 0.0]),
 
-        # Sống vảy đá gọn dọc sau gáy thuôn xuống cổ (0 gai phụ trên đỉnh đầu!)
-        make_centered_cube([0.0, 30.92, +4.84], [1.35, 1.35, 0.68], "DORSAL_SPIKE", rot=back_dorsal_rot),
-        make_centered_cube([0.0, 28.75, +4.76], [1.24, 1.24, 0.64], "DORSAL_SPIKE", rot=back_dorsal_rot),
-        make_centered_cube([0.0, 26.60, +4.62], [1.10, 1.10, 0.60], "DORSAL_SPIKE", rot=back_dorsal_rot),
-        make_centered_cube([0.0, 24.85, +4.44], [0.94, 0.94, 0.56], "DORSAL_SPIKE", rot=back_dorsal_rot),
-        make_centered_cube([0.0, 24.75, +4.26], [2.10, 1.35, 0.58], "NETH_DARK", rot=[+12.6, 0.0, 0.0]),
+        # 7. Sống gai đá dày sắc chạy dọc giữa bờm sau gáy xuống cổ
+        make_centered_cube([0.0, 31.40, +5.25], [1.45, 1.45, 0.82], "DORSAL_SPIKE", rot=back_dorsal_rot),
+        make_centered_cube([0.0, 29.10, +5.48], [1.38, 1.38, 0.78], "DORSAL_SPIKE", rot=back_dorsal_rot),
+        make_centered_cube([0.0, 26.85, +5.20], [1.22, 1.22, 0.70], "DORSAL_SPIKE", rot=back_dorsal_rot),
+        make_centered_cube([0.0, 24.90, +4.78], [1.04, 1.04, 0.62], "DORSAL_SPIKE", rot=back_dorsal_rot),
     ]
 
     for s in (-1.0, +1.0):
-        # 2 má giáp MẢNH GỌN (`0.58px`) ôm liền mạch từ thái dương xuống tận cằm (`y = 24.0`, 0% hở góc da rìa ngoài!)
         head_cubes.extend([
-            make_centered_cube(
-                [s * 3.80, 26.48, -4.16], [1.02, 5.05, 0.62], "NETH_DARK",
-                rot=[+2.0, s * -6.5, s * +6.5],
-            ),
-            make_centered_cube(
-                [s * 3.16, 26.48, -4.22], [1.18, 4.78, 0.58], "NETH_PLATE",
-                rot=[+2.5, s * -8.5, s * +9.5],
-                face_mats={"north": "NETH_PLATE", "east": "NETH_PLATE", "west": "NETH_PLATE", "down": "NETH_DARK"},
-            ),
+            # Vệt năng lượng magma sắc xéo lộ rõ trên thái dương (nổi bên ngoài vách mũ |X|=4.74, quét ngược lên gốc tai!)
+            make_segment_cube((s * 3.55, 29.96, -4.68), (s * 4.74, 31.38, -1.85), 0.24, 0.30, "MAGMA_CORE"),
+            make_segment_cube((s * 4.74, 31.38, -1.85), (s * 4.68, 30.25, +0.95), 0.22, 0.26, "MAGMA_CRACK"),
+            make_segment_cube((s * 4.25, 27.85, -4.55), (s * 4.76, 26.85, -2.05), 0.22, 0.26, "MAGMA_CRACK"),
+            # Viền sáng magma mảnh chạy dọc mép môi răng cưa hàm trên
+            make_centered_cube([s * 1.72, 27.72, -6.28], [0.22, 0.20, 3.05], "MAGMA_CRACK",
+                               rot=[+8.0, s * -10.0, 0.0]),
 
-            # 3 lớp vảy bờm đá đen mảnh gọn (`0.56–0.64px`) ôm phía sau thái dương vòng kín sau gáy, thuôn nhọn xuống cổ (0% đâm xuyên vách bên!)
-            make_centered_cube([s * 4.22, 30.80, +3.72], [0.64, 1.85, 2.05], "NETH_PLATE",
-                               rot=[+12.6, s * +12.0, s * -7.0]),
-            make_centered_cube([s * 3.96, 28.60, +3.85], [0.60, 1.80, 1.85], "NETH_PLATE",
-                               rot=[+12.6, s * +12.0, s * -5.0]),
-            make_centered_cube([s * 3.62, 26.45, +3.92], [0.56, 1.75, 1.60], "NETH_MID",
-                               rot=[+12.6, s * +12.0, s * -3.5]),
+            # Má giáp vát góc cạnh bọc kín hai bên hàm + sống hàm nối mượt sọ với khớp hàm dưới!
+            make_centered_cube([s * 4.02, 27.55, -3.55], [1.14, 3.65, 2.85], "NETH_PLATE",
+                               rot=[+5.0, s * -12.0, s * -7.0]),
+            make_centered_cube([s * 3.32, 25.45, -4.18], [1.75, 2.75, 1.25], "NETH_MID",
+                               rot=[+4.0, s * -14.0, s * +10.0]),
+            make_centered_cube([s * 4.46, 26.95, -0.82], [0.80, 2.25, 3.55], "NETH_MID",
+                               rot=[+14.0, s * -12.0, s * -8.0]),
+            make_segment_cube((s * 4.18, 26.15, -1.45), (s * 3.05, 24.95, -4.75), 0.92, 1.38, "NETH_PLATE", pad=0.18),
 
-            make_centered_cube([s * 2.08, 30.80, +4.52], [4.35, 1.90, 0.62], "NETH_PLATE",
-                               rot=[+12.6, s * +8.6, s * +7.5]),
-            make_centered_cube([s * 1.76, 28.60, +4.46], [3.70, 1.85, 0.60], "NETH_PLATE",
-                               rot=[+12.6, s * +8.6, s * +10.0]),
-            make_centered_cube([s * 1.38, 26.45, +4.34], [2.95, 1.80, 0.58], "NETH_MID",
-                               rot=[+12.6, s * +8.6, s * +13.0]),
+            # BỜM GAI SÓI VUỐT MẠNH RA SAU (3 tầng vảy bờm ôm sát + 3 cặp gai bờm 2 đốt vuốt nhọn sắc như lưỡi dao!)
+            make_centered_cube([s * 4.18, 31.15, +3.85], [0.84, 2.05, 2.65], "NETH_PLATE",
+                               rot=[+18.0, s * +10.0, s * -8.0]),
+            make_centered_cube([s * 3.92, 28.80, +4.05], [0.78, 2.00, 2.45], "NETH_PLATE",
+                               rot=[+18.0, s * +10.0, s * -6.0]),
+            make_centered_cube([s * 3.56, 26.55, +4.02], [0.70, 1.90, 2.05], "NETH_MID",
+                               rot=[+16.0, s * +10.0, s * -4.0]),
+
+            make_centered_cube([s * 2.15, 31.10, +4.85], [4.35, 2.10, 0.96], "NETH_PLATE",
+                               rot=[+18.0, s * +9.0, s * +8.0]),
+            make_centered_cube([s * 1.84, 28.80, +4.92], [3.85, 2.00, 0.92], "NETH_PLATE",
+                               rot=[+18.0, s * +9.0, s * +11.0]),
+            make_centered_cube([s * 1.44, 26.55, +4.66], [3.10, 1.88, 0.82], "NETH_MID",
+                               rot=[+16.0, s * +9.0, s * +14.0]),
+
+            # 3 cặp gai bờm 2 đốt vuốt nhọn sắc (gốc dày -> mũi kim Obsidian, hết hẳn đầu vuông cụt!)
+            make_segment_cube((s * 3.15, 31.45, +3.65), (s * 3.65, 32.80, +5.65), 1.04, 1.18, "OBSIDIAN_HORN", pad=0.22),
+            make_segment_cube((s * 3.65, 32.80, +5.65), (s * 4.02, 33.85, +7.25), 0.44, 0.52, "OBSIDIAN_TIP",  pad=0.14),
+
+            make_segment_cube((s * 3.35, 29.25, +3.95), (s * 3.82, 30.15, +5.95), 0.94, 1.06, "NETH_PLATE",    pad=0.20),
+            make_segment_cube((s * 3.82, 30.15, +5.95), (s * 4.15, 30.85, +7.45), 0.38, 0.44, "OBSIDIAN_TIP",  pad=0.12),
+
+            make_segment_cube((s * 3.00, 27.05, +3.95), (s * 3.45, 27.50, +5.65), 0.80, 0.90, "NETH_MID",      pad=0.18),
+            make_segment_cube((s * 3.45, 27.50, +5.65), (s * 3.72, 27.85, +6.90), 0.34, 0.38, "OBSIDIAN_TIP",  pad=0.10),
+
+            # Tia sáng magma mảnh ẩn dọc khe bờm trên
+            make_segment_cube((s * 2.55, 31.40, +4.25), (s * 3.15, 32.75, +6.25), 0.20, 0.24, "MAGMA_CRACK"),
         ])
 
-    # DUY NHẤT 1 CẶP SỪNG/TAI SÓI OBSIDIAN 4 ĐỐT VUỐT CONG LIỀN MẠCH (`cerberus_ear_r/l` — hết hẳn dáng ăng-ten 3 nấc!)
+    # HÀM DƯỚI MŨ GIÁP CỬ ĐỘNG (`cerberus_helm_jaw` — hé gầm sắc +9.5° để 2 hàng răng nanh đan khít quanh ánh magma!)
+    helm_jaw_piv = [0.0, 26.05, -4.18]
+    helm_jaw_R = bedrock_rot_matrix([+9.5, 0.0, 0.0])
+    helm_jaw_cubes = [
+        place_in_frame(helm_jaw_piv, helm_jaw_R, [0.0, -0.44, -1.88], [3.96, 1.20, 3.66], "NETH_DARK",
+                       face_mats={"north": "NETH_PLATE", "east": "NETH_PLATE", "west": "NETH_PLATE", "down": "NETH_DARK"}),
+        place_in_frame(helm_jaw_piv, helm_jaw_R, [0.0, -0.76, -3.48], [2.52, 0.90, 1.50], "NETH_PLATE",
+                       local_rot=[-12.0, 0.0, 0.0]),
+        place_in_frame(helm_jaw_piv, helm_jaw_R, [0.0, +0.16, -1.72], [2.46, 0.28, 2.72], "MAGMA_CRACK"),
+        # Viền sáng magma mảnh hai bên hàm dưới (tạo nét phát sáng rực lửa đúng phong cách ảnh mẫu!)
+        place_in_frame(helm_jaw_piv, helm_jaw_R, [-1.92, +0.14, -1.90], [0.22, 0.20, 3.05], "MAGMA_CRACK"),
+        place_in_frame(helm_jaw_piv, helm_jaw_R, [+1.92, +0.14, -1.90], [0.22, 0.20, 3.05], "MAGMA_CRACK"),
+        # 6 răng nanh hàm dưới đan răng cưa sắc bén với hàm trên!
+        place_in_frame(helm_jaw_piv, helm_jaw_R, [-0.98, +0.58, -3.18], [0.42, 1.06, 0.44], "FANG_IVORY", local_rot=[-10.0, 0.0, -6.0]),
+        place_in_frame(helm_jaw_piv, helm_jaw_R, [+0.98, +0.58, -3.18], [0.42, 1.06, 0.44], "FANG_IVORY", local_rot=[-10.0, 0.0, +6.0]),
+        place_in_frame(helm_jaw_piv, helm_jaw_R, [-1.54, +0.50, -2.08], [0.40, 0.92, 0.50], "FANG_IVORY", local_rot=[-8.0, +8.0, 0.0]),
+        place_in_frame(helm_jaw_piv, helm_jaw_R, [+1.54, +0.50, -2.08], [0.40, 0.92, 0.50], "FANG_IVORY", local_rot=[-8.0, -8.0, 0.0]),
+        place_in_frame(helm_jaw_piv, helm_jaw_R, [-1.84, +0.42, -1.08], [0.36, 0.76, 0.46], "FANG_IVORY", local_rot=[-6.0, +10.0, 0.0]),
+        place_in_frame(helm_jaw_piv, helm_jaw_R, [+1.84, +0.42, -1.08], [0.36, 0.76, 0.46], "FANG_IVORY", local_rot=[-6.0, -10.0, 0.0]),
+    ]
+
+    # CẶP TAI / SỪNG SÓI OBSIDIAN 4 ĐỐT VUỐT CONG SẮC KÈM GÂN SÁNG (`cerberus_ear_r/l`)
     def build_obsidian_ear_horn(s: float):
         return [
             make_segment_cube(
-                (s * 3.42, 32.15, -0.40),
-                (s * 3.88, 33.42, +0.98),
-                1.26, 0.88, "OBSIDIAN_HORN", pad=0.24,
+                (s * 3.45, 32.15, -0.50),
+                (s * 3.92, 33.55, +0.98),
+                1.34, 0.94, "OBSIDIAN_HORN", pad=0.26,
             ),
             make_segment_cube(
-                (s * 3.88, 33.42, +0.98),
-                (s * 4.18, 34.78, +2.15),
-                0.98, 0.70, "OBSIDIAN_HORN", pad=0.24,
+                (s * 3.92, 33.55, +0.98),
+                (s * 4.24, 34.98, +2.25),
+                1.04, 0.74, "OBSIDIAN_HORN", pad=0.24,
             ),
             make_segment_cube(
-                (s * 4.18, 34.78, +2.15),
-                (s * 4.35, 36.02, +3.02),
-                0.70, 0.52, "OBSIDIAN_HORN", pad=0.20,
+                (s * 4.24, 34.98, +2.25),
+                (s * 4.44, 36.28, +3.22),
+                0.74, 0.54, "OBSIDIAN_HORN", pad=0.20,
             ),
             make_segment_cube(
-                (s * 4.35, 36.02, +3.02),
-                (s * 4.42, 36.92, +3.52),
-                0.40, 0.32, "OBSIDIAN_TIP", pad=0.12,
+                (s * 4.44, 36.28, +3.22),
+                (s * 4.54, 37.25, +3.82),
+                0.42, 0.34, "OBSIDIAN_TIP", pad=0.12,
+            ),
+            # Viền sáng magma mảnh dọc sống trong tai sói
+            make_segment_cube(
+                (s * 3.22, 32.45, -0.58),
+                (s * 4.18, 35.85, +2.65),
+                0.22, 0.24, "MAGMA_CRACK", pad=0.10,
             ),
         ]
 
@@ -415,71 +487,226 @@ def build_cerberus_armor_geo():
         make_centered_cube([0.0, 18.10, +2.83], [1.32, 9.50, 0.14], "MAGMA_CRACK"),
     ]
 
-    # ==================== 3. CẦU VAI THANH GỌN SẮC CẠNH 1.0F (KHÔNG THANH NGANG THÔ, KHÔNG ĐÂM THỦNG, HỞ CẲNG TAY) ====================
+    # ==================== 3. CẦU VAI THANH GỌN + 2 ĐẦU CERBERUS CỠ LỚN (TAM THỦ CÙNG MŨ GIÁP!) ====================
+    def place_segment_in_frame(frame_origin, frame_R, p0_loc, p1_loc, w: float, h: float, mat: str, pad: float = 0.0) -> dict:
+        p0_arr = np.array(frame_origin, dtype=np.float64)
+        a_w = p0_arr + frame_R @ np.array(p0_loc, dtype=np.float64)
+        b_w = p0_arr + frame_R @ np.array(p1_loc, dtype=np.float64)
+        return make_segment_cube(tuple(a_w), tuple(b_w), w, h, mat, pad=pad)
+
     def build_arm_and_shoulder_head(s: float):
-        # Giữ nguyên 1 bên mắt tím phát sáng (`EYE_SMALL_PURPLE`), 1 bên mắt đỏ cam phát sáng (`EYE_SMALL_RED`)!
+        # 3 đầu Cerberus: Giữa (Mũ - Alpha mắt đỏ), Vai Phải (-X - Shadow mắt tím), Vai Trái (+X - Fire mắt đỏ cam)!
         eye_mat = "EYE_SMALL_PURPLE" if s < 0 else "EYE_SMALL_RED"
+        outer_face = "east" if s < 0 else "west"
+        inner_face = "west" if s < 0 else "east"
+        cx = s * 6.0
         v_tip_rot = matrix_to_bedrock_euler(
             bedrock_rot_matrix([0.0, 0.0, s * +7.5]) @ bedrock_rot_matrix([45.0, 0.0, 0.0])
         )
 
+        # --- PHẦN TRÊN CÁNH TAY (`armorRightArm` / `armorLeftArm`, Y = 18.0..24.0): Cầu vai + Bắp tay bọc giáp phân tầng ---
         arm_cubes = [
-            make_centered_cube([s * 4.66, 22.25, 0.0], [1.22, 3.72, 5.10], "NETH_DARK"),
-            # Nắp cầu vai vát nghiêng chữ V (`zRot = ±7.5°`) + tấm vai chính sạch gọn
-            make_centered_cube([s * 6.94, 23.72, 0.0], [4.04, 0.64, 5.62], "NETH_PLATE", rot=[0.0, 0.0, s * +7.5]),
+            make_centered_cube([s * 4.72, 22.25, 0.0], [1.30, 3.72, 5.10], "NETH_DARK"),
+            # Nắp cầu vai vát nghiêng chữ V (`zRot = ±7.5°`) làm bệ vững cho đầu Cerberus cỡ lớn
+            make_centered_cube([s * 7.25, 23.72, 0.0], [4.66, 0.70, 5.95], "NETH_PLATE", rot=[0.0, 0.0, s * +7.5]),
             make_centered_cube(
-                [s * 6.88, 22.22, 0.0], [3.84, 2.96, 5.42], "PAULDRON_PLATE",
+                [s * 7.16, 22.14, 0.0], [4.46, 3.06, 5.68], "PAULDRON_PLATE",
                 rot=[0.0, 0.0, s * +7.5],
                 face_mats={"up": "NETH_PLATE", "north": "PAULDRON_PLATE", "south": "PAULDRON_PLATE",
                            "east": "PAULDRON_PLATE", "west": "PAULDRON_PLATE", "down": "NETH_DARK"},
             ),
-            # Mũi vát nhọn chữ V sạch sẽ dưới cầu vai (nửa trên nằm sâu 0.45px trong tấm vai -> 0% lòi góc tam giác!)
+            # Mũi vát nhọn chữ V dưới cầu vai
             make_centered_cube(
-                [s * 7.40, 20.42, 0.0], [2.36, 2.95, 2.95], "PAULDRON_PLATE",
+                [s * 7.66, 20.26, 0.0], [2.52, 2.95, 2.95], "PAULDRON_PLATE",
                 rot=v_tip_rot,
             ),
+
+            # Ống giáp bắp tay bọc kín 360° (Y = 18.0..22.3 -> 0% hở da bắp tay!)
+            make_centered_cube(
+                [cx, 20.15, 0.0], [4.68, 4.30, 4.68], "ARM_BICEP",
+                face_mats={"north": "ARM_BICEP", "south": "ARM_BICEP",
+                           outer_face: "ARM_BICEP", inner_face: "NETH_DARK",
+                           "up": "NETH_DARK", "down": "NETH_DARK"},
+            ),
+            # 2 tầng vảy giáp chéo mặt ngoài bắp tay ôm xuống khuỷu (đồng bộ tầng giáp vai trong ảnh mẫu!)
+            make_centered_cube([cx + s * 2.38, 19.75, 0.0], [0.64, 1.50, 4.46], "NETH_PLATE", rot=[0.0, 0.0, s * +12.0]),
+            make_centered_cube([cx + s * 2.34, 18.55, 0.0], [0.58, 1.32, 4.24], "NETH_MID",   rot=[0.0, 0.0, s * +9.0]),
         ]
 
-        # Đầu phụ Cerberus đá đen nhỏ gọn khít cầu vai (tai Obsidian nhỏ sắc, giữ 48° yaw đồng bộ CerberusArmorModel.java)
-        hp = [s * 7.62, 24.16, -0.18]
-        frame_R = bedrock_rot_matrix([+10.0, -s * 48.0, s * +7.0])
+        # --- PHẦN CẲNG TAY & GĂNG LƯỠI ĐAO LƯỠI LIỀM MÓNG VUỐT (`armorRightForearm` / `armorLeftForearm`, pivot = [±5, 18, 0]) ---
+        # Dựng lưỡi cánh khuỷu cong trực tiếp trên mặt phẳng XY (chỉ xoay quanh Z -> bản lưỡi rộng sắc nét 100% giống ảnh mẫu, 0 xoắn trục!):
+        forearm_cubes = [
+            # 1. Khối đệm khuỷu chìm (Y = 17.1..18.9) chống hở khe khi gập khuỷu 90° & không z-fighting khi duỗi thẳng!
+            make_centered_cube([cx, 18.00, 0.0], [4.46, 1.80, 4.46], "NETH_DARK"),
+
+            # 2. Giáp cẳng tay chính (`Y = 13.7..18.1`) dày góc cạnh, bọc kín 360°
+            make_centered_cube(
+                [cx + s * 0.14, 15.88, 0.0], [4.98, 4.42, 4.98], "GAUNTLET_FRONT",
+                face_mats={"north": "GAUNTLET_FRONT", "south": "GAUNTLET_FRONT",
+                           outer_face: "GAUNTLET_OUTER", inner_face: "NETH_MID",
+                           "up": "NETH_DARK", "down": "NETH_DARK"},
+            ),
+            # Vòng giáp vát cổ tay & khuỷu tay tạo phân khối tầng sắc cạnh (thay thế hoàn toàn chữ X!)
+            make_centered_cube([cx + s * 0.18, 17.72, 0.0], [5.20, 0.68, 5.20], "NETH_PLATE"),
+            make_centered_cube([cx + s * 0.18, 13.86, 0.0], [5.16, 0.72, 5.16], "NETH_PLATE"),
+            # Gờ chữ V tối + chỉ đỏ cam mảnh ở mặt trước cẳng tay
+            make_centered_cube([cx + s * 0.25, 16.05, -2.56], [3.25, 2.65, 0.36], "NETH_PLATE", rot=[0.0, 0.0, s * -6.0]),
+            make_centered_cube([cx + s * 0.25, 16.05, +2.56], [3.25, 2.65, 0.36], "NETH_PLATE", rot=[0.0, 0.0, s * -6.0]),
+            make_centered_cube([cx + s * 0.20, 14.55, -2.62], [2.40, 0.30, 0.24], "BONE_TRIM",  rot=[0.0, 0.0, s * -14.0]),
+            make_centered_cube([cx + s * 0.20, 14.55, +2.62], [2.40, 0.30, 0.24], "BONE_TRIM",  rot=[0.0, 0.0, s * -14.0]),
+
+            # 3. KHIÊN NGOÀI CẲNG TAY BẢN RỘNG + ĐINH TÁN BẠC-XƯƠNG (khối nền ôm lưỡi đao cong!)
+            make_centered_cube(
+                [cx + s * 2.86, 15.95, 0.0], [1.05, 4.75, 3.95], "GAUNTLET_OUTER",
+                rot=[0.0, 0.0, s * -9.0],
+                face_mats={outer_face: "GAUNTLET_OUTER", inner_face: "NETH_DARK",
+                           "north": "NETH_PLATE", "south": "NETH_PLATE", "up": "NETH_PLATE", "down": "NETH_DARK"},
+            ),
+            # Đinh tán hình thoi bạc đặc trưng trên mặt ngoài giáp khuỷu
+            make_centered_cube([cx + s * 3.38, 16.65, -0.10], [0.38, 0.88, 0.88], "BONE_TRIM", rot=[45.0, 0.0, 0.0]),
+
+            # 5. GĂNG TAY MÓNG VUỐT BỌC KÍN BÀN TAY (`Y = 11.9..13.9`, 0% hở da bàn tay!)
+            make_centered_cube(
+                [cx + s * 0.04, 12.88, 0.0], [4.68, 2.02, 4.68], "GAUNTLET_HAND",
+                face_mats={"north": "GAUNTLET_HAND", "south": "GAUNTLET_HAND",
+                           outer_face: "GAUNTLET_HAND", inner_face: "NETH_DARK",
+                           "up": "NETH_DARK", "down": "NETH_DARK"},
+            ),
+            # Tấm giáp mu bàn tay sắc cạnh + thanh khớp ngón bạc mảnh
+            make_centered_cube([cx + s * 2.46, 12.92, -0.05], [0.46, 1.48, 3.85], "NETH_PLATE", rot=[0.0, 0.0, s * +6.0]),
+            make_centered_cube([cx + s * 2.66, 12.36, -0.05], [0.26, 0.34, 3.45], "BONE_TRIM"),
+        ]
+
+        # 4. LƯỠI ĐAO LƯỠI LIỀM CÁNH KHUỶU CO RÚT ĐỘC LẬP (`cerberus_arm_blade_r/l`, pivot = [±8.55, 16.0, +0.20])!
+        # Mặc định co rút ẩn hoàn toàn trong cẳng tay; khi kích hoạt Strength II (1 phút) sẽ trượt mở mượt ra từ khe giáp ngoài!
+        blade_piv = [round(cx + s * 2.55, 3), 16.00, +0.20]
+        blade_cubes = [
+            # Quy ước Bedrock: rot_z = s * +deg nghiêng đỉnh (+Y) RA NGOÀI (hướng s), s * -deg uốn đỉnh VÀO TRONG!
+            # Tầng 1 (gốc lưỡi ôm sát cẳng tay, bản rộng 1.85px, vát nghiêng ra ngoài 22°)
+            make_centered_cube([cx + s * 3.62, 16.45, +0.18], [1.85, 3.10, 1.15], "BLADE_FIN_SIDE",
+                               rot=[0.0, 0.0, s * +22.0],
+                               face_mats={"north": "BLADE_FIN_SIDE", "south": "BLADE_FIN_SIDE",
+                                          outer_face: "NETH_PLATE", inner_face: "BONE_TRIM",
+                                          "up": "NETH_PLATE", "down": "NETH_DARK"}),
+            # Tầng 2 (thân giữa lưỡi cong vồng ngang khuỷu tay, vươn ra |X|=10.5, góc nghiêng +10°)
+            make_centered_cube([cx + s * 4.42, 18.85, +0.26], [1.72, 2.75, 0.96], "BLADE_FIN_SIDE",
+                               rot=[0.0, 0.0, s * +10.0],
+                               face_mats={"north": "BLADE_FIN_SIDE", "south": "BLADE_FIN_SIDE",
+                                          outer_face: "NETH_PLATE", inner_face: "BONE_TRIM",
+                                          "up": "NETH_PLATE", "down": "NETH_DARK"}),
+            # Tầng 3 (đầu lưỡi uốn ngược vào trong thuôn nhọn thành mũi đao lưỡi liềm sắc bén ở Y=21.8!)
+            make_centered_cube([cx + s * 4.46, 20.68, +0.32], [1.14, 1.95, 0.72], "OBSIDIAN_HORN",
+                               rot=[0.0, 0.0, s * -14.0]),
+            make_centered_cube([cx + s * 4.10, 21.85, +0.36], [0.56, 1.10, 0.48], "OBSIDIAN_TIP",
+                               rot=[0.0, 0.0, s * -26.0]),
+
+            # Viền lửa magma đỏ cam liền mạch chạy đúng dọc mép ngoài cong của lưỡi đao!
+            make_centered_cube([cx + s * 4.46, 16.20, +0.22], [0.24, 2.95, 0.72], "MAGMA_CRACK", rot=[0.0, 0.0, s * +22.0]),
+            make_centered_cube([cx + s * 5.26, 18.75, +0.28], [0.24, 2.65, 0.62], "MAGMA_CORE",  rot=[0.0, 0.0, s * +10.0]),
+            make_centered_cube([cx + s * 5.00, 20.72, +0.32], [0.22, 1.85, 0.48], "MAGMA_CRACK", rot=[0.0, 0.0, s * -14.0]),
+
+            # Sống gân bạc-xương mảnh sắc uốn cong theo mép trong của lưỡi đao
+            make_centered_cube([cx + s * 2.86, 16.75, +0.16], [0.26, 2.85, 0.86], "BONE_TRIM", rot=[0.0, 0.0, s * +20.0]),
+            make_centered_cube([cx + s * 3.60, 19.00, +0.24], [0.24, 2.40, 0.70], "BONE_TRIM", rot=[0.0, 0.0, s * +10.0]),
+
+            # Mũi đao thứ 2 (ngạnh dưới) vát nhọn chỉa xuống bảo vệ cổ tay & mu bàn tay
+            make_centered_cube([cx + s * 3.44, 14.05, +0.18], [1.28, 2.25, 0.92], "OBSIDIAN_HORN", rot=[0.0, 0.0, s * +18.0]),
+            make_centered_cube([cx + s * 3.06, 12.60, +0.18], [0.64, 1.38, 0.60], "OBSIDIAN_TIP",  rot=[0.0, 0.0, s * +26.0]),
+            make_centered_cube([cx + s * 4.02, 13.85, +0.20], [0.22, 2.15, 0.56], "MAGMA_CRACK",   rot=[0.0, 0.0, s * +18.0]),
+        ]
+
+        # 4 móng vuốt quỷ sắc cong gập nhẹ ở 4 đầu ngón tay + 1 vuốt ngón cái mặt trước!
+        for fz in (-1.52, -0.52, +0.52, +1.52):
+            forearm_cubes.extend([
+                make_centered_cube([cx + s * 2.16, 11.88, fz], [0.56, 0.68, 0.56], "CLAW_OBSIDIAN", rot=[0.0, 0.0, s * -10.0]),
+                make_centered_cube([cx + s * 1.98, 11.35, fz], [0.36, 0.72, 0.38], "BONE_TRIM",     rot=[0.0, 0.0, s * -22.0]),
+            ])
+        # Vuốt ngón cái ôm phía trước bàn tay
+        forearm_cubes.extend([
+            make_centered_cube([cx - s * 1.25, 11.98, -2.18], [0.54, 0.62, 0.54], "CLAW_OBSIDIAN", rot=[-14.0, 0.0, s * +12.0]),
+            make_centered_cube([cx - s * 1.05, 11.48, -2.02], [0.34, 0.64, 0.36], "BONE_TRIM",     rot=[-22.0, 0.0, s * +18.0]),
+        ])
+
+        # Đầu Cerberus cỡ lớn hoàn chỉnh trên cầu vai (tư thế gốc hướng thẳng 0° đồng trục với mũ để CerberusArmorModel.java
+        # xoay đồng bộ cả 3 đầu nhìn chính xác vào cùng 1 điểm mục tiêu và há hàm đúng trục ở mọi góc nhìn!)
+        hp = [s * 8.95, 24.75, -0.35]
+        frame_R = np.eye(3, dtype=np.float64)
+        sh_dorsal_rot = matrix_to_bedrock_euler(bedrock_rot_matrix([+16.0, 0.0, 0.0]) @ bedrock_rot_matrix([0.0, 0.0, 45.0]))
 
         sh_head = [
-            place_in_frame(hp, frame_R, [0.0, +0.20, +0.32], [2.82, 2.05, 2.55], "NETH_PLATE",
-                           face_mats={"up": "HELM_TOP"}),
-            place_in_frame(hp, frame_R, [0.0, +0.26, +1.36], [2.84, 2.00, 0.88], "NETH_DARK"),
-            place_in_frame(hp, frame_R, [-0.98, +1.38, +0.88], [0.58, 1.05, 0.72], "OBSIDIAN_HORN",
-                           local_rot=[-30.0, +8.0, -10.0]),
-            place_in_frame(hp, frame_R, [+0.98, +1.38, +0.88], [0.58, 1.05, 0.72], "OBSIDIAN_HORN",
-                           local_rot=[-30.0, -8.0, +10.0]),
-            place_in_frame(hp, frame_R, [0.0, +0.05, -1.52], [1.88, 1.08, 1.88], "HELM_SNOUT_TOP",
+            # 1. Cổ giáp & bờm đá đen 3 tầng nối liền khối xuống cầu vai + sống gai đá sau gáy
+            place_in_frame(hp, frame_R, [0.0, -1.25, +0.96], [4.48, 2.20, 3.45], "NETH_DARK"),
+            place_in_frame(hp, frame_R, [0.0, +1.02, +2.50], [4.16, 1.48, 1.18], "NETH_PLATE", local_rot=[+14.0, 0.0, 0.0]),
+            place_in_frame(hp, frame_R, [0.0, -0.10, +2.66], [3.72, 1.40, 1.10], "NETH_MID",   local_rot=[+16.0, 0.0, 0.0]),
+            place_in_frame(hp, frame_R, [0.0, -1.16, +2.60], [3.16, 1.24, 1.00], "NETH_DARK",  local_rot=[+18.0, 0.0, 0.0]),
+            place_in_frame(hp, frame_R, [0.0, +2.02, +1.66], [1.02, 1.02, 0.60], "DORSAL_SPIKE", local_rot=sh_dorsal_rot),
+            place_in_frame(hp, frame_R, [0.0, +0.98, +2.92], [0.94, 0.94, 0.56], "DORSAL_SPIKE", local_rot=sh_dorsal_rot),
+            place_in_frame(hp, frame_R, [0.0, -0.24, +3.02], [0.86, 0.86, 0.52], "DORSAL_SPIKE", local_rot=sh_dorsal_rot),
+
+            # 2. Hộp sọ đá đen Blackstone cỡ lớn + sống vát đỉnh đầu 2 bậc + trán vát sắc
+            place_in_frame(hp, frame_R, [0.0, +0.40, +0.36], [5.02, 3.52, 3.92], "NETH_PLATE",
+                           face_mats={"up": "HELM_TOP", "east": "HELM_SIDE", "west": "HELM_SIDE", "south": "NETH_DARK"}),
+            place_in_frame(hp, frame_R, [0.0, +2.24, +0.12], [3.38, 0.50, 3.62], "NETH_PLATE"),
+            place_in_frame(hp, frame_R, [0.0, +2.52, -0.05], [1.72, 0.36, 3.04], "NETH_PLATE"),
+            place_in_frame(hp, frame_R, [0.0, +1.48, -1.52], [4.86, 1.36, 0.76], "NETH_PLATE", local_rot=[+8.0, 0.0, 0.0]),
+
+            # 3. Mõm sói địa ngục dài sắc + sống mũi vát + chóp mũi tối + vòm họng magma rực sáng
+            place_in_frame(hp, frame_R, [0.0, +0.12, -2.74], [3.24, 1.62, 3.08], "HELM_SNOUT_TOP",
+                           local_rot=[+4.5, 0.0, 0.0],
                            face_mats={"up": "HELM_SNOUT_TOP", "north": "NETH_DARK",
                                       "east": "HELM_SNOUT_SIDE", "west": "HELM_SNOUT_SIDE", "down": "NETH_DARK"}),
-            place_in_frame(hp, frame_R, [0.0, +0.18, -2.50], [0.90, 0.50, 0.34], "NOSE_DARK"),
-            place_in_frame(hp, frame_R, [-0.98, +0.54, -0.94], [1.06, 0.52, 0.22], eye_mat,
-                           local_rot=[0.0, +14.0, +12.0]),
-            place_in_frame(hp, frame_R, [+0.98, +0.54, -0.94], [1.06, 0.52, 0.22], eye_mat,
-                           local_rot=[0.0, -14.0, -12.0]),
-            place_in_frame(hp, frame_R, [-1.00, +0.96, -0.94], [1.18, 0.36, 0.86], "NETH_DARK",
-                           local_rot=[+10.0, +12.0, +14.0]),
-            place_in_frame(hp, frame_R, [+1.00, +0.96, -0.94], [1.18, 0.36, 0.86], "NETH_DARK",
-                           local_rot=[+10.0, -12.0, -14.0]),
-            place_in_frame(hp, frame_R, [-0.70, -0.56, -1.96], [0.28, 0.48, 0.28], "FANG_IVORY"),
-            place_in_frame(hp, frame_R, [+0.70, -0.56, -1.96], [0.28, 0.48, 0.28], "FANG_IVORY"),
+            place_in_frame(hp, frame_R, [0.0, +0.98, -2.54], [1.68, 0.52, 2.86], "NETH_PLATE", local_rot=[+8.0, 0.0, 0.0]),
+            place_in_frame(hp, frame_R, [0.0, +0.28, -4.28], [1.46, 0.72, 0.44], "NOSE_DARK",  local_rot=[+4.5, 0.0, 0.0]),
+            place_in_frame(hp, frame_R, [0.0, -0.58, -2.35], [2.26, 0.28, 2.18], "MAGMA_CORE"),
+
+            # 4. Đôi mắt phát sáng cỡ lớn thoáng sáng rõ + gờ chân mày sắc dữ tợn không đè mắt
+            place_in_frame(hp, frame_R, [-1.46, +0.82, -1.96], [1.62, 0.78, 0.26], eye_mat,
+                           local_rot=[0.0, +13.0, +13.0]),
+            place_in_frame(hp, frame_R, [+1.46, +0.82, -1.96], [1.62, 0.78, 0.26], eye_mat,
+                           local_rot=[0.0, -13.0, -13.0]),
+            place_in_frame(hp, frame_R, [-1.52, +1.48, -1.86], [1.90, 0.46, 0.94], "NETH_PLATE",
+                           local_rot=[+10.0, +12.0, +15.0]),
+            place_in_frame(hp, frame_R, [+1.52, +1.48, -1.86], [1.90, 0.46, 0.94], "NETH_PLATE",
+                           local_rot=[+10.0, -12.0, -15.0]),
+
+            # 5. 4 răng nanh hàm trên sắc bén nổi bật trong khe hàm há gầm
+            place_in_frame(hp, frame_R, [-1.18, -0.88, -3.62], [0.42, 0.92, 0.42], "FANG_IVORY", local_rot=[+6.0, 0.0, 0.0]),
+            place_in_frame(hp, frame_R, [+1.18, -0.88, -3.62], [0.42, 0.92, 0.42], "FANG_IVORY", local_rot=[+6.0, 0.0, 0.0]),
+            place_in_frame(hp, frame_R, [-1.28, -0.78, -2.62], [0.34, 0.64, 0.34], "FANG_IVORY", local_rot=[+6.0, 0.0, 0.0]),
+            place_in_frame(hp, frame_R, [+1.28, -0.78, -2.62], [0.34, 0.64, 0.34], "FANG_IVORY", local_rot=[+6.0, 0.0, 0.0]),
         ]
 
+        # Má giáp vát góc cạnh + cặp sừng/tai sói Obsidian 3 đốt cong mượt đồng bộ 100% với mũ!
+        for cs in (-1.0, +1.0):
+            sh_head.extend([
+                place_in_frame(hp, frame_R, [cs * 2.42, -0.26, -0.46], [0.84, 1.88, 2.72], "NETH_PLATE",
+                               local_rot=[+4.0, cs * -8.0, cs * -10.0]),
+                place_in_frame(hp, frame_R, [cs * 2.68, -0.38, +1.04], [0.62, 1.24, 1.94], "NETH_MID",
+                               local_rot=[+10.0, cs * -16.0, cs * -12.0]),
+                place_segment_in_frame(hp, frame_R, (cs * 1.74, +2.00, +0.36), (cs * 2.18, +3.26, +1.52), 1.08, 0.78, "OBSIDIAN_HORN", pad=0.22),
+                place_segment_in_frame(hp, frame_R, (cs * 2.18, +3.26, +1.52), (cs * 2.46, +4.48, +2.52), 0.80, 0.58, "OBSIDIAN_HORN", pad=0.18),
+                place_segment_in_frame(hp, frame_R, (cs * 2.46, +4.48, +2.52), (cs * 2.58, +5.36, +3.12), 0.46, 0.36, "OBSIDIAN_TIP",  pad=0.10),
+            ])
+
+        # Hàm dưới hé gầm nhẹ (+13° theo quy ước Bedrock -> mở xuống dưới) lộ rõ 2 hàng răng nanh & họng dung nham phát sáng!
         hp_arr = np.array(hp, dtype=np.float64)
-        jaw_local_piv = np.array([0.0, -0.68, -0.54], dtype=np.float64)
+        jaw_local_piv = np.array([0.0, -0.96, -0.86], dtype=np.float64)
         jp = (hp_arr + frame_R @ jaw_local_piv).tolist()
+        jaw_R = frame_R @ bedrock_rot_matrix([+13.0, 0.0, 0.0])
         sh_jaw = [
-            place_in_frame(jp, frame_R, [0.0, -0.18, -0.82], [1.62, 0.48, 1.66], "NETH_DARK"),
-            place_in_frame(jp, frame_R, [-0.56, +0.12, -1.36], [0.24, 0.36, 0.24], "FANG_IVORY"),
-            place_in_frame(jp, frame_R, [+0.56, +0.12, -1.36], [0.24, 0.36, 0.24], "FANG_IVORY"),
+            place_in_frame(jp, jaw_R, [0.0, -0.38, -1.56], [2.76, 0.84, 2.94], "NETH_DARK",
+                           face_mats={"north": "NETH_PLATE", "down": "NETH_DARK"}),
+            place_in_frame(jp, jaw_R, [0.0, -0.56, -2.74], [2.26, 0.60, 0.96], "NETH_PLATE", local_rot=[-10.0, 0.0, 0.0]),
+            place_in_frame(jp, jaw_R, [0.0, +0.08, -1.36], [1.86, 0.26, 2.02], "MAGMA_CORE"),
+            place_in_frame(jp, jaw_R, [-0.94, +0.26, -2.54], [0.36, 0.66, 0.36], "FANG_IVORY", local_rot=[-8.0, 0.0, 0.0]),
+            place_in_frame(jp, jaw_R, [+0.94, +0.26, -2.54], [0.36, 0.66, 0.36], "FANG_IVORY", local_rot=[-8.0, 0.0, 0.0]),
+            place_in_frame(jp, jaw_R, [-1.04, +0.22, -1.68], [0.28, 0.46, 0.28], "FANG_IVORY", local_rot=[-6.0, 0.0, 0.0]),
+            place_in_frame(jp, jaw_R, [+1.04, +0.22, -1.68], [0.28, 0.46, 0.28], "FANG_IVORY", local_rot=[-6.0, 0.0, 0.0]),
         ]
-        return arm_cubes, hp, sh_head, jp, sh_jaw
+        return arm_cubes, forearm_cubes, blade_piv, blade_cubes, hp, sh_head, jp, sh_jaw
 
-    rarm_cubes, sh_r_piv, sh_r_head, jaw_r_piv, jaw_r_cubes = build_arm_and_shoulder_head(-1.0)
-    larm_cubes, sh_l_piv, sh_l_head, jaw_l_piv, jaw_l_cubes = build_arm_and_shoulder_head(+1.0)
+    rarm_cubes, rfore_cubes, rblade_piv, rblade_cubes, sh_r_piv, sh_r_head, jaw_r_piv, jaw_r_cubes = build_arm_and_shoulder_head(-1.0)
+    larm_cubes, lfore_cubes, lblade_piv, lblade_cubes, sh_l_piv, sh_l_head, jaw_l_piv, jaw_l_cubes = build_arm_and_shoulder_head(+1.0)
 
     # ==================== 4. QUẦN GIÁP ÔM GỌN — INNER LAYER 0.5F (`armorRightLeg/LeftLeg`) ====================
     knee_rot = matrix_to_bedrock_euler(bedrock_rot_matrix([-10.0, 0.0, 0.0]) @ bedrock_rot_matrix([0.0, 0.0, 45.0]))
@@ -553,10 +780,11 @@ def build_cerberus_armor_geo():
     lboot_cubes, fl_l_piv, fl_l_cubes = build_boot_and_flames(+1.0)
 
     bones = [
-        {"name": "bipedHead",      "pivot": [0, 24, 0]},
-        {"name": "armorHead",      "parent": "bipedHead", "pivot": [0, 24, 0], "cubes": head_cubes},
-        {"name": "cerberus_ear_r", "parent": "armorHead", "pivot": [-3.42, 32.15, -0.40], "cubes": ear_r_cubes},
-        {"name": "cerberus_ear_l", "parent": "armorHead", "pivot": [+3.42, 32.15, -0.40], "cubes": ear_l_cubes},
+        {"name": "bipedHead",         "pivot": [0, 24, 0]},
+        {"name": "armorHead",         "parent": "bipedHead", "pivot": [0, 24, 0], "cubes": head_cubes},
+        {"name": "cerberus_helm_jaw", "parent": "armorHead", "pivot": helm_jaw_piv, "cubes": helm_jaw_cubes},
+        {"name": "cerberus_ear_r",    "parent": "armorHead", "pivot": [-3.45, 32.15, -0.50], "cubes": ear_r_cubes},
+        {"name": "cerberus_ear_l",    "parent": "armorHead", "pivot": [+3.45, 32.15, -0.50], "cubes": ear_l_cubes},
 
         {"name": "bipedBody",           "pivot": [0, 24, 0]},
         {"name": "armorBody",           "parent": "bipedBody", "pivot": [0, 24, 0], "cubes": body_cubes},
@@ -564,11 +792,15 @@ def build_cerberus_armor_geo():
 
         {"name": "bipedRightArm",            "pivot": [-5, 22, 0]},
         {"name": "armorRightArm",            "parent": "bipedRightArm",           "pivot": [-5, 22, 0], "cubes": rarm_cubes},
+        {"name": "armorRightForearm",        "parent": "armorRightArm",           "pivot": [-5, 18, 0], "cubes": rfore_cubes},
+        {"name": "cerberus_arm_blade_r",     "parent": "armorRightForearm",       "pivot": rblade_piv,  "cubes": rblade_cubes},
         {"name": "cerberus_shoulder_head_r", "parent": "armorRightArm",           "pivot": sh_r_piv,    "cubes": sh_r_head},
         {"name": "cerberus_shoulder_jaw_r",  "parent": "cerberus_shoulder_head_r","pivot": jaw_r_piv,   "cubes": jaw_r_cubes},
 
         {"name": "bipedLeftArm",             "pivot": [5, 22, 0]},
         {"name": "armorLeftArm",             "parent": "bipedLeftArm",            "pivot": [5, 22, 0],  "cubes": larm_cubes},
+        {"name": "armorLeftForearm",         "parent": "armorLeftArm",            "pivot": [5, 18, 0],  "cubes": lfore_cubes},
+        {"name": "cerberus_arm_blade_l",     "parent": "armorLeftForearm",        "pivot": lblade_piv,  "cubes": lblade_cubes},
         {"name": "cerberus_shoulder_head_l", "parent": "armorLeftArm",            "pivot": sh_l_piv,    "cubes": sh_l_head},
         {"name": "cerberus_shoulder_jaw_l",  "parent": "cerberus_shoulder_head_l","pivot": jaw_l_piv,   "cubes": jaw_l_cubes},
 
@@ -971,8 +1203,81 @@ def build_cerberus_armor_textures():
             else:
                 blend_rgb(x0 + x, y0 + y, BOUNCE_RED, 0.28)
 
-    # 6. Vai giáp (`PAULDRON_PLATE`): đá đen Blackstone xếp lớp
+    # 6. Vai giáp (`PAULDRON_PLATE`) + Bắp tay, Găng cẳng tay lưỡi khuỷu & Bàn tay móng vuốt (phong cách ảnh mẫu!)
     paint_blackstone("PAULDRON_PLATE", base_lvl=2, sharp_edge=True, layered=True, top_ao_rows=1)
+
+    BONE = [
+        (78,  80,  90, 255),
+        (134, 138, 148, 255),
+        (184, 188, 198, 255),
+        (224, 228, 236, 255),
+    ]
+    # BONE_TRIM: thanh gân bạc-xương sáng lạnh nổi bật trên cẳng tay, lưỡi đao & vuốt tay
+    x0, y0, w, h = REG["BONE_TRIM"]
+    for y in range(h):
+        for x in range(w):
+            if x == 0 or x == w - 1 or y == 0 or y == h - 1:
+                diff[y0 + y, x0 + x] = BONE[0]
+            elif x == 1 or y == 1:
+                diff[y0 + y, x0 + x] = BONE[3]
+            elif x <= w // 2:
+                diff[y0 + y, x0 + x] = BONE[2]
+            else:
+                diff[y0 + y, x0 + x] = BONE[1]
+
+    # ARM_BICEP: giáp bắp tay phân tầng vảy đá đen góc cạnh có khe đỏ thẫm mảnh tinh tế
+    paint_blackstone("ARM_BICEP", base_lvl=2, sharp_edge=True, layered=True, top_ao_rows=1)
+    x0, y0, w, h = REG["ARM_BICEP"]
+    for row_y in (5, 10):
+        for x in range(1, w - 1):
+            diff[y0 + row_y, x0 + x] = NETH[0]
+            if 3 <= x <= w - 4 and row_y == 10:
+                set_glow_px(x0 + x, y0 + row_y + 1, MAGMA["d"] if (x % 2 == 0) else MAGMA["r"])
+    apply_crimson_rim("ARM_BICEP", radius=1.4)
+
+    # GAUNTLET_FRONT: mặt trước/sau cẳng tay giáp đen tối giản + đường viền đỏ mảnh dọc mép ngoài (0 chữ X!)
+    paint_blackstone("GAUNTLET_FRONT", base_lvl=2, sharp_edge=True, layered=True, top_ao_rows=1)
+    x0, y0, w, h = REG["GAUNTLET_FRONT"]
+    for y in range(3, h - 3):
+        set_glow_px(x0 + 1, y0 + y, MAGMA["r"] if (5 <= y <= h - 6) else MAGMA["d"])
+        set_glow_px(x0 + w - 2, y0 + y, MAGMA["r"] if (5 <= y <= h - 6) else MAGMA["d"])
+        if y in (6, 13):
+            for x in range(3, w - 3):
+                diff[y0 + y, x0 + x] = NETH[0]
+                diff[y0 + y + 1, x0 + x] = NETH[4]
+    apply_crimson_rim("GAUNTLET_FRONT", radius=1.5)
+
+    # GAUNTLET_OUTER: mặt ngoài cẳng tay giáp Obsidian tối + chỉ đỏ mảnh hai mép & gờ đá sáng giữa
+    paint_blackstone("GAUNTLET_OUTER", base_lvl=2, sharp_edge=True, layered=True, top_ao_rows=1)
+    x0, y0, w, h = REG["GAUNTLET_OUTER"]
+    for y in range(2, h - 2):
+        set_glow_px(x0 + 1, y0 + y, MAGMA["r"] if (4 <= y <= h - 5) else MAGMA["d"])
+        set_glow_px(x0 + w - 2, y0 + y, MAGMA["r"] if (4 <= y <= h - 5) else MAGMA["d"])
+        diff[y0 + y, x0 + w // 2] = NETH[5]
+        diff[y0 + y, x0 + w // 2 - 1] = NETH[4]
+    apply_crimson_rim("GAUNTLET_OUTER", radius=1.6)
+
+    # BLADE_FIN_SIDE: mặt trước/sau lưỡi đao cong khuỷu tay (Obsidian tối liền khối có gân nổi & sắc đỏ mảnh)
+    paint_blackstone("BLADE_FIN_SIDE", base_lvl=2, sharp_edge=True, layered=True, top_ao_rows=1)
+    x0, y0, w, h = REG["BLADE_FIN_SIDE"]
+    for y in range(2, h - 2):
+        diff[y0 + y, x0 + w // 2] = NETH[5]
+        diff[y0 + y, x0 + w // 2 - 1] = NETH[4]
+        if y % 7 == 3:
+            for x in range(3, w - 3):
+                diff[y0 + y, x0 + x] = NETH[0]
+    apply_crimson_rim("BLADE_FIN_SIDE", radius=1.4)
+
+    # GAUNTLET_HAND: găng bàn tay tối có các rãnh khớp ngón tối & mạch lửa đỏ mảnh 1px tinh tế!
+    paint_blackstone("GAUNTLET_HAND", base_lvl=1, sharp_edge=True, layered=False, top_ao_rows=1)
+    x0, y0, w, h = REG["GAUNTLET_HAND"]
+    for fx in (3, 7, 11):
+        for y in range(4, h - 2):
+            diff[y0 + y, x0 + fx - 1] = NETH[0]
+            if y in (6, 7, 9, 10, 11):
+                set_glow_px(x0 + fx, y0 + y, MAGMA["r"] if y <= 9 else MAGMA["d"])
+        diff[y0 + 3, x0 + fx] = BONE[2]
+    apply_crimson_rim("GAUNTLET_HAND", radius=1.4)
 
     # 7. Quần 0.5F (`LEG_FRONT`, `LEG_SIDE`, `LEG_BACK`): 100% đá đen Blackstone + mạch nứt dung nham đỏ cam (0% mảng nâu!)
     paint_overlapping_tasset_scales("LEG_FRONT", base_lvl=2, y_end_ratio=0.45)
@@ -1047,25 +1352,141 @@ def build_cerberus_armor_textures():
 
 def build_cerberus_item_icons():
     """
-    6 icon 16x16 đồng bộ 100% chất liệu Đá đen Blackstone + Obsidian ánh tím + Magma đỏ cam (0% màu nâu, 0% màu vàng!).
+    6 icon đồng bộ 100% chất liệu Đá đen Blackstone + Obsidian ánh tím + Magma đỏ cam (0% màu nâu, 0% màu vàng!):
+    - `cerberus_helmet.png` & `cerberus_chestplate.png` nâng cấp chuẩn pixel-art `32x32` sắc nét (đồng chuẩn với
+      vũ khí 32x32 trong mod) để khắc họa 1:1 model 3D: mũ đầu sói bọc kín có cặp sừng viền magma + mào đỉnh +
+      mắt xếch dữ tợn + hàm lửa răng nanh, và giáp thân với 2 đầu Cerberus cỡ lớn trên cầu vai (trái mắt tím /
+      phải mắt đỏ cam) + cánh tay bọc giáp có găng móng vuốt + lõi magma kim cương chéo xích sắt X!
     """
-    pal = {
+    pal16 = {
         ".": (0, 0, 0, 0),
         "0": (13, 10, 19, 255),
         "1": (24, 20, 35, 255),
         "2": (42, 36, 58, 255),
         "3": (66, 58, 88, 255),
         "4": (138, 128, 166, 255),
-        "p": (182, 86, 246, 255),  # Mắt tím phát sáng đầu vai phải
+        "p": (182, 86, 246, 255),
         "s": (48, 52, 66, 255),
         "m": (150, 154, 178, 255),
-        "b": (122, 22, 24, 255),   # Phản sáng đỏ thẫm (0% nâu!)
+        "b": (122, 22, 24, 255),
         "i": (244, 240, 232, 255),
         "d": (158, 20, 8, 255),
         "r": (232, 38, 12, 255),
         "o": (254, 104, 16, 255),
         "h": (255, 214, 56, 255),
     }
+    pal32 = {
+        ".": (0, 0, 0, 0),
+        "0": (12, 9, 18, 255),       # Viền tối Blackstone sâu
+        "1": (23, 18, 35, 255),      # Đá đen tối
+        "2": (39, 33, 56, 255),      # Đá đen nền
+        "3": (62, 54, 86, 255),      # Đá đen trung tính
+        "4": (96, 86, 128, 255),     # Cạnh vát sáng Blackstone
+        "5": (144, 134, 178, 255),   # Điểm sáng cạnh Obsidian
+        "c": (20, 22, 30, 255),      # Lõi xích sắt tối
+        "s": (78, 86, 108, 255),     # Ánh kim xích sắt
+        "m": (182, 188, 210, 255),   # Viền bạc-xương & móng vuốt
+        "i": (248, 244, 234, 255),   # Răng nanh ngà trắng sáng
+        "g": (188, 182, 174, 255),   # Bóng răng nanh ngà
+        "d": (166, 20, 10, 255),     # Magma đỏ thẫm
+        "r": (240, 42, 14, 255),     # Magma đỏ tươi
+        "o": (255, 118, 18, 255),    # Magma cam rực
+        "h": (255, 222, 66, 255),    # Tâm lửa vàng chanh
+        "w": (255, 248, 188, 255),   # Tâm lửa trắng nóng
+        "v": (134, 40, 214, 255),    # Ánh tím tối (đầu vai phải)
+        "p": (204, 102, 255, 255),   # Mắt tím phát sáng đầu vai phải
+        "q": (248, 214, 255, 255),   # Tâm sáng mắt tím
+    }
+
+    def mirror_32(half_rows, eye_left_map=None, eye_right_map=None):
+        assert len(half_rows) == 32, f"Expected 32 rows, got {len(half_rows)}"
+        full = []
+        for idx, hr in enumerate(half_rows):
+            assert len(hr) == 16, f"Bad half row {idx}: len={len(hr)}"
+            left = hr
+            right = hr[::-1]
+            if eye_left_map:
+                for k, v in eye_left_map.items():
+                    left = left.replace(k, v)
+            if eye_right_map:
+                for k, v in eye_right_map.items():
+                    right = right.replace(k, v)
+            full.append(left + right)
+        return full
+
+    # Mũ đầu sói Cerberus 32x32 khớp 1:1 model 3D: sừng cao viền lửa magma + mào đỉnh + mắt xếch dữ + mõm sói + hàm lửa răng nanh!
+    helmet_32 = mirror_32([
+        "....0...........",
+        "....05..........",
+        "....040........0",
+        "....03o0......04",
+        "....023o0.....03",
+        ".....023h0....0o",
+        ".....023ro0...0r",
+        ".....0123ro0..03",
+        ".....01234o0..02",
+        ".....00344400003",
+        ".....04543334444",
+        ".....03332223332",
+        "....0o2223332233",
+        "....0r1234433222",
+        "....0d0120023332",
+        ".....0120ro01233",
+        ".....01210oh0232",
+        "....0021100dr022",
+        "....032122100132",
+        "....023212332211",
+        "....023211221100",
+        "....023100i1i0ro",
+        "....02310iioiohw",
+        "....02210igoohww",
+        "....02210droihhh",
+        "....012101diiroo",
+        "....0120001gi0dr",
+        ".....02211222111",
+        ".....01223332232",
+        ".....00112221121",
+        "......0000000000",
+        "................",
+    ])
+
+    # Giáp thân Cerberus 32x32 khớp 1:1 model 3D: 2 đầu sói cỡ lớn trên vai (trái mắt tím / phải mắt đỏ cam) +
+    # full 2 cánh tay bọc giáp găng móng vuốt + lõi magma dọc kim cương chéo xích sắt X + cổ chữ V!
+    chestplate_32 = mirror_32([
+        "................",
+        ".0......0.......",
+        ".05....05.......",
+        ".040...040......",
+        ".0340..030......",
+        ".023400320......",
+        "0234433320......",
+        "0123322320......",
+        "01fEe22eE0......",
+        "00123432100.....",
+        ".00i1oo1i0000000",
+        "..00122100s430ro",
+        "..034433202cs0oh",
+        ".03432232022csro",
+        ".023211210221cso",
+        ".02droor202320ch",
+        ".0121112102330ow",
+        ".00233320012rohw",
+        "032234321012rhw0",
+        "02o223211002rh0s",
+        "02o222211012rhw0",
+        "02o223211012rohw",
+        "02o2222110221cso",
+        "01r223211022csro",
+        "01222mm2102cs0oh",
+        ".012mm210.0s40ro",
+        ".01211210.0330dr",
+        ".012r1r20.022111",
+        ".00122210.000000",
+        "..0m010m0.......",
+        "..0i0.0i0.......",
+        "...0...0........",
+    ], eye_left_map={"f": "v", "E": "p", "e": "q"}, eye_right_map={"f": "d", "E": "r", "e": "o"})
+
     icons = {
         "cerberus_heart.png": [
             "................",
@@ -1103,44 +1524,8 @@ def build_cerberus_item_icons():
             "................",
             "................",
         ],
-        # Mũ gọn 1.0F có DUY NHẤT 1 cặp sừng/tai đá đen Obsidian vuốt gọn + mắt đỏ + 2 nanh trắng ngắn!
-        "cerberus_helmet.png": [
-            "..04........40..",
-            "..0340....0430..",
-            "..023003400320..",
-            "..034324423430..",
-            "..023213312320..",
-            "..0320dr4rd0230.",
-            "..0210ro4or0120.",
-            "..0201234321020.",
-            "..020.0220..020.",
-            "..020.0110..020.",
-            "..010.i00i..010.",
-            "..010.......010.",
-            "..010......0010.",
-            "...00......000..",
-            "................",
-            "................",
-        ],
-        # Áo Blackstone liền mạch tới gấu áo (0% bụng nâu!), 2 đầu vai (1 tím / 1 đỏ cam), 4 tấm ngực + xích X!
-        "cerberus_chestplate.png": [
-            ".04..........40.",
-            "034300....003430",
-            "0p2340....0432r0",
-            "03212m0000m21230",
-            ".03m21mddm12m30.",
-            "..0032mrom2300..",
-            "...03smrohs30...",
-            "...02mrohhrm20..",
-            "...03smroooms30.",
-            "...0m3bdrrdb3m0.",
-            "...0423droo3240.",
-            "...02321dr12320.",
-            "...012321123210.",
-            "....0122112210..",
-            ".....00000000...",
-            "................",
-        ],
+        "cerberus_helmet.png": helmet_32,
+        "cerberus_chestplate.png": chestplate_32,
         "cerberus_leggings.png": [
             "................",
             "..000000000000..",
@@ -1185,11 +1570,13 @@ def build_cerberus_item_icons():
     PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
     strip = Image.new("RGBA", (16 * 8 * 6 + 40, 16 * 8 + 20), (22, 19, 28, 255))
     for idx, (fname, rows) in enumerate(icons.items()):
-        arr = np.zeros((16, 16, 4), dtype=np.uint8)
-        assert len(rows) == 16 and all(len(r) == 16 for r in rows), f"Bad icon shape: {fname}"
+        sz = len(rows)
+        assert sz in (16, 32) and all(len(r) == sz for r in rows), f"Bad icon shape: {fname} ({sz})"
+        cur_pal = pal32 if sz == 32 else pal16
+        arr = np.zeros((sz, sz, 4), dtype=np.uint8)
         for y, row in enumerate(rows):
             for x, ch in enumerate(row):
-                arr[y, x] = pal[ch]
+                arr[y, x] = cur_pal[ch]
         im = Image.fromarray(arr, "RGBA")
         im.save(item_dir / fname)
         up = im.resize((128, 128), Image.Resampling.NEAREST)
@@ -1231,9 +1618,11 @@ def render_cerberus_previews(geo_data, diff_img, glow_img):
         helm_faces.append((quad, uv, rgb))
 
     def bone_piece_key(bname: str):
-        if bname in ("armorHead", "cerberus_ear_r", "cerberus_ear_l"):
+        if bname in ("armorHead", "cerberus_helm_jaw", "cerberus_ear_r", "cerberus_ear_l"):
             return "helmet"
         if bname in ("armorBody", "cerberus_magma_core", "armorRightArm", "armorLeftArm",
+                     "armorRightForearm", "armorLeftForearm",
+                     "cerberus_arm_blade_r", "cerberus_arm_blade_l",
                      "cerberus_shoulder_head_r", "cerberus_shoulder_jaw_r",
                      "cerberus_shoulder_head_l", "cerberus_shoulder_jaw_l"):
             return "chest"
@@ -1385,8 +1774,8 @@ def render_cerberus_previews(geo_data, diff_img, glow_img):
     isheet = Image.new("RGB", (ipw * 2, iph * 2), (24, 24, 28))
     idr = ImageDraw.Draw(isheet)
     for im, gx, gy, title in (
-        (raster(cam_mat(208, 12), ipw, iph, 20.5, np.array([0.0, 30.2, -0.3]), face_list=piece_faces["helmet"]), 0, 0, "CERBERUS (HELMET) - 1.0F SLEEK OBSIDIAN HORNS"),
-        (raster(cam_mat(150, 12), ipw, iph, 15.2, np.array([0.0, 19.2, -0.2]), face_list=piece_faces["chest"]),  1, 0, "CERBERUS (CHESTPLATE) - 1.0F BLACKSTONE + RED/PURPLE HEADS"),
+        (raster(cam_mat(208, 12), ipw, iph, 17.5, np.array([0.0, 29.8, -1.0]), face_list=piece_faces["helmet"]), 0, 0, "CERBERUS (HELMET) - FULL-ENCLOSED BEAST MASK"),
+        (raster(cam_mat(150, 12), ipw, iph, 13.8, np.array([0.0, 20.0, -0.4]), face_list=piece_faces["chest"]),  1, 0, "CERBERUS (CHESTPLATE) - 1.0F BLACKSTONE + LARGE 3-HEAD PAULDRONS"),
         (raster(cam_mat(150, 14), ipw, iph, 23.0, np.array([0.0,  8.6, -0.4]), face_list=piece_faces["legs"]),   0, 1, "CERBERUS (LEGGINGS) - 0.5F BLACKSTONE + LAVA VEINS"),
         (raster(cam_mat(145, 16), ipw, iph, 23.0, np.array([0.0,  2.8, -0.4]), face_list=piece_faces["boots"]),  1, 1, "CERBERUS (BOOTS) - 1.0F BLACKSTONE + OBSIDIAN CLAWS"),
     ):
@@ -1396,15 +1785,15 @@ def render_cerberus_previews(geo_data, diff_img, glow_img):
     isheet.save(out_iso)
     print(f"ISOLATED_PREVIEW_OK: {out_iso}")
 
-    ctr_head = np.array([0.0, 30.4, +0.1], dtype=np.float64)
+    ctr_head = np.array([0.0, 29.8, -0.8], dtype=np.float64)
     hpw, hph = 440, 440
     hsheet = Image.new("RGB", (hpw * 2, hph * 2), (24, 24, 28))
     hdr = ImageDraw.Draw(hsheet)
     for im, gx, gy, title in (
-        (raster(cam_mat(180,  4), hpw, hph, 20.5, ctr_head, face_list=helm_faces), 0, 0, "HELM 1. FRONT - COMPACT 1.0F + 2 OBSIDIAN HORNS"),
-        (raster(cam_mat(  0,  4), hpw, hph, 20.5, ctr_head, face_list=helm_faces), 1, 0, "HELM 2. BACK - STONE DORSAL RIDGE + OBSIDIAN HORNS"),
-        (raster(cam_mat(+90,  0), hpw, hph, 20.5, ctr_head, face_list=helm_faces), 0, 1, "HELM 3. SIDE - SWEPT-BACK OBSIDIAN HORNS + 2 FANGS"),
-        (raster(cam_mat(146, 10), hpw, hph, 20.5, ctr_head, face_list=helm_faces), 1, 1, "HELM 4. 3/4 - SLEEK CERBERUS 1.0F HELMET"),
+        (raster(cam_mat(180,  4), hpw, hph, 17.8, ctr_head, face_list=helm_faces), 0, 0, "HELM 1. FRONT - FULL ENCLOSED + FIERY MAW & FANGS"),
+        (raster(cam_mat(  0,  4), hpw, hph, 17.8, ctr_head, face_list=helm_faces), 1, 0, "HELM 2. BACK - SPIKY MANE + CROWN CREST + HORNS"),
+        (raster(cam_mat(+90,  0), hpw, hph, 17.8, ctr_head, face_list=helm_faces), 0, 1, "HELM 3. SIDE - WOLF SNOUT + JAGGED JAW + MANE"),
+        (raster(cam_mat(146, 10), hpw, hph, 17.8, ctr_head, face_list=helm_faces), 1, 1, "HELM 4. 3/4 - FULL-HEAD CERBERUS BEAST HELMET"),
     ):
         hsheet.paste(im, (gx * hpw, gy * hph))
         hdr.text((gx * hpw + 10, gy * hph + 10), title, fill=(214, 198, 242))

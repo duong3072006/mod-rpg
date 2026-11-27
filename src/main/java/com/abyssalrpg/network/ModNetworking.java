@@ -1,5 +1,6 @@
 package com.abyssalrpg.network;
 
+import com.abyssalrpg.combat.CerberusArmorHandler;
 import com.abyssalrpg.combat.DualBladeCombatHandler;
 import com.abyssalrpg.combat.ExcaliburCombatHandler;
 import com.abyssalrpg.combat.MuramasaCombatHandler;
@@ -30,6 +31,7 @@ public final class ModNetworking {
         PayloadTypeRegistry.playS2C().register(ExcaliburSyncPayload.TYPE, ExcaliburSyncPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(SeaWeaponsSyncPayload.TYPE, SeaWeaponsSyncPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(MuramasaSyncPayload.TYPE, MuramasaSyncPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(CerberusArmorSyncPayload.TYPE, CerberusArmorSyncPayload.CODEC);
 
         PayloadTypeRegistry.playC2S().register(DualBladeSlashC2SPayload.TYPE, DualBladeSlashC2SPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(DualBladeSlashC2SPayload.TYPE, (payload, context) ->
@@ -54,6 +56,10 @@ public final class ModNetworking {
         PayloadTypeRegistry.playC2S().register(MuramasaActionC2SPayload.TYPE, MuramasaActionC2SPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(MuramasaActionC2SPayload.TYPE, (payload, context) ->
                 context.server().execute(() -> MuramasaCombatHandler.handleActionPacket(context.player(), payload)));
+
+        PayloadTypeRegistry.playC2S().register(CerberusArmorActionC2SPayload.TYPE, CerberusArmorActionC2SPayload.CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(CerberusArmorActionC2SPayload.TYPE, (payload, context) ->
+                context.server().execute(() -> CerberusArmorHandler.handleActionPacket(context.player(), payload)));
     }
 
     public static void sendShakeNearby(ServerLevel level, Vec3 center, double radius, float intensity, int ticks) {
@@ -230,6 +236,26 @@ public final class ModNetworking {
             if (p.position().distanceToSqr(center) <= syncDist * syncDist) {
                 ServerPlayNetworking.send(p, payload);
             }
+        }
+    }
+
+    /** Gửi trạng thái co/bung 2 thanh đao cánh tay Giáp Cerberus tới chủ nhân & người chơi xung quanh (72 block). */
+    public static void sendCerberusArmorSyncNearby(ServerLevel level, ServerPlayer owner, CerberusArmorSyncPayload payload) {
+        double syncDist = 72.0;
+        Vec3 center = owner.position();
+        AABB box = new AABB(center.x - syncDist, center.y - 32.0, center.z - syncDist,
+                center.x + syncDist, center.y + 32.0, center.z + syncDist);
+        boolean sentToOwner = false;
+        for (ServerPlayer p : level.getEntitiesOfClass(ServerPlayer.class, box)) {
+            if (p.position().distanceToSqr(center) <= syncDist * syncDist) {
+                ServerPlayNetworking.send(p, payload);
+                if (p == owner) {
+                    sentToOwner = true;
+                }
+            }
+        }
+        if (!sentToOwner) {
+            ServerPlayNetworking.send(owner, payload);
         }
     }
 }

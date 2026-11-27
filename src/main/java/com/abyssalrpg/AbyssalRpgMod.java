@@ -88,13 +88,15 @@ public class AbyssalRpgMod implements ModInitializer {
             NightmareArmorHandler.syncPlayerImmediate(handler.getPlayer());
             CinderDragonArmorHandler.syncPlayerImmediate(handler.getPlayer());
             SpiritHydraArmorHandler.syncPlayerImmediate(handler.getPlayer());
-            CerberusArmorHandler.syncPlayerImmediate(handler.getPlayer());
+            CerberusArmorHandler.onPlayerJoin(handler.getPlayer());
         });
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
+                CerberusArmorHandler.onPlayerDisconnect(handler.getPlayer()));
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
             NightmareArmorHandler.syncPlayerImmediate(newPlayer);
             CinderDragonArmorHandler.syncPlayerImmediate(newPlayer);
             SpiritHydraArmorHandler.syncPlayerImmediate(newPlayer);
-            CerberusArmorHandler.syncPlayerImmediate(newPlayer);
+            CerberusArmorHandler.onPlayerRespawn(newPlayer);
         });
         ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) -> {
             NightmareArmorHandler.syncPlayerImmediate(player);

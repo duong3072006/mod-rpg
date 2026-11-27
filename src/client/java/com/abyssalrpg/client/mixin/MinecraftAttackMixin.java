@@ -1,5 +1,6 @@
 package com.abyssalrpg.client.mixin;
 
+import com.abyssalrpg.client.CerberusArmorClientState;
 import com.abyssalrpg.client.DualBladeClientState;
 import com.abyssalrpg.client.ExcaliburClientState;
 import com.abyssalrpg.client.MuramasaClientState;
@@ -15,6 +16,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Minecraft.class)
@@ -56,6 +58,16 @@ public abstract class MinecraftAttackMixin {
             } else {
                 MuramasaClientState.onClientAirSwing((Minecraft) (Object) this);
             }
+        }
+    }
+
+    @Inject(method = "startUseItem", at = @At("TAIL"))
+    private void abyssalrpg$onEmptyHandRightClickTail(CallbackInfo ci) {
+        if (this.player == null || this.screen != null || this.player.isSpectator() || this.player.isHandsBusy()) {
+            return;
+        }
+        if (this.player.getMainHandItem().isEmpty() && this.player.getOffhandItem().isEmpty()) {
+            CerberusArmorClientState.onClientEmptyHandRightClick((Minecraft) (Object) this);
         }
     }
 }

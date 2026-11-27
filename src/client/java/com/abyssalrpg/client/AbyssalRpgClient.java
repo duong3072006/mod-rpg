@@ -60,6 +60,7 @@ import com.abyssalrpg.item.NightmareArmorItem;
 import com.abyssalrpg.item.SeaTridentItem;
 import com.abyssalrpg.item.SpiritHydraArmorItem;
 import com.abyssalrpg.item.TogetsuItem;
+import com.abyssalrpg.network.CerberusArmorSyncPayload;
 import com.abyssalrpg.network.CerberusVfxPayload;
 import com.abyssalrpg.network.CinderDragonVfxPayload;
 import com.abyssalrpg.network.DualBladeComboPayload;
@@ -309,6 +310,13 @@ public class AbyssalRpgClient implements ClientModInitializer {
                     }
                 }));
 
+        ClientPlayNetworking.registerGlobalReceiver(CerberusArmorSyncPayload.TYPE,
+                (payload, context) -> context.client().execute(() -> {
+                    if (context.client().level != null) {
+                        CerberusArmorClientState.handleSyncPayload(context.client().level, payload);
+                    }
+                }));
+
         ClientPlayNetworking.registerGlobalReceiver(DualBladeComboPayload.TYPE,
                 (payload, context) -> context.client().execute(() -> {
                     if (context.client().level != null) {
@@ -385,6 +393,7 @@ public class AbyssalRpgClient implements ClientModInitializer {
             ExcaliburClientState.tickClient(client);
             SeaWeaponsClientState.tickClient(client);
             MuramasaClientState.tickClient(client);
+            CerberusArmorClientState.tickClient(client);
 
             LocalPlayer player = client.player;
             if (player == null || client.isPaused() || client.level == null)
